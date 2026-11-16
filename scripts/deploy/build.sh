@@ -105,7 +105,11 @@ build_kubernetes_images() {
     ref="$image"
     if [[ "$engine" == "podman" ]]; then
       digestfile="$(maop_tmpdir)/digest-${svc}"
-      podman push --digestfile "$digestfile" "$image"
+      if [[ "${MAOP_REGISTRY_TLS_VERIFY:-true}" == "false" ]]; then
+        podman push --tls-verify=false --digestfile "$digestfile" "$image"
+      else
+        podman push --digestfile "$digestfile" "$image"
+      fi
       [[ -s "$digestfile" ]] && ref="${MAOP_REGISTRY%/}/maop-${svc}@$(cat "$digestfile")"
     else
       docker push "$image"
