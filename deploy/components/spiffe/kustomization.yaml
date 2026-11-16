@@ -1,0 +1,111 @@
+# SPIFFE workload identity plumbing for the five application Deployments, in one place
+# (docs/security.md §3.2):
+#   - pod label maop.io/spiffe=enabled (selected by the ClusterSPIFFEID in deploy/base/identity),
+#   - CSI inline volume csi.spiffe.io (read-only) with the SPIRE agent's Workload API socket,
+#   - spiffe-helper as a native sidecar (init container with restartPolicy: Always) writing
+#     svid.pem / svid_key.pem / svid_bundle.pem into a memory-backed emptyDir at /spiffe,
+#   - the same emptyDir mounted read-only at /spiffe in the application container, and
+#     MAOP_SPIFFE_DIR=/spiffe.
+# The helper's startupProbe waits for its /ready endpoint (X.509 files written), so kubelet starts
+# the application container only after the first SVID exists.
+#
+# JSON patches address containers/0, which by convention is the application container.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+configMapGenerator:
+  - name: spiffe-helper-config
+    options:
+      labels:
+        app.kubernetes.io/name: spiffe-helper
+    files:
+      - helper.conf
+
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: "^(triage-agent|evidence-worker|recommendation-agent|tool-service|ops-console)$"
+    patch: |-
+      - op: add
+        path: /metadata/labels/maop.io~1spiffe
+        value: enabled
+      - op: add
+        path: /spec/template/metadata/labels/maop.io~1spiffe
+        value: enabled
+      - op: add
+        path: /spec/template/spec/volumes/-
+        value:
+          name: spiffe-workload-api
+          csi:
+            driver: csi.spiffe.io
+            readOnly: true
+      - op: add
+        path: /spec/template/spec/volumes/-
+        value:
+          name: spiffe-certs
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
+      - op: add
+        path: /spec/template/spec/volumes/-
+        value:
+          name: spiffe-helper-config
+          configMap:
+            name: spiffe-helper-config
+      - op: add
+        path: /spec/template/spec/initContainers
+        value:
+          - name: spiffe-helper
+            image: ghcr.io/spiffe/spiffe-helper:0.12.3
+            imagePullPolicy: IfNotPresent
+            restartPolicy: Always
+            args: ["-config", "/etc/spiffe-helper/helper.conf"]
+            ports:
+              - name: helper-health
+                containerPort: 8081
+            startupProbe:
+              httpGet:
+                path: /ready
+                port: helper-health
+              periodSeconds: 2
+              failureThreshold: 150
+            livenessProbe:
+              httpGet:
+                path: /live
+                port: helper-health
+              periodSeconds: 10
+              failureThreshold: 3
+            resources:
+              requests:
+                cpu: 10m
+                memory: 16Mi
+              limits:
+                cpu: 100m
+                memory: 64Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+            volumeMounts:
+              - name: spiffe-workload-api
+                mountPath: /spiffe-workload-api
+                readOnly: true
+              - name: spiffe-certs
+                mountPath: /spiffe
+              - name: spiffe-helper-config
+                mountPath: /etc/spiffe-helper
+                readOnly: true
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts/-
+        value:
+          name: spiffe-certs
+          mountPath: /spiffe
+          readOnly: true
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: MAOP_SPIFFE_DIR
+          value: /spiffe

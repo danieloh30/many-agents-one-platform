@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats
+  labels:
+    app.kubernetes.io/name: nats
+spec:
+  selector:
+    app.kubernetes.io/name: nats
+  ports:
+    - name: client
+      port: 4222
+      targetPort: client
+    # Monitoring endpoint: read by the KEDA nats-jetstream scaler (from the KEDA namespace),
+    # ops-console, and the exporter sidecar (via localhost).
+    - name: monitor
+      port: 8222
+      targetPort: monitor
+    - name: metrics
+      port: 7777
+      targetPort: metrics

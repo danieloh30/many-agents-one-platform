@@ -1,0 +1,416 @@
+# NetworkPolicies: default deny for ingress and egress, then one allow per edge of the
+# architecture diagram (docs/security.md §8, docs/deployment.md §4). Assumptions, all marked
+# "verify on cluster" (docs/deployment.md C9):
+#   - DNS: pods resolve through a cluster DNS service in another namespace (openshift-dns on
+#     OpenShift, kube-system elsewhere). Allowed to any namespace on 53 and 5353 (OpenShift's DNS
+#     pods listen on 5353 behind the service port 53).
+#   - Kubernetes API (ops-console, Prometheus discovery): the API endpoints are host-network
+#     addresses whose CIDR is not knowable here, so egress is allowed to any address on 6443 and
+#     443 for those two workloads only.
+#   - Model egress: the three agents may reach any address on 443 (the model host is configurable
+#     and may sit behind a proxy). Cluster-internal CIDRs cannot be excluded generically.
+#   - KEDA reads nats:8222 from its own namespace: 8222 is allowed from every namespace.
+#   - The SPIRE Workload API is a unix socket from the CSI driver; no network policy applies.
+#   - Kubelet probes are not subject to NetworkPolicy on OVN-Kubernetes/Calico (host traffic).
+#   - Exposure (router/ingress controller) is added by each overlay.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+        - { protocol: UDP, port: 5353 }
+        - { protocol: TCP, port: 5353 }
+---
+# ---------------------------------------------------------------- application edges (egress)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: app-egress-common
+spec:
+  # All five services: NATS client, OTLP to the Collector.
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [triage-agent, evidence-worker, recommendation-agent, tool-service, ops-console]
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: nats
+      ports:
+        - { protocol: TCP, port: 4222 }
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
+      ports:
+        - { protocol: TCP, port: 4317 }
+        - { protocol: TCP, port: 4318 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tool-callers-egress
+spec:
+  # Every caller of the tool API (mTLS, X.509-SVID).
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [triage-agent, evidence-worker, recommendation-agent, ops-console]
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: tool-service
+      ports:
+        - { protocol: TCP, port: 8443 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-clients-egress
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [triage-agent, tool-service, postgres-setup]
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+      ports:
+        - { protocol: TCP, port: 5432 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agents-model-egress
+spec:
+  # Model egress only from the three agents (docs/security.md §8).
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [triage-agent, evidence-worker, recommendation-agent]
+  policyTypes: ["Egress"]
+  egress:
+    - ports:
+        - { protocol: TCP, port: 443 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ops-console-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ops-console
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: triage-agent
+      ports:
+        - { protocol: TCP, port: 8080 }
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: nats
+      ports:
+        - { protocol: TCP, port: 8222 }
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - { protocol: TCP, port: 9090 }
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: jaeger
+      ports:
+        - { protocol: TCP, port: 16686 }
+    # Component health of the in-namespace services (management port).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: maop
+      ports:
+        - { protocol: TCP, port: 9000 }
+    # Kubernetes API (read-only Role): address range not knowable, see header.
+    - ports:
+        - { protocol: TCP, port: 6443 }
+        - { protocol: TCP, port: 443 }
+---
+# ---------------------------------------------------------------- application edges (ingress)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: triage-agent-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: triage-agent
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ops-console
+      ports:
+        - { protocol: TCP, port: 8080 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tool-service-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: tool-service
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [triage-agent, evidence-worker, recommendation-agent, ops-console]
+        # `./demo.sh verify` starts a short-lived probe pod with this label to show that a
+        # connection without a client certificate fails the TLS handshake. Reachability is
+        # deliberate: the control under test is mTLS, not the network policy.
+        - podSelector:
+            matchLabels:
+              maop.io/identity-probe: "true"
+      ports:
+        - { protocol: TCP, port: 8443 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: identity-probe-egress
+spec:
+  podSelector:
+    matchLabels:
+      maop.io/identity-probe: "true"
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: tool-service
+      ports:
+        - { protocol: TCP, port: 8443 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: app-management-ingress
+spec:
+  # Metrics scrape by Prometheus and health reads by ops-console on the management port.
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [triage-agent, evidence-worker, recommendation-agent, tool-service, ops-console]
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [prometheus, ops-console]
+      ports:
+        - { protocol: TCP, port: 9000 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nats-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: nats
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [triage-agent, evidence-worker, recommendation-agent, tool-service, ops-console]
+      ports:
+        - { protocol: TCP, port: 4222 }
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ops-console
+      ports:
+        - { protocol: TCP, port: 8222 }
+    # KEDA nats-jetstream scaler (operator namespace differs per install).
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - { protocol: TCP, port: 8222 }
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - { protocol: TCP, port: 7777 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [triage-agent, tool-service, postgres-setup]
+      ports:
+        - { protocol: TCP, port: 5432 }
+---
+# ---------------------------------------------------------------- observability edges
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: otel-collector-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: otel-collector
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: maop
+      ports:
+        - { protocol: TCP, port: 4317 }
+        - { protocol: TCP, port: 4318 }
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - { protocol: TCP, port: 8889 }
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: jaeger
+      ports:
+        - { protocol: TCP, port: 4317 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jaeger-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: jaeger
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
+      ports:
+        - { protocol: TCP, port: 4317 }
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [grafana, ops-console]
+      ports:
+        - { protocol: TCP, port: 16686 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: prometheus-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [grafana, ops-console]
+      ports:
+        - { protocol: TCP, port: 9090 }
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: maop
+      ports:
+        - { protocol: TCP, port: 9000 }
+        - { protocol: TCP, port: 7777 }
+        - { protocol: TCP, port: 8889 }
+    # Kubernetes API for pod discovery (namespaced Role), see header.
+    - ports:
+        - { protocol: TCP, port: 6443 }
+        - { protocol: TCP, port: 443 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: grafana-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - { protocol: TCP, port: 9090 }
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: jaeger
+      ports:
+        - { protocol: TCP, port: 16686 }

@@ -1,0 +1,194 @@
+# In-cluster binary Docker builds (docs/deployment.md §5.3). Applied by `./demo.sh build` into the
+# app namespace; `oc start-build <svc> --from-dir=<module> --follow --wait` uploads the module
+# directory (with target/quarkus-app/ already built by Maven) as the build context.
+# Deployments reference the resulting image by digest (demo.sh), so no image change triggers are used.
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: maop-triage-agent
+  labels:
+    app.kubernetes.io/name: triage-agent
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: triage-agent
+  labels:
+    app.kubernetes.io/name: triage-agent
+spec:
+  runPolicy: Serial
+  successfulBuildsHistoryLimit: 3
+  failedBuildsHistoryLimit: 3
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: src/main/docker/Dockerfile.jvm
+  output:
+    to:
+      kind: ImageStreamTag
+      name: maop-triage-agent:latest
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: maop-evidence-worker
+  labels:
+    app.kubernetes.io/name: evidence-worker
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: evidence-worker
+  labels:
+    app.kubernetes.io/name: evidence-worker
+spec:
+  runPolicy: Serial
+  successfulBuildsHistoryLimit: 3
+  failedBuildsHistoryLimit: 3
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: src/main/docker/Dockerfile.jvm
+  output:
+    to:
+      kind: ImageStreamTag
+      name: maop-evidence-worker:latest
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: maop-recommendation-agent
+  labels:
+    app.kubernetes.io/name: recommendation-agent
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: recommendation-agent
+  labels:
+    app.kubernetes.io/name: recommendation-agent
+spec:
+  runPolicy: Serial
+  successfulBuildsHistoryLimit: 3
+  failedBuildsHistoryLimit: 3
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: src/main/docker/Dockerfile.jvm
+  output:
+    to:
+      kind: ImageStreamTag
+      name: maop-recommendation-agent:latest
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: maop-tool-service
+  labels:
+    app.kubernetes.io/name: tool-service
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: tool-service
+  labels:
+    app.kubernetes.io/name: tool-service
+spec:
+  runPolicy: Serial
+  successfulBuildsHistoryLimit: 3
+  failedBuildsHistoryLimit: 3
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: src/main/docker/Dockerfile.jvm
+  output:
+    to:
+      kind: ImageStreamTag
+      name: maop-tool-service:latest
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: maop-ops-console
+  labels:
+    app.kubernetes.io/name: ops-console
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: ops-console
+  labels:
+    app.kubernetes.io/name: ops-console
+spec:
+  runPolicy: Serial
+  successfulBuildsHistoryLimit: 3
+  failedBuildsHistoryLimit: 3
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: src/main/docker/Dockerfile.jvm
+  output:
+    to:
+      kind: ImageStreamTag
+      name: maop-ops-console:latest
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi

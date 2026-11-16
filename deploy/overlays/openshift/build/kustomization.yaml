@@ -1,0 +1,14 @@
+# ImageStreams + BuildConfigs for the five services. Applied with the app namespace by
+# `./demo.sh build --platform openshift` (not part of the deploy overlay).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: maop
+      app.kubernetes.io/managed-by: many-agents-one-platform
+      app.kubernetes.io/component: build
+    includeSelectors: false
+
+resources:
+  - buildconfigs.yaml

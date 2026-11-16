@@ -1,0 +1,18 @@
+# OpenShift additions, layered after values.yaml.
+#
+# global.openshift=true makes the charts render:
+#   - SecurityContextConstraints for the SPIRE agent and the SPIFFE CSI driver (privileged node
+#     access; accepting these is a cluster-admin decision — docs/security.md S2), and
+#   - the CSIDriver label security.openshift.io/csi-ephemeral-volume-profile=restricted, which lets
+#     pods admitted under restricted-v2 / Pod Security "restricted" mount the csi.spiffe.io inline
+#     volume (docs/deployment.md §5.2 item 2).
+# Verified in spire 0.30.4: charts/spiffe-csi-driver/templates/spiffe-csi-driver.yaml.
+
+global:
+  openshift: true
+
+spiffe-csi-driver:
+  # Already set by the chart when global.openshift=true; restated so the requirement is visible
+  # and survives a chart change.
+  csiDriverLabels:
+    security.openshift.io/csi-ephemeral-volume-profile: restricted

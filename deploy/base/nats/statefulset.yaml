@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nats
+  labels:
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/component: messaging
+spec:
+  serviceName: nats
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nats
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nats
+        app.kubernetes.io/component: messaging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "7777"
+        prometheus.io/path: /metrics
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      # No runAsUser/fsGroup: on OpenShift restricted-v2 assigns a UID and an fsGroup from the
+      # namespace range, which makes the PVC writable. The kubernetes overlay sets them explicitly.
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nats
+          image: docker.io/library/nats:2.15.3-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["nats-server", "--config", "/etc/nats/nats.conf"]
+          ports:
+            - name: client
+              containerPort: 4222
+            - name: monitor
+              containerPort: 8222
+          env:
+            - name: TRIAGE_AGENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nats-auth
+                  key: triage-agent
+            - name: EVIDENCE_WORKER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nats-auth
+                  key: evidence-worker
+            - name: RECOMMENDATION_AGENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nats-auth
+                  key: recommendation-agent
+            - name: TOOL_SERVICE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nats-auth
+                  key: tool-service
+            - name: OPS_CONSOLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nats-auth
+                  key: ops-console
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: monitor
+            periodSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /healthz?js-enabled-only=true
+              port: monitor
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz?js-enabled-only=true
+              port: monitor
+            periodSeconds: 10
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /etc/nats
+              readOnly: true
+        - name: exporter
+          image: docker.io/natsio/prometheus-nats-exporter:0.20.3
+          imagePullPolicy: IfNotPresent
+          args: ["-port", "7777", "-jsz=all", "-varz", "-connz", "http://localhost:8222"]
+          ports:
+            - name: metrics
+              containerPort: 7777
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: config
+          configMap:
+            name: nats-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: nats
+          app.kubernetes.io/part-of: maop
+          app.kubernetes.io/managed-by: many-agents-one-platform
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        # Default StorageClass (doctor fails without one).
+        resources:
+          requests:
+            storage: 2Gi

@@ -1,0 +1,65 @@
+# Upstream KEDA chart 2.21.0 (kedacore/keda) — used only when neither upstream KEDA nor the
+# OpenShift Custom Metrics Autoscaler is present (docs/deployment.md §5.1).
+#
+# Installed with:
+#   helm upgrade --install keda kedacore/keda --version 2.21.0 -n keda --create-namespace \
+#     -f deploy/platform/keda/values.yaml
+#
+# Keys verified with `helm show values kedacore/keda --version 2.21.0`. The chart defaults are
+# already compatible with OpenShift restricted-v2 and Pod Security "restricted" (no runAsUser,
+# all capabilities dropped, RuntimeDefault seccomp, read-only root filesystem); they are restated
+# here so a reviewer sees the security posture without opening the chart.
+
+podSecurityContext:
+  operator:
+    runAsNonRoot: true
+  metricServer:
+    runAsNonRoot: true
+  webhooks:
+    runAsNonRoot: true
+
+securityContext:
+  operator:
+    capabilities:
+      drop: ["ALL"]
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+  metricServer:
+    capabilities:
+      drop: ["ALL"]
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+  webhooks:
+    capabilities:
+      drop: ["ALL"]
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+
+resources:
+  operator:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  metricServer:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  webhooks:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

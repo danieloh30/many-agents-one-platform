@@ -1,0 +1,49 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - otel-collector/deployment.yaml
+  - jaeger/deployment.yaml
+  - prometheus/deployment.yaml
+  - grafana/deployment.yaml
+
+configMapGenerator:
+  - name: otel-collector-config
+    options:
+      labels:
+        app.kubernetes.io/name: otel-collector
+    files:
+      - config.yaml=otel-collector/config.yaml
+  - name: jaeger-config
+    options:
+      labels:
+        app.kubernetes.io/name: jaeger
+    files:
+      - config.yaml=jaeger/config.yaml
+  - name: prometheus-config
+    options:
+      labels:
+        app.kubernetes.io/name: prometheus
+    files:
+      - prometheus.yml=prometheus/prometheus.yml
+  - name: grafana-datasources
+    options:
+      labels:
+        app.kubernetes.io/name: grafana
+    files:
+      - datasources.yaml=grafana/datasources.yaml
+  - name: grafana-dashboard-provider
+    options:
+      labels:
+        app.kubernetes.io/name: grafana
+    files:
+      - dashboards.yaml=grafana/dashboards.yaml
+  - name: grafana-dashboards
+    options:
+      labels:
+        app.kubernetes.io/name: grafana
+    files:
+      - maop-overview.json=grafana/dashboards/maop-overview.json
+      - maop-queue-scaling.json=grafana/dashboards/maop-queue-scaling.json
+      - maop-policy-tools.json=grafana/dashboards/maop-policy-tools.json
+      - maop-model-usage.json=grafana/dashboards/maop-model-usage.json

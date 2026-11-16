@@ -1,0 +1,5 @@
+# Rendered on its own by demo.sh (no namespace transform) — see clusterspiffeid.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - clusterspiffeid.yaml

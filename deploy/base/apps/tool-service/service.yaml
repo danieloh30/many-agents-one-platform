@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tool-service
+  labels:
+    app.kubernetes.io/name: tool-service
+automountServiceAccountToken: false
+---
+# Service name == ServiceAccount name, so the SVID's DNS SANs (ClusterSPIFFEID dnsNameTemplates:
+# "tool-service" and "tool-service.<ns>.svc") match the host clients dial.
+apiVersion: v1
+kind: Service
+metadata:
+  name: tool-service
+  labels:
+    app.kubernetes.io/name: tool-service
+spec:
+  selector:
+    app.kubernetes.io/name: tool-service
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https
+    - name: management
+      port: 9000
+      targetPort: management

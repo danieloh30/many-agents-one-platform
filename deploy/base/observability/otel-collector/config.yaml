@@ -1,0 +1,52 @@
+# OpenTelemetry Collector (contrib) 0.165.0.
+# Component types verified against the v0.165.0 sources/manifest:
+#   receiver otlp, processor batch, exporter otlp_grpc (the old name "otlp" is a deprecated alias),
+#   exporter prometheus, connector spanmetrics, extension health_check.
+# k8sattributes is intentionally not used: it needs cluster-wide pod read RBAC for little demo
+# value (services already set service.name). Listen addresses are explicit because recent
+# collector releases default to localhost.
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 2s
+
+connectors:
+  spanmetrics:
+    histogram:
+      unit: s
+    dimensions:
+      - name: maop.model.mode
+    metrics_flush_interval: 15s
+
+exporters:
+  otlp_grpc/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_grpc/jaeger, spanmetrics]
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      exporters: [prometheus]
+  telemetry:
+    logs:
+      level: info

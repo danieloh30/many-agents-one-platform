@@ -1,0 +1,22 @@
+# Ingress from the OpenShift router to the exposed UIs. Router namespaces carry the label
+# policy-group.network.openshift.io/ingress="" (OpenShift NetworkPolicy documentation).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-openshift-router
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [ops-console, jaeger, grafana]
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              policy-group.network.openshift.io/ingress: ""
+      ports:
+        - { protocol: TCP, port: 8080 }
+        - { protocol: TCP, port: 16686 }
+        - { protocol: TCP, port: 3000 }

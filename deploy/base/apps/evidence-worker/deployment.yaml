@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evidence-worker
+  labels:
+    app.kubernetes.io/name: evidence-worker
+    app.kubernetes.io/component: agent
+spec:
+  # No `replicas`: the KEDA ScaledObject (deploy/base/scaling) owns the replica count, and leaving
+  # the field out keeps `kubectl apply` from fighting the HPA on every rerun.
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: evidence-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: evidence-worker
+        app.kubernetes.io/component: agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9000"
+        prometheus.io/path: /q/metrics
+    spec:
+      serviceAccountName: evidence-worker
+      automountServiceAccountToken: false
+      # Graceful scale-in: stop pulling, finish or nak in-flight tasks (architecture.md §9).
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: evidence-worker
+      containers:
+        # Container 0 must stay the application container: the spiffe component patches index 0.
+        - name: evidence-worker
+          image: maop-evidence-worker:0.0.0-dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: management
+              containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: maop-config
+            - configMapRef:
+                name: model-config
+          env:
+            - name: MAOP_NATS_USER
+              value: evidence-worker
+            - name: MAOP_NATS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nats-auth
+                  key: evidence-worker
+            - name: MAOP_MODEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: model-credentials
+                  key: MAOP_MODEL_API_KEY
+                  optional: true
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          startupProbe:
+            httpGet:
+              path: /q/health/ready
+              port: management
+            periodSeconds: 2
+            failureThreshold: 90
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: management
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: management
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi

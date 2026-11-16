@@ -1,0 +1,53 @@
+# Edge-terminated Routes with insecure → HTTPS redirect (docs/deployment.md §4). Hosts are left to
+# the router's default (<name>-<namespace>.<apps domain>); demo.sh reads them back after apply.
+# jaeger and grafana Routes are removed by demo.sh when MAOP_EXPOSE_OBSERVABILITY=false.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: ops-console
+  labels:
+    app.kubernetes.io/name: ops-console
+  annotations:
+    # SSE: the console streams events; heartbeat every 15 s (verify on cluster, C6).
+    haproxy.router.openshift.io/timeout: 1h
+spec:
+  to:
+    kind: Service
+    name: ops-console
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: jaeger
+  labels:
+    app.kubernetes.io/name: jaeger
+spec:
+  to:
+    kind: Service
+    name: jaeger
+  port:
+    targetPort: query
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: grafana
+  labels:
+    app.kubernetes.io/name: grafana
+spec:
+  to:
+    kind: Service
+    name: grafana
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

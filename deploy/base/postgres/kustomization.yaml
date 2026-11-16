@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - statefulset.yaml
+  - setup-job.yaml
+
+configMapGenerator:
+  - name: postgres-setup
+    options:
+      labels:
+        app.kubernetes.io/name: postgres-setup
+    files:
+      - setup.sql

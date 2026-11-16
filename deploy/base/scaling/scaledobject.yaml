@@ -1,0 +1,45 @@
+# KEDA ScaledObject for evidence-worker (docs/deployment.md §2.2).
+#
+# Deploy-time values set by the kustomization demo.sh generates (scripts/deploy/render.sh):
+#   - natsServerMonitoringEndpoint: the namespace segment is replaced with the ScaledObject's own
+#     namespace (kustomize `replacements`, delimiter "."). The KEDA operator runs in another
+#     namespace, so the endpoint must be the FQDN.
+#   - minReplicaCount from the profile (summit: 1), maxReplicaCount from MAOP_EVIDENCE_MAX_REPLICAS.
+# The openshift-cma overlay replaces the trigger with a prometheus trigger (§5.1).
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: evidence-worker
+  labels:
+    app.kubernetes.io/name: evidence-worker
+spec:
+  scaleTargetRef:
+    name: evidence-worker
+  minReplicaCount: 1
+  maxReplicaCount: 6
+  pollingInterval: 5
+  cooldownPeriod: 60
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Pods
+              value: 4
+              periodSeconds: 15
+        scaleDown:
+          stabilizationWindowSeconds: 60
+          policies:
+            - type: Pods
+              value: 2
+              periodSeconds: 30
+  triggers:
+    - type: nats-jetstream
+      metadata:
+        natsServerMonitoringEndpoint: nats.maop.svc.cluster.local:8222
+        account: $G
+        stream: MAOP_WORK
+        consumer: evidence-workers
+        lagThreshold: "4"
+        activationLagThreshold: "0"

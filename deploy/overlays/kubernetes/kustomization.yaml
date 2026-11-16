@@ -1,0 +1,32 @@
+# Generic Kubernetes / kind profile. Images come from an external registry (MAOP_REGISTRY), set by
+# demo.sh with kustomize `images:` (tag = short git SHA, digest when the push reported one).
+#
+# Unlike OpenShift, nothing assigns a UID: several upstream images (nats, the exporter,
+# spiffe-helper on distroless/static) would run as root and be rejected by runAsNonRoot. Every pod
+# therefore gets an explicit non-root UID with GID 0 semantics like OpenShift (no runAsGroup, so the
+# primary group is 0 for UIDs absent from the image's /etc/passwd) and an fsGroup for the PVCs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - ingress.yaml
+  - network-ingress.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: maop
+      app.kubernetes.io/managed-by: many-agents-one-platform
+    includeSelectors: false
+    includeTemplates: false
+
+patches:
+  - target:
+      kind: (Deployment|StatefulSet|Job)
+    patch: |-
+      - op: add
+        path: /spec/template/spec/securityContext/runAsUser
+        value: 10001
+      - op: add
+        path: /spec/template/spec/securityContext/fsGroup
+        value: 10001

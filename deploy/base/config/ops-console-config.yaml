@@ -1,0 +1,13 @@
+# External Jaeger/Grafana URLs for the console links (docs/deployment.md §4). Not hashed: demo.sh
+# discovers the Route/Ingress hosts after apply, patches this ConfigMap and restarts ops-console.
+# On a rerun demo.sh renders the already-known URLs here so apply does not blank them.
+# Empty value = link disabled (the console reports null).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ops-console-config
+  labels:
+    app.kubernetes.io/name: ops-console-config
+data:
+  MAOP_JAEGER_URL: ""
+  MAOP_GRAFANA_URL: ""

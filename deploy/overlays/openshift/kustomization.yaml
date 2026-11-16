@@ -1,0 +1,21 @@
+# OpenShift profile (docs/deployment.md §5): Routes and router NetworkPolicy on top of the base.
+# No runAsUser/fsGroup anywhere — restricted-v2 assigns them from the namespace range.
+#
+# Images: the base uses maop-<svc>:0.0.0-dev placeholders. demo.sh rewrites them (kustomize
+# `images:` in its generated kustomization) to
+#   image-registry.openshift-image-registry.svc:5000/<ns>/maop-<svc>@sha256:<digest of the build>
+# ImageStreams and BuildConfigs are in ./build and applied by `./demo.sh build`.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - routes.yaml
+  - network-router.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: maop
+      app.kubernetes.io/managed-by: many-agents-one-platform
+    includeSelectors: false
+    includeTemplates: false

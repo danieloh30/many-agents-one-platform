@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ops-console
+  labels:
+    app.kubernetes.io/name: ops-console
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ops-console
+  labels:
+    app.kubernetes.io/name: ops-console
+spec:
+  selector:
+    app.kubernetes.io/name: ops-console
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: management
+      port: 9000
+      targetPort: management
+---
+# Read-only view of the demo namespace for the ops snapshot (docs/security.md §8).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ops-console-reader
+  labels:
+    app.kubernetes.io/name: ops-console
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["keda.sh"]
+    resources: ["scaledobjects"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ops-console-reader
+  labels:
+    app.kubernetes.io/name: ops-console
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ops-console-reader
+subjects:
+  - kind: ServiceAccount
+    name: ops-console

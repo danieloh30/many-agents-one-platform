@@ -1,0 +1,34 @@
+# Kustomize base: every namespaced resource of the demo. Namespace-agnostic — the namespace is set
+# at deploy time by the kustomization that demo.sh generates (scripts/deploy/render.sh), together
+# with image references, the trust domain, the KEDA endpoint FQDN and the OPA policy ConfigMap.
+#
+# Rendering a plain overlay (`oc kustomize deploy/overlays/openshift`) is valid and shows the
+# defaults for namespace "maop"; it is what CI checks. The cluster-scoped ClusterSPIFFEID lives in
+# deploy/base/identity/ and is rendered separately (kustomize would otherwise give the unknown
+# cluster-scoped kind a metadata.namespace).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: maop
+      app.kubernetes.io/managed-by: many-agents-one-platform
+    includeSelectors: false
+    includeTemplates: true
+
+resources:
+  - config
+  - apps/triage-agent
+  - apps/evidence-worker
+  - apps/recommendation-agent
+  - apps/tool-service
+  - apps/ops-console
+  - nats
+  - postgres
+  - observability
+  - scaling
+  - network
+
+components:
+  # SPIFFE CSI volume + spiffe-helper native sidecar for the five application Deployments.
+  - ../components/spiffe

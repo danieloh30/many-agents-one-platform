@@ -1,0 +1,39 @@
+# Workload registration (docs/security.md §3.1). Cluster-scoped, so it is NOT part of the base
+# kustomization (kustomize would add a metadata.namespace to this unknown kind). demo.sh renders
+# this kustomization separately and patches, per deployment:
+#   - metadata.name                     -> maop-<namespace>
+#   - spec.namespaceSelector            -> kubernetes.io/metadata.name: <namespace>
+#   - spec.className                    -> controller class of the SPIRE controller manager
+#                                          (installed chart: spire-mgmt-spire; existing install:
+#                                          detected from existing ClusterSPIFFEIDs or
+#                                          MAOP_SPIRE_CLASS_NAME)
+#
+# Template fields (.TrustDomain, .PodMeta.Namespace, .PodSpec.ServiceAccountName) and spec fields
+# verified against spire-controller-manager 0.8.0 (CRD from spire-crds 0.6.1 and the spire chart's
+# default ClusterSPIFFEID).
+#
+# Services are named like their ServiceAccounts, so the tool-service SVID carries the DNS SANs
+# "tool-service" and "tool-service.<ns>.svc" that clients dial. Not a fallback entry, so it wins
+# over the chart's default (fallback) ClusterSPIFFEID for these pods.
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: maop-maop
+  labels:
+    app.kubernetes.io/name: maop-identity
+    app.kubernetes.io/part-of: maop
+    app.kubernetes.io/managed-by: many-agents-one-platform
+spec:
+  className: spire-mgmt-spire
+  spiffeIDTemplate: "spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}"
+  podSelector:
+    matchLabels:
+      maop.io/spiffe: enabled
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: maop
+  dnsNameTemplates:
+    - "{{ .PodSpec.ServiceAccountName }}.{{ .PodMeta.Namespace }}.svc"
+    - "{{ .PodSpec.ServiceAccountName }}"
+  # SVID TTL 1 h so rotation happens during a rehearsal (docs/security.md §3.2).
+  ttl: 1h

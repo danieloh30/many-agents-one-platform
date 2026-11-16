@@ -1,0 +1,43 @@
+# Upstream SPIRE hardened charts: spire-crds 0.6.1 + spire 0.30.4
+# (https://spiffe.github.io/helm-charts-hardened/). Used only when no SPIRE / SPIFFE CSI driver /
+# Zero Trust Workload Identity Manager is present (docs/deployment.md §5.2).
+#
+# Installed by demo.sh (scripts/deploy/platform.sh):
+#   helm upgrade --install spire-crds spiffe/spire-crds --version 0.6.1 -n spire-mgmt --create-namespace
+#   helm upgrade --install spire spiffe/spire --version 0.30.4 -n spire-mgmt \
+#     -f deploy/platform/spire/values.yaml [-f deploy/platform/spire/values-openshift.yaml] \
+#     --set global.spire.trustDomain=<td> --set global.spire.clusterName=<name>
+#
+# Keys verified with `helm show values spiffe/spire --version 0.30.4`.
+
+global:
+  spire:
+    # trustDomain and clusterName are always passed with --set by demo.sh.
+    trustDomain: ""
+    clusterName: ""
+    # Required by recommendations.strictMode. Demo CA subject; override with --set if needed.
+    caSubject:
+      country: US
+      organization: many-agents-one-platform demo
+      commonName: maop-demo-spire-ca
+    # Recommended layout from the hardened-chart guide: releases in spire-mgmt, the chart creates
+    # spire-system (agent, CSI driver; labelled privileged) and spire-server (server; restricted).
+    recommendations:
+      enabled: true
+    namespaces:
+      create: true
+
+spire-server:
+  controllerManager:
+    enabled: true
+    # Explicit so the demo's ClusterSPIFFEID can name it (spec.className). Equals the chart's
+    # default "<release namespace>-<release name>"; keep in step with SPIRE_CLASS_NAME in
+    # deploy/platform/versions.env.
+    className: spire-mgmt-spire
+    # The chart's "default" ClusterSPIFFEID is a fallback (fallback: true), so the demo's
+    # non-fallback ClusterSPIFFEID wins for the demo pods. Left at chart defaults otherwise.
+
+spiffe-csi-driver:
+  image:
+    # Chart default trails the 0.3.0 release (docs/versions.md §4).
+    tag: "0.3.0"

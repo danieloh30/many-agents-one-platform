@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# maop-config and model-config are generated with a content hash, so a change rolls the pods that
+# use them. demo.sh merges deploy-time values into both (behavior: merge in its generated
+# kustomization): trust domain, tool-service SPIFFE ID, profile, max replicas, model settings.
+configMapGenerator:
+  - name: maop-config
+    options:
+      labels:
+        app.kubernetes.io/name: maop-config
+    literals:
+      - MAOP_NATS_URL=nats://nats:4222
+      - MAOP_NATS_MONITOR_URL=http://nats:8222
+      - MAOP_PROMETHEUS_URL=http://prometheus:9090
+      - QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://postgres:5432/maop
+      - MAOP_TOOL_SERVICE_URL=https://tool-service:8443
+      # Placeholders, always replaced by demo.sh at deploy time.
+      - MAOP_TRUST_DOMAIN=maop.example
+      - MAOP_TOOL_SERVICE_SPIFFE_ID=spiffe://maop.example/ns/maop/sa/tool-service
+      - MAOP_PROFILE=summit
+      - MAOP_EVIDENCE_MIN_REPLICAS=1
+      - MAOP_EVIDENCE_MAX_REPLICAS=6
+  - name: model-config
+    options:
+      labels:
+        app.kubernetes.io/name: model-config
+    # Non-secret model settings (docs/security.md §7). Values come from .env.local via demo.sh.
+    # The API key is in Secret model-credentials, never here.
+    literals:
+      - MAOP_MODEL_MODE=live
+      - MAOP_MODEL_BASE_URL=
+      - MAOP_MODEL_NAME=
+
+resources:
+  - ops-console-config.yaml

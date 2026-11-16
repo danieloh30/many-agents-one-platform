@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tool-service
+  labels:
+    app.kubernetes.io/name: tool-service
+    app.kubernetes.io/component: enforcement
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tool-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tool-service
+        app.kubernetes.io/component: enforcement
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9000"
+        prometheus.io/path: /q/metrics
+    spec:
+      serviceAccountName: tool-service
+      # Neither tool-service nor its OPA sidecar gets an API token (docs/security.md §4.4, §8).
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        # Container 0 must stay the application container: the spiffe component patches index 0.
+        - name: tool-service
+          image: maop-tool-service:0.0.0-dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            # mTLS only (X.509-SVID); there is no plaintext listener for the tool API.
+            - name: https
+              containerPort: 8443
+            - name: management
+              containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: maop-config
+          env:
+            - name: MAOP_OPA_URL
+              value: http://127.0.0.1:8181
+            # tool-service publishes tool.invocation.completed.v1 through its outbox
+            # (docs/contracts.md §3), so it has its own NATS user.
+            - name: MAOP_NATS_USER
+              value: tool-service
+            - name: MAOP_NATS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nats-auth
+                  key: tool-service
+            - name: QUARKUS_DATASOURCE_USERNAME
+              value: tools
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-roles
+                  key: tools-password
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          startupProbe:
+            httpGet:
+              path: /q/health/ready
+              port: management
+            periodSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: management
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: management
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+        # Policy decision point. Listens on localhost only; tool-service queries
+        # POST http://127.0.0.1:8181/v1/data/maop/tools/decision and fails closed.
+        # No kubelet probes: the listener is bound to 127.0.0.1, which kubelet cannot reach;
+        # tool-service's own readiness covers OPA reachability.
+        - name: opa
+          image: docker.io/openpolicyagent/opa:1.22.4-static
+          imagePullPolicy: IfNotPresent
+          args:
+            - run
+            - --server
+            - --addr=127.0.0.1:8181
+            - --config-file=/config/opa.yaml
+            # ConfigMap volumes contain hidden ..<timestamp> directories; without this OPA would
+            # load every file twice.
+            - --ignore=.*
+            - /policy
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: opa-config
+              mountPath: /config
+              readOnly: true
+            - name: policy
+              mountPath: /policy
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: opa-config
+          configMap:
+            name: opa-config
+        # ConfigMap opa-policy is generated at deploy time from policy/maop/ (scripts/deploy/render.sh),
+        # with a content-hashed name so a policy change rolls this pod. Keys are mounted under
+        # maop/ so data.json lands at data.maop (same layout as the policy/maop source tree).
+        # demo.sh regenerates `items` from the actual policy files.
+        - name: policy
+          configMap:
+            name: opa-policy
+            items:
+              - key: tools.rego
+                path: maop/tools.rego
+              - key: data.json
+                path: maop/data.json
