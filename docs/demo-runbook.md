@@ -133,7 +133,7 @@ not happened yet.
 
 ## 5. Reset between rehearsals
 
-`./demo.sh reset` (or the console's Reset control), then reload the console. Reset takes under 30 s and leaves platform components and
+`./demo.sh reset` (or **Reset** in the console's top bar, also in the presenter bar), then reload the console. Reset takes under 30 s and leaves platform components and
 images in place. Do not reset on stage.
 
 ## 6. Failure handling on stage

@@ -24,7 +24,7 @@ decided, and what it cost. Versions are pinned in [versions.md](versions.md).
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ Top bar: product name · model badge (LIVE <model> | DETERMINISTIC) · SYNTHETIC DATA    │
-│          · stream status · theme · presenter · full screen                             │
+│          · stream status · reset · theme · presenter · full screen                     │
 ├───────────────┬──────────────────────────────────────────────┬─────────────────────────┤
 │ Left rail     │ Main stage                                   │ Inspector (right)       │
 │               │                                              │                         │
@@ -143,6 +143,8 @@ Each tile shows `observedAt` age; if older than 10 s it greys out and reads "sta
   (e.g. "✓ Tool call denied — decision `…`"), and **Focus** buttons that pan/zoom the stage to the
   relevant element. Nothing in the guide simulates an outcome.
 - Presenter mode raises the type scale (§4.2), hides the left rail, and enlarges the stage.
+- **Reset** (delete runs, audit, simulated actions and queued messages, after a confirm dialog) sits in the top
+  bar outside presenter mode and in the guide bar in presenter mode; it is refused while a burst is active.
 - `1`–`4` trigger presets (after a confirm chord `Shift`), `T` toggles topology/timeline,
   `[` / `]` move between runs. All shortcuts are listed in the help dialog and avoid browser defaults.
 - A "preflight" panel (presenter only) runs `GET /api/v1/ops/snapshot` + `/config` and lists any

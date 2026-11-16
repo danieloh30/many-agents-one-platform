@@ -118,7 +118,7 @@ with live `gpt-4o-mini`:
 
 | Area | What it shows |
 | --- | --- |
-| **Top bar** | Product name, the model badge (`LIVE <model>` or an amber `DETERMINISTIC`), `SYNTHETIC DATA`, stream status, the **Light / Dark** theme switch, presenter mode and full screen. |
+| **Top bar** | Product name, the model badge (`LIVE <model>` or an amber `DETERMINISTIC`), `SYNTHETIC DATA`, stream status, **Reset** (clears runs, audit and queued messages to start the demo over), the **Light / Dark** theme switch, presenter mode and full screen. |
 | **Left rail** | The four scenario presets with the exact request each one sends, a *New incident* form, and recent runs. |
 | **Topology** (main stage) | A fixed-layout graph of the services and queues. Edges pulse only when a real event arrives. mTLS calls show the verified caller's SPIFFE ID on hover, and a denied call is drawn in red. |
 | **Timeline** (`T` toggles) | The durable state rail, a deadline bar, and task lanes where each delivery attempt is a segment, so a redelivery shows up as `delivery 2`. |

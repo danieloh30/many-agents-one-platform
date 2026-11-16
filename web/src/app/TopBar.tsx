@@ -19,6 +19,7 @@ import { useLiveStore } from '../api/liveStore';
 import { useConfig } from '../api/queries';
 import type { StreamStatus } from '../api/streamClient';
 import { Button, Pill, Tip } from '../design/ui';
+import { ResetControl } from '../features/presenter/ResetControl';
 import { usePresenterTokenRequired, useSession } from './session';
 import { useEffectiveTheme } from './theme';
 import { useUi } from './uiStore';
@@ -111,6 +112,8 @@ export function TopBar() {
             {session === 'valid' ? 'Presenter token active' : 'Presenter sign-in'}
           </Button>
         ) : null}
+        {/* Always reachable; presenter mode shows the same control in its guide bar instead. */}
+        {presenter ? null : <ResetControl />}
         <div
           role="group"
           aria-label="Color theme"
