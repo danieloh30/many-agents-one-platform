@@ -47,6 +47,7 @@ public class RecommendationAgent {
              "citations": ["evidenceId", ...],   // ids from the evidence list, at least one
              "confidence": number 0..1,
              "risks": ["short risk", ...]}       // up to 3
+            Copy service names and version numbers exactly as they appear in the evidence facts; never invent a version.
             Do not include reasoning steps.""";
 
     @Inject

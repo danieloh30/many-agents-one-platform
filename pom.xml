@@ -17,6 +17,7 @@
     <module>triage-agent</module>
     <module>evidence-worker</module>
     <module>recommendation-agent</module>
+    <module>ops-console</module>
     
   </modules>
 
