@@ -33,7 +33,7 @@
 
     <!-- Independently versioned libraries (each owns its property; never reuse the platform property). -->
     <jnats.version>2.26.4</jnats.version>
-    <!-- Test-only PKI helper; LTS line chosen to match the bcprov-lts8on that jnats brings in. -->
+    <!-- BouncyCastle LTS line: bcprov-lts8on comes with jnats; bcpkix-lts8on is the test PKI helper. -->
     <bouncycastle-lts.version>2.73.12</bouncycastle-lts.version>
 
     <!-- Plugins -->
@@ -80,13 +80,22 @@
         <type>test-jar</type>
         <scope>test</scope>
       </dependency>
+      <!-- One property for the BouncyCastle LTS jars: bcprov (pulled in by jnats) and bcpkix/bcutil (test PKI)
+           must be the same release, so Dependabot moves them together in a single update. -->
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-lts8on</artifactId>
+        <version>${bouncycastle-lts.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcutil-lts8on</artifactId>
+        <version>${bouncycastle-lts.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-lts8on</artifactId>
         <version>${bouncycastle-lts.version}</version>
-        <exclusions>
-          <exclusion><groupId>org.bouncycastle</groupId><artifactId>bcprov-lts8on</artifactId></exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>io.nats</groupId>
