@@ -29,8 +29,8 @@ interface LiveState {
   clearEvents(): void;
 }
 
-export const EVIDENCE_CONSUMER = 'evidence-workers';
-export const EVIDENCE_WORKLOAD = 'evidence-worker';
+export const EVIDENCE_CONSUMER = 'evidence-agents';
+export const EVIDENCE_WORKLOAD = 'evidence-agent';
 
 export function toPoint(s: OpsSnapshot): SnapshotPoint | null {
   const t = Date.parse(s.observedAt);

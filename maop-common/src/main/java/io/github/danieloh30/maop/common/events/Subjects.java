@@ -16,7 +16,7 @@ public final class Subjects {
     public static final String DLQ_PREFIX = "maop.dlq.v1.";
 
     public static final String CONSUMER_TRIAGE = "triage-workers";
-    public static final String CONSUMER_EVIDENCE = "evidence-workers";
+    public static final String CONSUMER_EVIDENCE = "evidence-agents";
     public static final String CONSUMER_RECOMMENDATION = "recommendation-workers";
     public static final String CONSUMER_TRIAGE_RESULTS = "triage-results";
 

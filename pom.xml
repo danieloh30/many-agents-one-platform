@@ -15,7 +15,7 @@
     <module>maop-outbox</module>
     <module>tool-service</module>
     <module>triage-agent</module>
-    <module>evidence-worker</module>
+    <module>evidence-agent</module>
     <module>recommendation-agent</module>
     <module>ops-console</module>
     

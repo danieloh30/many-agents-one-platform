@@ -28,3 +28,8 @@ CDI beans with typed outputs. The module is beta upstream, and its workflow anno
 - Dependency on a beta upstream module, pinned through the platform BOM; upgrades are reviewed via the upgrade
   workflow.
 - `AgentGatewayTest` proves the gateway path (budget, deadline, metrics) for `@Agent` calls.
+- The service formerly named `evidence-worker` is now `evidence-agent`, matching `triage-agent` and
+  `recommendation-agent`: all three call the model through an `@Agent` interface. The rename covers the module,
+  workload, ServiceAccount and SPIFFE ID, OPA data, NATS user and the durable consumer (`evidence-agents`).
+  Existing clusters must drop the old `evidence-workers` consumer: the work stream uses WorkQueue retention, which
+  allows only one consumer per subject.

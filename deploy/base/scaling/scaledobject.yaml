@@ -1,4 +1,4 @@
-# KEDA ScaledObject for evidence-worker (docs/deployment.md §2.2).
+# KEDA ScaledObject for evidence-agent (docs/deployment.md §2.2).
 #
 # Deploy-time values set by the kustomization demo.sh generates (scripts/deploy/render.sh):
 #   - natsServerMonitoringEndpoint: the namespace segment is replaced with the ScaledObject's own
@@ -9,12 +9,12 @@
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: evidence-worker
+  name: evidence-agent
   labels:
-    app.kubernetes.io/name: evidence-worker
+    app.kubernetes.io/name: evidence-agent
 spec:
   scaleTargetRef:
-    name: evidence-worker
+    name: evidence-agent
   minReplicaCount: 1
   maxReplicaCount: 6
   pollingInterval: 5
@@ -40,6 +40,6 @@ spec:
         natsServerMonitoringEndpoint: nats.maop.svc.cluster.local:8222
         account: $G
         stream: MAOP_WORK
-        consumer: evidence-workers
+        consumer: evidence-agents
         lagThreshold: "4"
         activationLagThreshold: "0"

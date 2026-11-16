@@ -18,9 +18,9 @@ scripts/
   maintenance/               # dependency automation used by GitHub Actions
 deploy/
   base/                      # Kustomize base for the application namespace
-    apps/{triage-agent,evidence-worker,recommendation-agent,tool-service,ops-console}/
+    apps/{triage-agent,evidence-agent,recommendation-agent,tool-service,ops-console}/
     config/  nats/  postgres/ (StatefulSet + setup Job)  observability/{otel-collector,jaeger,prometheus,grafana}/
-    scaling/                 # KEDA ScaledObject for evidence-worker
+    scaling/                 # KEDA ScaledObject for evidence-agent
     network/                 # default-deny NetworkPolicies plus one allow per edge
     identity/                # ClusterSPIFFEID (rendered separately: it is cluster-scoped)
   components/
@@ -54,7 +54,7 @@ Decisions:
 | --- | --- | --- | --- | --- | --- |
 | ops-console | Deployment | 1 | 8080 http, 9000 management | — | spiffe-helper |
 | triage-agent | Deployment | 1 | 8080 http, 9000 management | — | spiffe-helper |
-| evidence-worker | Deployment | 1–6 (KEDA) | 9000 management | — | spiffe-helper |
+| evidence-agent | Deployment | 1–6 (KEDA) | 9000 management | — | spiffe-helper |
 | recommendation-agent | Deployment | 1 | 9000 management | — | spiffe-helper |
 | tool-service | Deployment | 1 | 8443 https (mTLS), 9000 management | — | spiffe-helper, OPA |
 | nats | StatefulSet | 1 | 4222 client, 8222 monitoring, 7777 exporter | PVC 2 Gi (JetStream file store) | prometheus-nats-exporter |
@@ -68,7 +68,7 @@ Decisions:
 Common pod settings: resource requests and limits on every container; `startupProbe`,
 `readinessProbe`, `livenessProbe` on `/q/health/*` (management port 9000);
 `terminationGracePeriodSeconds: 60` for consumers; `topologySpreadConstraints` for
-evidence-worker; `imagePullPolicy: IfNotPresent` with digest-pinned images.
+evidence-agent; `imagePullPolicy: IfNotPresent` with digest-pinned images.
 
 Quarkus services read configuration from environment variables set by ConfigMaps and Secrets
 (`MAOP_*`, `QUARKUS_*`). Database schema migration runs with Flyway at service start
@@ -90,16 +90,16 @@ Quarkus services read configuration from environment variables set by ConfigMaps
 
 ### 2.2 Scaling
 
-`ScaledObject` `evidence-worker` (`keda.sh/v1alpha1`):
+`ScaledObject` `evidence-agent` (`keda.sh/v1alpha1`):
 
 | Field | Value | Reason |
 | --- | --- | --- |
-| `scaleTargetRef` | Deployment `evidence-worker` | The only autoscaled workload. |
+| `scaleTargetRef` | Deployment `evidence-agent` | The only autoscaled workload. |
 | `minReplicaCount` / `maxReplicaCount` | 1 / 6 | Warm baseline for the demo; bounded by model rate limits. |
 | `pollingInterval` | 5 | Fast reaction on stage. |
 | `cooldownPeriod` | 60 | Applies to scale-to-zero only; kept for clarity. |
 | trigger `type` | `nats-jetstream` | |
-| trigger `metadata` | `natsServerMonitoringEndpoint: nats.maop.svc.cluster.local:8222`, `account: $G`, `stream: MAOP_WORK`, `consumer: evidence-workers`, `lagThreshold: "4"`, `activationLagThreshold: "0"` | Lag = pending + in-flight, so in-flight work keeps replicas up until acknowledged. |
+| trigger `metadata` | `natsServerMonitoringEndpoint: nats.maop.svc.cluster.local:8222`, `account: $G`, `stream: MAOP_WORK`, `consumer: evidence-agents`, `lagThreshold: "4"`, `activationLagThreshold: "0"` | Lag = pending + in-flight, so in-flight work keeps replicas up until acknowledged. |
 | `advanced.horizontalPodAutoscalerConfig.behavior` | scale up: no stabilization, up to 4 pods per 15 s; scale down: 60 s stabilization, 2 pods per 30 s | Visible scale-out within the demo slot; calm scale-in. **Verify on cluster.** |
 
 With a burst of ~36 tasks, lag/threshold exceeds the maximum, so replicas go to 6 and return to 1
@@ -157,7 +157,7 @@ metrics API service). The preflight therefore checks for the CMA operator and ex
 | --- | --- |
 | No KEDA, no CMA | Install upstream KEDA chart (default path). |
 | Upstream KEDA already present at a compatible version | Reuse it; install nothing. |
-| CMA present | Do **not** install upstream KEDA. Deploy the `openshift-cma` overlay, whose `ScaledObject` uses a `prometheus` trigger on `maop_queue_pending` + `maop_queue_ack_pending` for `consumer="evidence-workers"` (exported by ops-console from JetStream consumer info) served by the in-namespace Prometheus. The console shows the scaler kind it actually finds. |
+| CMA present | Do **not** install upstream KEDA. Deploy the `openshift-cma` overlay, whose `ScaledObject` uses a `prometheus` trigger on `maop_queue_pending` + `maop_queue_ack_pending` for `consumer="evidence-agents"` (exported by ops-console from JetStream consumer info) served by the in-namespace Prometheus. The console shows the scaler kind it actually finds. |
 
 **Verify on cluster**: which state applies; KEDA operator pods run under `restricted-v2`; the
 metric name prefix from the NATS exporter (confirm with a live scrape before relying on the CMA variant).
@@ -218,7 +218,7 @@ to the internal registry. **Verify on cluster**: Docker Hub pull limits; pre-pul
 
 The `openshift` overlay groups the workloads into Topology applications through the workload-level
 `app.kubernetes.io/part-of` label: `operations-console` (ops-console), `agent-services` (triage-agent,
-evidence-worker, recommendation-agent), `tool-boundary` (tool-service with its OPA sidecar),
+evidence-agent, recommendation-agent), `tool-boundary` (tool-service with its OPA sidecar),
 `messaging-and-state` (NATS, PostgreSQL) and `observability` (OTel Collector, Jaeger, Prometheus, Grafana).
 Pod templates keep `part-of: maop`, which the NetworkPolicies select on, and `demo.sh status/down` find workloads
 by `app.kubernetes.io/managed-by`. `app.openshift.io/runtime` sets the icons (`quarkus`, `postgresql`, and `golang`
@@ -266,7 +266,7 @@ Route hosts written into the console configuration → smoke checks.
 
 `./demo.sh verify` collects real evidence into `artifacts/verify-<timestamp>/` (raw JSON plus a PASS/FAIL
 summary): a successful run, its Jaeger trace and the services in it, a policy denial with no side effect,
-TLS refusal of a certificate-less client from inside the cluster, KEDA scale-out of evidence-worker under a
+TLS refusal of a certificate-less client from inside the cluster, KEDA scale-out of evidence-agent under a
 burst, and a redelivery with one execution. `--quick` runs the first four.
 
 `./demo.sh reset` deletes demonstration state only (runs, audit, simulated actions, queued messages) through the
@@ -291,7 +291,7 @@ and SPIRE uses a local Kubernetes cluster (for example kind) with `./demo.sh up 
 
 **Verified on OpenShift 4.22** (cluster admin, `./demo.sh up --platform openshift --profile summit
 --install-platform-components`, then `./demo.sh verify`, all six checks PASS): C1 (no CMA present; upstream KEDA
-2.21.0 installed and scaled evidence-worker 1 → 6), C3 and C4 (SPIRE 0.30.4 with the chart's SCCs; restricted
+2.21.0 installed and scaled evidence-agent 1 → 6), C3 and C4 (SPIRE 0.30.4 with the chart's SCCs; restricted
 pods mount `csi.spiffe.io`, after the CSIDriver-ordering retry in `platform.sh`), C5 (all images run with
 OpenShift-assigned UIDs), C7 (scale-out within the runbook target), C8 (live model reachable from the agents),
 C9 (OVN-Kubernetes enforced the NetworkPolicies; OpenShift build pods needed their own egress policy, `deploy/overlays/openshift/network-builds.yaml`, found on the second deployment), C10 (public images pulled). C2 is

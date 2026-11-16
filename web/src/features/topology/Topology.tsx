@@ -243,9 +243,9 @@ function nodeData(id: TopologyNodeId, snap: OpsSnapshot | undefined, modelName: 
     case 'triage':
       return { icon: 'service' as const, ...svc('triage-agent') };
     case 'evidence-queue':
-      return { icon: 'queue' as const, ...q('evidence-workers') };
-    case 'evidence-workers':
-      return { icon: 'service' as const, ...svc('evidence-worker') };
+      return { icon: 'queue' as const, ...q('evidence-agents') };
+    case 'evidence-agents':
+      return { icon: 'service' as const, ...svc('evidence-agent') };
     case 'recommendation-queue':
       return { icon: 'queue' as const, ...q('recommendation-workers') };
     case 'recommendation':
@@ -296,12 +296,12 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
     for (const e of events) {
       if (e.type !== 'tool.invocation.completed.v1' || !eventMatchesRun(e, runId)) continue;
       const w = workloadOf(e.data.callerSpiffeId);
-      const edge = w === 'recommendation-agent' ? 'rec-tool' : w === 'evidence-worker' ? 'workers-tool' : null;
+      const edge = w === 'recommendation-agent' ? 'rec-tool' : w === 'evidence-agent' ? 'workers-tool' : null;
       if (edge) latest[edge] = { denied: e.data.status === 'DENIED', caller: e.data.callerSpiffeId ?? null };
     }
     for (const inv of runId ? (auditItems ?? []) : []) {
       const w = workloadOf(inv.caller.spiffeId);
-      const edge = w === 'recommendation-agent' ? 'rec-tool' : w === 'evidence-worker' ? 'workers-tool' : null;
+      const edge = w === 'recommendation-agent' ? 'rec-tool' : w === 'evidence-agent' ? 'workers-tool' : null;
       if (edge && inv.status === 'DENIED' && !latest[edge]) latest[edge] = { denied: true, caller: inv.caller.spiffeId };
       if (edge && !latest[edge]) latest[edge] = { denied: false, caller: inv.caller.spiffeId };
     }
@@ -318,8 +318,8 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
       data: {
         title: NODE_LABELS[id],
         ...d,
-        pods: id === 'evidence-workers' ? (workload(snap, 'evidence-worker')?.pods ?? null) : null,
-        showPods: id === 'evidence-workers',
+        pods: id === 'evidence-agents' ? (workload(snap, 'evidence-agent')?.pods ?? null) : null,
+        showPods: id === 'evidence-agents',
         pulse: Math.max(0, (nodeCounts[id] ?? 0) - (nodeBase[id] ?? 0)),
         selected: focusNode === id,
       },

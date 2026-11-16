@@ -41,8 +41,8 @@ class ConsoleApiTest {
     @Test
     void unreachableSourcesAreReportedAsUnavailableNotZero() {
         given().get("/api/v1/ops/snapshot").then().statusCode(200)
-                .body("workloads.find { it.name == 'evidence-worker' }.status", equalTo("UNAVAILABLE"))
-                .body("workloads.find { it.name == 'evidence-worker' }.desiredReplicas", nullValue())
+                .body("workloads.find { it.name == 'evidence-agent' }.status", equalTo("UNAVAILABLE"))
+                .body("workloads.find { it.name == 'evidence-agent' }.desiredReplicas", nullValue())
                 .body("platform.find { it.component == 'spire' }.status", equalTo("UNAVAILABLE"))
                 .body("platform.find { it.component == 'opa' }.status", equalTo("UNAVAILABLE"))
                 .body("platform.find { it.component == 'prometheus' }.status", equalTo("UNAVAILABLE"));

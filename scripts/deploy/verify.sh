@@ -157,9 +157,9 @@ check_identity() {
 
 check_scale_out() {
   local log="${ART}/05-scale-out.tsv" min max r ready start now i
-  r="$(kn get deploy evidence-worker -o jsonpath='{.status.replicas}' 2>/dev/null || true)"; min="${r:-0}"; max="$min"
+  r="$(kn get deploy evidence-agent -o jsonpath='{.status.replicas}' 2>/dev/null || true)"; min="${r:-0}"; max="$min"
   printf 'utc\treplicas\treadyReplicas\n' > "$log"
-  printf '%s\t%s\t%s\n' "$(utc_now)" "$min" "$(kn get deploy evidence-worker -o jsonpath='{.status.readyReplicas}' 2>/dev/null)" >> "$log"
+  printf '%s\t%s\t%s\n' "$(utc_now)" "$min" "$(kn get deploy evidence-agent -o jsonpath='{.status.readyReplicas}' 2>/dev/null)" >> "$log"
   printf '{}\n' > "${ART}/request-burst.json"
   console_api POST /api/v1/bursts "${ART}/05-burst-start.json" "${ART}/request-burst.json" auth
   if [[ "$API_CODE" != 2* ]]; then
@@ -168,17 +168,17 @@ check_scale_out() {
   start="$(date +%s)"
   for ((i = 0; i < 36; i++)); do
     sleep 5
-    r="$(kn get deploy evidence-worker -o jsonpath='{.status.replicas}' 2>/dev/null || true)"
-    ready="$(kn get deploy evidence-worker -o jsonpath='{.status.readyReplicas}' 2>/dev/null || true)"
+    r="$(kn get deploy evidence-agent -o jsonpath='{.status.replicas}' 2>/dev/null || true)"
+    ready="$(kn get deploy evidence-agent -o jsonpath='{.status.readyReplicas}' 2>/dev/null || true)"
     printf '%s\t%s\t%s\n' "$(utc_now)" "${r:-?}" "${ready:-0}" >> "$log"
     [[ "$r" =~ ^[0-9]+$ ]] && ((r > max)) && max="$r"
   done
   now="$(date +%s)"
-  kn get scaledobject evidence-worker -o json > "${ART}/05-scaledobject.json" 2>/dev/null || true
+  kn get scaledobject evidence-agent -o json > "${ART}/05-scaledobject.json" 2>/dev/null || true
   kn get hpa -o json > "${ART}/05-hpa.json" 2>/dev/null || true
   console_api POST /api/v1/bursts/stop "${ART}/05-burst-stop.json" - auth
   if ((max > min)); then
-    v_record "5 scale-out" PASS "evidence-worker replicas ${min} -> max ${max} within $((now - start))s (timeline in 05-scale-out.tsv); burst stopped (HTTP ${API_CODE})"
+    v_record "5 scale-out" PASS "evidence-agent replicas ${min} -> max ${max} within $((now - start))s (timeline in 05-scale-out.tsv); burst stopped (HTTP ${API_CODE})"
   else
     v_record "5 scale-out" FAIL "replicas stayed at ${min} (max ${max}) for $((now - start))s; burst stop HTTP ${API_CODE}"
   fi

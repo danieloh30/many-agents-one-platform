@@ -8,8 +8,8 @@
     <artifactId>maop-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>evidence-worker</artifactId>
-  <name>evidence-worker</name>
+  <artifactId>evidence-agent</artifactId>
+  <name>evidence-agent</name>
   <description>Stateless, KEDA-scaled evidence agent: gathers synthetic facts through protected tools.</description>
 
   <dependencies>

@@ -23,7 +23,7 @@ Timings below are design targets. They become facts only after rehearsal on the 
 2. `./demo.sh up --platform openshift --profile summit --install-platform-components` (ends with smoke checks), then `./demo.sh verify`.
 3. Rehearse all scenarios twice end to end; fill in §7.
 4. Confirm the model provider key has quota and a rate limit of at least 12 concurrent requests.
-5. Pre-pull: scale `evidence-worker` to 6 once so every node has the image, then let it return to 1.
+5. Pre-pull: scale `evidence-agent` to 6 once so every node has the image, then let it return to 1.
 
 ### T-30 minutes
 
@@ -35,7 +35,7 @@ Timings below are design targets. They become facts only after rehearsal on the 
    `LIVE <model>`; stream status `Live`.
 5. If `MAOP_PRESENTER_AUTH=true`, enter the presenter token (print it with `./demo.sh token`; it is never shown in the UI). With the default `false` the controls are already enabled.
 6. Check projector legibility in both themes; pick one and stay with it.
-7. Terminal ready (large font) with: `oc get pods -n maop -l app.kubernetes.io/name=evidence-worker -w` — optional
+7. Terminal ready (large font) with: `oc get pods -n maop -l app.kubernetes.io/name=evidence-agent -w` — optional
    corroboration for scenario 3.
 
 ### Go / no-go
@@ -60,14 +60,14 @@ Timings below are design targets. They become facts only after rehearsal on the 
 
 1. Run the **Success** preset. The run appears as `SUBMITTED` → `TRIAGING`.
 2. Topology: triage calls the model, then publishes evidence tasks; edges pulse as real events arrive.
-3. Evidence workers call the tool service over mTLS — hover an edge to show the verified SPIFFE ID.
+3. Evidence agents call the tool service over mTLS — hover an edge to show the verified SPIFFE ID.
 4. Open the run timeline: state rail reaches `RECOMMENDING` then `AWAITING_APPROVAL`
    (expected 20–40 s with a live model).
 5. Inspector → **Evidence**: each finding lists facts linked to tool invocations.
 6. Inspector → **Summary**: the proposed action is a structured record with citations — a proposal,
    not an execution.
 7. Click **Open trace in Jaeger**: one trace, spans from console, triage, NATS publish/process,
-   evidence workers, tool service (with policy decision attributes), recommendation agent.
+   evidence agents, tool service (with policy decision attributes), recommendation agent.
 
 Say: the run state lives in PostgreSQL, not in any agent's memory; a restart of any service would not lose it.
 

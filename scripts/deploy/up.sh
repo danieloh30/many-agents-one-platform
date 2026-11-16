@@ -47,7 +47,7 @@ ensure_secrets() {
   ensure_secret postgres-admin admin-password gen_password owner-password gen_password
   ensure_secret postgres-roles triage-password gen_password tools-password gen_password
   ensure_secret nats-auth \
-    triage-agent gen_nats_password evidence-worker gen_nats_password \
+    triage-agent gen_nats_password evidence-agent gen_nats_password \
     recommendation-agent gen_nats_password tool-service gen_nats_password ops-console gen_nats_password
   ensure_secret ops-console-presenter token gen_presenter_token
   ensure_secret grafana-admin admin-password gen_password
@@ -85,6 +85,20 @@ current_console_config() {
   "$KC" get configmap ops-console-config -n "$MAOP_NAMESPACE" -o jsonpath="{.data.$1}" 2>/dev/null || true
 }
 
+# Workloads renamed in later releases (evidence-worker -> evidence-agent, ADR-0017). apply does not prune, so the
+# old objects would keep running next to the new ones. Only objects carrying this project's ownership labels go.
+remove_retired_workloads() {
+  local kind kinds="deployment scaledobject.keda.sh service serviceaccount"
+  [[ "$MAOP_PLATFORM" == "openshift" ]] && kinds="$kinds buildconfig.build.openshift.io imagestream.image.openshift.io"
+  for kind in $kinds; do
+    if [[ -n "$("$KC" get "$kind" -n "$MAOP_NAMESPACE" -l "$MAOP_OWNED_SELECTOR" \
+      --field-selector metadata.name=evidence-worker -o name 2>/dev/null)" ]]; then
+      "$KC" delete "$kind" evidence-worker -n "$MAOP_NAMESPACE" --ignore-not-found --wait=false >/dev/null
+      info "removed retired $kind evidence-worker (renamed to evidence-agent)"
+    fi
+  done
+}
+
 wait_rollouts() {
   log "waiting for StatefulSets"
   kn rollout status statefulset/postgres --timeout=10m
@@ -94,7 +108,7 @@ wait_rollouts() {
     || { kn logs job/postgres-setup --tail=50 >&2 || true; die "postgres-setup did not complete"; }
   log "waiting for Deployments"
   local d
-  for d in otel-collector jaeger prometheus grafana tool-service triage-agent evidence-worker recommendation-agent ops-console; do
+  for d in otel-collector jaeger prometheus grafana tool-service triage-agent evidence-agent recommendation-agent ops-console; do
     kn rollout status "deployment/$d" --timeout=10m || die "deployment $d did not become ready (try: ./demo.sh logs $d)"
   done
 }
@@ -148,6 +162,7 @@ cmd_up() {
   # Job templates are immutable: delete and recreate so the setup reruns idempotently.
   kn delete job postgres-setup --ignore-not-found --wait=true >/dev/null
   log "applying manifests (server-side apply)"
+  remove_retired_workloads
   "$KC" apply --server-side --force-conflicts --field-manager=maop-demo -f "$rendered"
   if [[ "${MAOP_NETWORK_POLICIES:-true}" == "false" ]]; then
     # Server-side apply never deletes: remove this project's policies explicitly.

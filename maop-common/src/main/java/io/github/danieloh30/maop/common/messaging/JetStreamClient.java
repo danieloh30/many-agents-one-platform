@@ -125,6 +125,16 @@ public class JetStreamClient {
         ensureStream(StreamConfiguration.builder().name(Subjects.DLQ_STREAM).subjects(Subjects.DLQ_PREFIX + ">")
                 .retentionPolicy(RetentionPolicy.Limits).storageType(StorageType.File)
                 .maxAge(Duration.ofDays(7)).duplicateWindow(Topology.DUPLICATE_WINDOW).replicas(1).build());
+        for (String retired : Topology.RETIRED_WORK_CONSUMERS) {
+            try {
+                management.deleteConsumer(Subjects.WORK_STREAM, retired);
+                LOG.infof("Deleted retired consumer %s on %s", retired, Subjects.WORK_STREAM);
+            } catch (JetStreamApiException e) {
+                if (e.getApiErrorCode() != 10014) { // 10014: consumer not found
+                    throw e;
+                }
+            }
+        }
         for (ConsumerSpec c : Topology.consumers(evidenceAckWait)) {
             ConsumerConfiguration cc = ConsumerConfiguration.builder().durable(c.durable())
                     .filterSubjects(c.filterSubjects()).ackPolicy(AckPolicy.Explicit).ackWait(c.ackWait())

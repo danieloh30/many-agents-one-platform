@@ -10,7 +10,7 @@ cmd_status() {
   kn get pods -l "app.kubernetes.io/part-of=${MAOP_PART_OF}" -o wide || true
   printf '\n'
   log "autoscaling"
-  kn get scaledobject evidence-worker 2>/dev/null || warn "ScaledObject evidence-worker not found (KEDA CRD missing?)"
+  kn get scaledobject evidence-agent 2>/dev/null || warn "ScaledObject evidence-agent not found (KEDA CRD missing?)"
   kn get hpa 2>/dev/null || true
   printf '\n'
   log "exposure"
@@ -72,7 +72,7 @@ cmd_reset() {
   local out="${MAOP_TMP}/reset.json"
   console_api POST /api/v1/admin/reset "$out" - auth
   case "$API_CODE" in
-    2*) log "demo state reset (HTTP ${API_CODE}). evidence-worker replicas are left to KEDA to settle.";;
+    2*) log "demo state reset (HTTP ${API_CODE}). evidence-agent replicas are left to KEDA to settle.";;
     409) die "reset refused (HTTP 409): a burst is active — wait for it to finish or stop it in the console";;
     *) die "reset failed: HTTP ${API_CODE} $(head -c 300 "$out" 2>/dev/null)";;
   esac

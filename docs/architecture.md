@@ -19,7 +19,7 @@ flowchart LR
   subgraph ns["Namespace: maop"]
     console["ops-console<br/>SPA + console API (BFF)"]
     triage["triage-agent<br/>run owner + coordinator"]
-    evidence["evidence-worker ×1..6<br/>KEDA-scaled"]
+    evidence["evidence-agent ×1..6<br/>KEDA-scaled"]
     reco["recommendation-agent"]
     subgraph toolpod["tool-service pod"]
       tools["tool-service<br/>policy enforcement point"]
@@ -85,7 +85,7 @@ identity. A service owns its data exclusively; no service reads another service'
 | --- | --- | --- | --- |
 | **ops-console** | Nothing durable. An in-memory replay buffer of recent events. | Serves the SPA; exposes the console API and SSE; aggregates runtime snapshots from NATS and the Kubernetes API; proxies run commands to triage and audit reads to tool-service; enforces the presenter token. | Call a model. Decide workflow state. Hold write access to any cluster resource. |
 | **triage-agent** | `triage` schema: runs, tasks, timeline, approvals, outbox, inbox, idempotency keys. | Classifies the incident (model call → `TriagePlan`); is the **only** writer of run state; dispatches commands; folds results; enforces deadlines and budgets; registers approval grants. | Call investigation or remediation tools. |
-| **evidence-worker** | Nothing durable (stateless, horizontally scaled). | Consumes evidence tasks; calls the read tools through tool-service, then `EvidenceAnalystAgent` (`@Agent`) turns the results into a structured `EvidenceItem`, which it publishes. | Write to a database. Delegate further work. Call remediation tools (policy would deny). |
+| **evidence-agent** | Nothing durable (stateless, horizontally scaled). | Consumes evidence tasks; calls the read tools through tool-service, then `EvidenceAnalystAgent` (`@Agent`) turns the results into a structured `EvidenceItem`, which it publishes. | Write to a database. Delegate further work. Call remediation tools (policy would deny). |
 | **recommendation-agent** | Nothing durable (stateless). | Produces a `Recommendation` grounded in evidence; in `ATTEMPT_UNAPPROVED` mode or after approval, requests the simulated remediation from tool-service. | Decide whether the action is allowed. Persist run state. |
 | **tool-service** | `tools` schema: invocations (audit + idempotency), approval grants, simulated actions, synthetic catalogue/deployment data, outbox. | Authenticates the caller's SVID, asks OPA, records the decision, executes the simulated tool at most once per idempotency key. | Call a model. Call any cluster or external API. Trust identity from a header. |
 | **OPA** (sidecar) | Policy bundle (from Git via ConfigMap). | Answers allow/deny with reasons and a decision ID. | Hold business state. |
@@ -205,7 +205,7 @@ reported in every result event and accumulated transactionally by triage.
 | Evidence tasks per run | 4 | 6 | triage (plan is truncated, truncation recorded) |
 | Delegation depth | 1 | 1 | Contract: workers have no dispatch capability |
 | Model calls per run | 12 | 20 | triage before each dispatch; workers per task slice |
-| Model calls per evidence task | 2 | 3 | evidence-worker |
+| Model calls per evidence task | 2 | 3 | evidence-agent |
 | Tool calls per task | 4 | 6 | Worker (`quarkus.langchain4j.ai-service.max-tool-executions`) and counted |
 | Output tokens per model call | 800 | 1500 | Provider `max-tokens` setting |
 | Total tokens per run | 24 000 | 40 000 | triage; exceeding → `NEEDS_REVIEW (BUDGET_EXHAUSTED)` |
@@ -223,7 +223,7 @@ sequenceDiagram
   participant T as triage-agent
   participant DB as PostgreSQL (triage)
   participant N as NATS JetStream
-  participant E as evidence-worker
+  participant E as evidence-agent
   participant TS as tool-service + OPA
   participant R as recommendation-agent
   participant M as Model endpoint
@@ -320,9 +320,9 @@ command row), so neither step can be lost.
 sequenceDiagram
   autonumber
   participant N as NATS JetStream
-  participant E1 as evidence-worker (delivery 1)
+  participant E1 as evidence-agent (delivery 1)
   participant TS as tool-service
-  participant E2 as evidence-worker (delivery 2)
+  participant E2 as evidence-agent (delivery 2)
   participant T as triage-agent
 
   N->>E1: deliver task (faultInjection = DROP_ACK_ONCE)
@@ -347,14 +347,14 @@ sequenceDiagram
   participant T as triage-agent
   participant N as NATS JetStream
   participant K as KEDA + HPA
-  participant D as Deployment evidence-worker
+  participant D as Deployment evidence-agent
 
   Op->>C: POST /api/v1/bursts
   C->>T: POST /v1/bursts (clamped to cap)
   T->>T: tx: create K runs with planSource=PRESET, outbox ×(K·3)
   T->>N: relay publishes ~36 evidence commands
   loop every pollingInterval
-    K->>N: read consumer evidence-workers lag
+    K->>N: read consumer evidence-agents lag
   end
   K->>D: scale 1 → up to 6 (lag / lagThreshold)
   D->>N: new pods pull work
@@ -442,7 +442,7 @@ additionally by the run's model-call and token budgets.
   ConfigMap as `MAOP_MODEL_BASE_URL`, `MAOP_MODEL_API_KEY`, `MAOP_MODEL_NAME`. Any
   OpenAI-compatible endpoint works.
 - **Per-pod concurrency**: a fair semaphore (`maop.model.max-concurrent`, default 2 for
-  evidence-worker and triage, 1 for recommendation). A task that cannot get a permit within 10 s
+  evidence-agent and triage, 1 for recommendation). A task that cannot get a permit within 10 s
   is negatively acknowledged with delay. Cluster-wide ceiling for evidence = `2 × maxReplicaCount`
   = 12 concurrent calls; the KEDA maximum is chosen with the provider's rate limit in mind.
 - **Admission control** in triage: at most `maop.limits.max-active-runs` (25) non-terminal runs
@@ -495,8 +495,8 @@ messages, so the first remaining message for the subject is the oldest unacknowl
 
 ## 9. Scaling
 
-- Only `evidence-worker` is autoscaled. KEDA's NATS JetStream scaler reads the lag of consumer
-  `evidence-workers` and drives a `ScaledObject` → HPA → Deployment replicas between 1 and 6.
+- Only `evidence-agent` is autoscaled. KEDA's NATS JetStream scaler reads the lag of consumer
+  `evidence-agents` and drives a `ScaledObject` → HPA → Deployment replicas between 1 and 6.
 - `triage-agent` may run 1–2 replicas (outbox relay and sweeper are `SKIP LOCKED`-safe);
   `recommendation-agent`, `tool-service`, and `ops-console` run 1 replica in the demo and are
   stateless enough to run more.
@@ -523,7 +523,7 @@ messages, so the first remaining message for the subject is the oldest unacknowl
 
 Documented in [decisions/0012-agent-substrate-optional-future.md](decisions/0012-agent-substrate-optional-future.md).
 It is not part of the core demo, nothing in the core depends on it, and KEDA scaling in this
-design applies to the `evidence-worker` Deployment only.
+design applies to the `evidence-agent` Deployment only.
 
 ## 12. Assumptions and risks
 

@@ -110,10 +110,10 @@ public class ConsoleResource {
                 "The recommendation agent tries a simulated rollback without approval; policy denies it before execution.",
                 run("POLICY_DENIAL", "ATTEMPT_UNAPPROVED", "NONE")));
         items.add(scenario("BURST", "Bounded queue burst",
-                "A capped batch of evidence work raises queue lag; KEDA adds evidence workers and removes them afterwards.",
+                "A capped batch of evidence work raises queue lag; KEDA adds evidence agents and removes them afterwards.",
                 Json.MAPPER.createObjectNode()));
         items.add(scenario("REDELIVERY", "Redelivery without a duplicate effect",
-                "One evidence worker abandons its task after the tool call commits; the redelivery replays the stored result.",
+                "One evidence agent abandons its task after the tool call commits; the redelivery replays the stored result.",
                 run("REDELIVERY", "PROPOSE_ONLY", "DROP_ACK_ONCE")));
         return n;
     }

@@ -1,21 +1,21 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: evidence-worker
+  name: evidence-agent
   labels:
-    app.kubernetes.io/name: evidence-worker
+    app.kubernetes.io/name: evidence-agent
 automountServiceAccountToken: false
 ---
 # Management port only (health/metrics); the worker has no request API.
 apiVersion: v1
 kind: Service
 metadata:
-  name: evidence-worker
+  name: evidence-agent
   labels:
-    app.kubernetes.io/name: evidence-worker
+    app.kubernetes.io/name: evidence-agent
 spec:
   selector:
-    app.kubernetes.io/name: evidence-worker
+    app.kubernetes.io/name: evidence-agent
   ports:
     - name: management
       port: 9000

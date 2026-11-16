@@ -84,7 +84,7 @@ Base path `/v1`. Called only by `ops-console`.
   driven only by the explicit fields below it.
 - `remediationMode`: `PROPOSE_ONLY` (default) or `ATTEMPT_UNAPPROVED` (the agent tries to execute the
   simulated remediation without approval; policy is expected to deny).
-- `faultInjection`: `NONE` (default) or `DROP_ACK_ONCE` (evidence worker deliberately abandons the first
+- `faultInjection`: `NONE` (default) or `DROP_ACK_ONCE` (evidence agent deliberately abandons the first
   delivery of one task after its tool call commits). Accepted only when
   `maop.fault-injection.enabled=true`; always echoed on the run and shown in the UI.
 
@@ -155,7 +155,7 @@ X.509-SVID presented on the connection; no header can assert identity.
   "simulated": true,
   "dataOrigin": "SYNTHETIC",
   "decision": { "allow": true, "decisionId": "…", "policyRevision": "…", "reasons": [] },
-  "caller": { "spiffeId": "spiffe://<trust-domain>/ns/maop/sa/evidence-worker" },
+  "caller": { "spiffeId": "spiffe://<trust-domain>/ns/maop/sa/evidence-agent" },
   "result": { "…tool specific…" },
   "executedAt": "…"
 }
@@ -193,7 +193,7 @@ Tool catalogue (all data is synthetic; all remediation is simulated):
 | --- | --- | --- |
 | `SUCCESS` | `remediationMode=PROPOSE_ONLY` | Run reaches `AWAITING_APPROVAL` with an evidence-backed proposal and one connected trace. |
 | `POLICY_DENIAL` | `remediationMode=ATTEMPT_UNAPPROVED` | Tool audit shows `DENIED` with the rule that fired; no `simulated_action` row; run falls back to `AWAITING_APPROVAL`. |
-| `BURST` | `POST /api/v1/bursts` | Queue depth rises, KEDA raises evidence-worker replicas, queue drains, replicas return to minimum. |
+| `BURST` | `POST /api/v1/bursts` | Queue depth rises, KEDA raises evidence-agent replicas, queue drains, replicas return to minimum. |
 | `REDELIVERY` (optional) | `faultInjection=DROP_ACK_ONCE` | One task shows `deliveries: 2`; its tool invocation shows one execution and `replayed: true` on the second call. |
 
 ### 2.5 Ops snapshot (runtime, not business state)
@@ -202,13 +202,13 @@ Tool catalogue (all data is synthetic; all remediation is simulated):
 {
   "observedAt": "…",
   "queues": [
-    { "stream": "MAOP_WORK", "consumer": "evidence-workers", "status": "OK",
+    { "stream": "MAOP_WORK", "consumer": "evidence-agents", "status": "OK",
       "pending": 23, "inFlight": 4, "redelivered": 1, "oldestMessageAgeSeconds": 11.4 }
   ],
   "workloads": [
-    { "name": "evidence-worker", "status": "OK", "desiredReplicas": 4, "readyReplicas": 3,
+    { "name": "evidence-agent", "status": "OK", "desiredReplicas": 4, "readyReplicas": 3,
       "minReplicas": 1, "maxReplicas": 6, "scaler": { "kind": "KEDA", "active": true, "ready": true },
-      "pods": [ { "name": "evidence-worker-7c9…", "phase": "Running", "ready": true, "startedAt": "…", "activeTasks": 2 } ] }
+      "pods": [ { "name": "evidence-agent-7c9…", "phase": "Running", "ready": true, "startedAt": "…", "activeTasks": 2 } ] }
   ],
   "platform": [
     { "component": "opa", "status": "OK" }, { "component": "spire", "status": "OK" },
@@ -278,7 +278,7 @@ All streams: duplicate window 2 min, 1 replica (demo; production uses 3).
 | Durable pull consumer | Stream / filter | Owner | AckWait | MaxDeliver | MaxAckPending |
 | --- | --- | --- | --- | --- | --- |
 | `triage-workers` | `MAOP_WORK` / `maop.work.v1.triage` | triage-agent | 30 s | 3 | 16 |
-| `evidence-workers` | `MAOP_WORK` / `maop.work.v1.evidence` | evidence-worker | 20 s | 3 | 64 |
+| `evidence-agents` | `MAOP_WORK` / `maop.work.v1.evidence` | evidence-agent | 20 s | 3 | 64 |
 | `recommendation-workers` | `MAOP_WORK` / `maop.work.v1.recommendation` | recommendation-agent | 30 s | 3 | 8 |
 | `triage-results` | `MAOP_EVENTS` / `maop.events.v1.task.>` | triage-agent | 30 s | 5 | 64 |
 
@@ -309,7 +309,7 @@ Commands (`MAOP_WORK`):
 | Type suffix | Producer → consumer | `data` |
 | --- | --- | --- |
 | `run.triage.requested.v1` | triage-agent → triage-agent | `{runId}` |
-| `task.evidence.requested.v1` | triage-agent → evidence-worker | `EvidenceTaskCommand` |
+| `task.evidence.requested.v1` | triage-agent → evidence-agent | `EvidenceTaskCommand` |
 | `task.recommendation.requested.v1` | triage-agent → recommendation-agent | `RecommendationCommand` |
 | `task.action.requested.v1` | triage-agent → recommendation-agent | `ActionCommand` (approved execution) |
 
@@ -317,7 +317,7 @@ Facts consumed by triage (`MAOP_EVENTS`, `maop.events.v1.task.>`):
 
 | Type suffix | Producer | `data` |
 | --- | --- | --- |
-| `task.evidence.completed.v1` | evidence-worker | `{taskId, evidence: EvidenceItem, usage}` |
+| `task.evidence.completed.v1` | evidence-agent | `{taskId, evidence: EvidenceItem, usage}` |
 | `task.recommendation.completed.v1` | recommendation-agent | `{taskId, recommendation: Recommendation, executionAttempt?, usage}` |
 | `task.action.completed.v1` | recommendation-agent | `{taskId, invocationId, status: EXECUTED, replayed, usage}` |
 | `task.failed.v1` | any worker | `{taskId, kind, reason, retryable: false, detail, deliveries, usage}` |

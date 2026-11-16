@@ -58,7 +58,7 @@ describe('EventStreamClient', () => {
     const { h, es } = setup();
     es.emit('ops-snapshot', {
       observedAt: '2026-01-01T00:00:00Z',
-      queues: [{ stream: 'S', consumer: 'evidence-workers', status: 'UNAVAILABLE', pending: null, inFlight: null, redelivered: null, oldestMessageAgeSeconds: null }],
+      queues: [{ stream: 'S', consumer: 'evidence-agents', status: 'UNAVAILABLE', pending: null, inFlight: null, redelivered: null, oldestMessageAgeSeconds: null }],
       workloads: [],
       platform: [],
     });

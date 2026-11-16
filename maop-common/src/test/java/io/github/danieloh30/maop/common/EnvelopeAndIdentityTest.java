@@ -107,9 +107,9 @@ class EnvelopeAndIdentityTest {
     void svidParsingRequiresExactlyOneSpiffeUri() throws Exception {
         Path dir = Files.createTempDirectory("svid");
         TestPki pki = new TestPki("unit CA");
-        pki.issue(dir.resolve("ok"), "spiffe://maop.test/ns/maop/sa/evidence-worker");
+        pki.issue(dir.resolve("ok"), "spiffe://maop.test/ns/maop/sa/evidence-agent");
         SvidSource.Material m = new SvidSource(dir.resolve("ok")).current();
-        assertEquals("spiffe://maop.test/ns/maop/sa/evidence-worker", m.spiffeId());
+        assertEquals("spiffe://maop.test/ns/maop/sa/evidence-agent", m.spiffeId());
         assertEquals("maop.test", SpiffeIds.trustDomain(m.spiffeId()));
         pki.issue(dir.resolve("two"), Duration.ofHours(1),
                 List.of("spiffe://maop.test/a", "spiffe://maop.test/b"), List.of());

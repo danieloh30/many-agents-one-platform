@@ -71,14 +71,14 @@ class ToolServiceTest {
     }
 
     @Test
-    void evidenceWorkerReadsSyntheticDataWithVerifiedIdentity() throws Exception {
-        HttpResponse<String> r = invoke("evidence-worker", "deployment.get_history", "k-" + Ids.v7(), run(), Ids.v7(),
+    void evidenceAgentReadsSyntheticDataWithVerifiedIdentity() throws Exception {
+        HttpResponse<String> r = invoke("evidence-agent", "deployment.get_history", "k-" + Ids.v7(), run(), Ids.v7(),
                 Map.of("service", "checkout", "limit", 3), null);
         assertEquals(200, r.statusCode(), r.body());
         JsonNode b = json(r);
         assertEquals("EXECUTED", b.get("status").asText());
         assertEquals(false, b.get("replayed").asBoolean());
-        assertEquals(ToolServiceResources.id("evidence-worker"), b.at("/caller/spiffeId").asText());
+        assertEquals(ToolServiceResources.id("evidence-agent"), b.at("/caller/spiffeId").asText());
         assertEquals(true, b.at("/decision/allow").asBoolean());
         assertTrue(b.at("/decision/decisionId").asText().length() > 0, "OPA decision id recorded");
         assertEquals("SYNTHETIC", b.at("/result/dataOrigin").asText());
@@ -91,8 +91,8 @@ class ToolServiceTest {
         UUID task = Ids.v7();
         String key = "dup-" + Ids.v7();
         Map<String, Object> args = Map.of("service", "checkout");
-        HttpResponse<String> first = invoke("evidence-worker", "catalog.get_service", key, run, task, args, null);
-        HttpResponse<String> second = invoke("evidence-worker", "catalog.get_service", key, run, task, args, null);
+        HttpResponse<String> first = invoke("evidence-agent", "catalog.get_service", key, run, task, args, null);
+        HttpResponse<String> second = invoke("evidence-agent", "catalog.get_service", key, run, task, args, null);
         assertEquals(200, second.statusCode());
         assertEquals(json(first).get("invocationId"), json(second).get("invocationId"));
         assertTrue(json(second).get("replayed").asBoolean());
@@ -106,8 +106,8 @@ class ToolServiceTest {
         String key = "conflict-" + Ids.v7();
         UUID run = run();
         UUID task = Ids.v7();
-        invoke("evidence-worker", "catalog.get_service", key, run, task, Map.of("service", "checkout"), null);
-        HttpResponse<String> r = invoke("evidence-worker", "catalog.get_service", key, run, task,
+        invoke("evidence-agent", "catalog.get_service", key, run, task, Map.of("service", "checkout"), null);
+        HttpResponse<String> r = invoke("evidence-agent", "catalog.get_service", key, run, task,
                 Map.of("service", "cart"), null);
         assertEquals(409, r.statusCode());
         assertEquals("IDEMPOTENCY_KEY_REUSED", json(r).get("code").asText());
@@ -120,7 +120,7 @@ class ToolServiceTest {
         String key = "race-" + Ids.v7();
         List<Callable<Integer>> calls = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
-            calls.add(() -> invoke("evidence-worker", "telemetry.get_error_summary", key, run, task,
+            calls.add(() -> invoke("evidence-agent", "telemetry.get_error_summary", key, run, task,
                     Map.of("service", "checkout", "windowMinutes", 30), null).statusCode());
         }
         ExecutorService pool = Executors.newFixedThreadPool(8);
@@ -172,8 +172,8 @@ class ToolServiceTest {
         assertEquals(403, other.statusCode());
         assertEquals("approval_mismatch", json(other).at("/decision/reasons/0").asText());
 
-        // The evidence worker cannot use it at all.
-        HttpResponse<String> ev = invoke("evidence-worker", "remediation.rollback_deployment", "rb-e-" + Ids.v7(), run,
+        // The evidence agent cannot use it at all.
+        HttpResponse<String> ev = invoke("evidence-agent", "remediation.rollback_deployment", "rb-e-" + Ids.v7(), run,
                 Ids.v7(), Map.of("service", "checkout", "toVersion", "2.13.2"), approval);
         assertEquals(403, ev.statusCode());
         assertEquals("caller_not_permitted", json(ev).at("/decision/reasons/0").asText());
@@ -235,14 +235,14 @@ class ToolServiceTest {
 
     @Test
     void auditIsOnlyReadableByTheConsole() throws Exception {
-        assertEquals(403, call("evidence-worker", "GET", "/v1/invocations", null).statusCode());
+        assertEquals(403, call("evidence-agent", "GET", "/v1/invocations", null).statusCode());
         assertEquals(200, call("ops-console", "GET", "/v1/invocations", null).statusCode());
     }
 
     @Test
     void invalidArgumentsAreRejectedWithoutExecution() throws Exception {
         UUID run = run();
-        HttpResponse<String> r = invoke("evidence-worker", "deployment.get_history", "bad-" + Ids.v7(), run, Ids.v7(),
+        HttpResponse<String> r = invoke("evidence-agent", "deployment.get_history", "bad-" + Ids.v7(), run, Ids.v7(),
                 Map.of("service", "checkout", "limit", 500), null);
         assertEquals(422, r.statusCode());
         assertEquals(0, count("select count(*) from tool_invocation where run_id = '" + run + "'"));
@@ -261,7 +261,7 @@ class ToolServiceTest {
                             .deliverPolicy(DeliverPolicy.New).build())
                     .build());
             Map<String, Object> body = Map.of("runId", run, "taskId", task, "arguments", Map.of("service", "checkout"));
-            HttpResponse<String> r = ToolClients.as("evidence-worker").send("POST",
+            HttpResponse<String> r = ToolClients.as("evidence-agent").send("POST",
                     URI.create(ToolClients.BASE + "/v1/tools/catalog.get_service/invocations"),
                     io.github.danieloh30.maop.common.json.Json.write(body),
                     Map.of("Idempotency-Key", "trace-" + Ids.v7(), "traceparent", traceparent), Duration.ofSeconds(5));
@@ -280,7 +280,7 @@ class ToolServiceTest {
             assertTrue(found != null, "tool.invocation.completed event published via outbox");
             String tp = found.ext(CloudEvent.EXT_TRACEPARENT);
             assertTrue(tp != null && tp.contains(traceId), "event continues the caller's trace: " + tp);
-            assertEquals(ToolServiceResources.id("evidence-worker"), found.data().get("callerSpiffeId").asText());
+            assertEquals(ToolServiceResources.id("evidence-agent"), found.data().get("callerSpiffeId").asText());
         }
     }
 

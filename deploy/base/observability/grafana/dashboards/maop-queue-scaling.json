@@ -4,7 +4,7 @@
   "tags": [
     "maop"
   ],
-  "description": "JetStream consumer backlog, queue age, redeliveries and evidence-worker replicas. Queue numbers come from consumer info; replicas from the Kubernetes API via ops-console.",
+  "description": "JetStream consumer backlog, queue age, redeliveries and evidence-agent replicas. Queue numbers come from consumer info; replicas from the Kubernetes API via ops-console.",
   "editable": false,
   "graphTooltip": 1,
   "timezone": "browser",
@@ -87,7 +87,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(maop_queue_pending{consumer=\"evidence-workers\"}) + sum(maop_queue_ack_pending{consumer=\"evidence-workers\"})",
+          "expr": "sum(maop_queue_pending{consumer=\"evidence-agents\"}) + sum(maop_queue_ack_pending{consumer=\"evidence-agents\"})",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -141,7 +141,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "max(maop_queue_oldest_age_seconds{consumer=\"evidence-workers\"})",
+          "expr": "max(maop_queue_oldest_age_seconds{consumer=\"evidence-agents\"})",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -151,7 +151,7 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "Evidence workers desired",
+      "title": "Evidence agents desired",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -205,7 +205,7 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "Evidence workers ready",
+      "title": "Evidence agents ready",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -529,7 +529,7 @@
     {
       "id": 11,
       "type": "timeseries",
-      "title": "Evidence-worker replicas (desired vs ready)",
+      "title": "Evidence-agent replicas (desired vs ready)",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -601,7 +601,7 @@
     {
       "id": 12,
       "type": "timeseries",
-      "title": "Active tasks per evidence-worker pod",
+      "title": "Active tasks per evidence-agent pod",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -652,7 +652,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (pod) (maop_worker_active_tasks{service=\"evidence-worker\"})",
+          "expr": "sum by (pod) (maop_worker_active_tasks{service=\"evidence-agent\"})",
           "legendFormat": "{{pod}}",
           "range": true,
           "instant": false

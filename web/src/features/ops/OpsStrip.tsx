@@ -117,7 +117,7 @@ export function OpsStrip() {
             </div>
             <Sparkline points={history} label="Evidence queue pending" />
           </Tile>
-          <Tile title="Evidence worker replicas" icon={Server} stale={stale}>
+          <Tile title="Evidence agent replicas" icon={Server} stale={stale}>
             <div className="mb-1 flex flex-wrap items-center gap-1">
               <StatusPill status={w?.status} />
               {w?.scaler ? (

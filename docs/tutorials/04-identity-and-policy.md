@@ -153,8 +153,8 @@ curl -s http://localhost:8181/v1/data/maop/tools/decision -H 'Content-Type: appl
   }}' | jq .result
 ```
 
-Change the caller to `.../sa/evidence-worker` and send it again: the reason becomes
-`caller_not_permitted`, because evidence workers hold no remediation permission at all.
+Change the caller to `.../sa/evidence-agent` and send it again: the reason becomes
+`caller_not_permitted`, because evidence agents hold no remediation permission at all.
 
 ### 4. Try to call the tool API without an SVID
 

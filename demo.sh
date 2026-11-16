@@ -54,7 +54,7 @@ Commands
 Options
   --platform openshift|kubernetes   Target platform (default: openshift; env MAOP_PLATFORM).
   --namespace NAME                  Application namespace (default: maop; env MAOP_NAMESPACE).
-  --profile summit|dev              summit: 1 warm evidence worker, max MAOP_EVIDENCE_MAX_REPLICAS
+  --profile summit|dev              summit: 1 warm evidence agent, max MAOP_EVIDENCE_MAX_REPLICAS
                                     (default 6); dev: smaller requests (default: summit).
   --install-platform-components     up: allow installing KEDA and/or SPIRE (cluster-scoped).
   --skip-build                      up: deploy the images from the last build.

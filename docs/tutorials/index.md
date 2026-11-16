@@ -26,7 +26,7 @@ interface that returns a typed result (`IncidentTriageAgent`, `EvidenceAnalystAg
 | --- | --- | --- |
 | `ops-console` | Java app (web UI + API) | Serves the React **Agent Operations Console** and its API. It proxies run commands and holds no durable state. |
 | `triage-agent` | **Agentic AI Java app** (`@Agent`) | Owns the run. It is the only writer of run state: it classifies the incident, dispatches work, folds results, and enforces deadlines and budgets. |
-| `evidence-worker` | **Agentic AI Java app** (`@Agent`) | A stateless worker, scaled horizontally. It gathers facts through read tools and publishes a structured `EvidenceItem`. |
+| `evidence-agent` | **Agentic AI Java app** (`@Agent`) | A stateless worker, scaled horizontally. It gathers facts through read tools and publishes a structured `EvidenceItem`. |
 | `recommendation-agent` | **Agentic AI Java app** (`@Agent`) | Proposes a remediation, grounded in the evidence and cited. It can try to execute the proposal only through the tool service. |
 | `tool-service` | Java app (policy enforcement point, no model) | The protected boundary. It verifies the caller's SPIFFE ID over mTLS, asks OPA for a decision, audits it, and runs only synthetic or simulated tools. |
 
@@ -36,7 +36,7 @@ interface that returns a typed result (`IncidentTriageAgent`, `EvidenceAnalystAg
 | --- | --- | --- |
 | **Successful run** | Triage, evidence and recommendation agents complete a durable run, and one trace connects every hop. | [01](01-run-it-locally.md), [02](02-durable-workflow.md), [05](05-observability.md) |
 | **Policy denial** | The recommendation agent tries a simulated rollback without approval. The tool service verifies its identity, and policy denies the call before anything executes. | [04](04-identity-and-policy.md) |
-| **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence workers out and back in (verified on Red Hat OpenShift: 1 → 6 replicas). | [06](06-scaling-with-keda.md) |
+| **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence agents out and back in (verified on Red Hat OpenShift: 1 → 6 replicas). | [06](06-scaling-with-keda.md) |
 | **Redelivery** (optional) | A worker abandons a task after its tool call commits. The task is redelivered, and the effect is still recorded only once. | [03](03-messaging-and-redelivery.md) |
 
 Tool data is synthetic and remediation is simulated: no code path can change a real cluster.
@@ -51,7 +51,7 @@ flowchart LR
 
     subgraph AGENTS[Agent services]
         TRIAGE[triage-agent<br/>owns the durable run]
-        EVIDENCE[evidence-worker x N]
+        EVIDENCE[evidence-agent x N]
         RECO[recommendation-agent]
     end
 
@@ -92,7 +92,7 @@ flowchart LR
 | OpenTelemetry, Collector, Jaeger, Prometheus, Grafana | Traces, metrics, dashboards |
 | SPIFFE/SPIRE | Workload identity on the mTLS connection to the tool service |
 | Open Policy Agent | Runtime authorization at the tool service |
-| KEDA | Scaling evidence workers on queue lag |
+| KEDA | Scaling evidence agents on queue lag |
 | Kubernetes, OpenShift | Deployment targets |
 
 ## How to read the tutorials

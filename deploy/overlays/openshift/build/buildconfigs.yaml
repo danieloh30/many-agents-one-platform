@@ -44,9 +44,9 @@ spec:
 apiVersion: image.openshift.io/v1
 kind: ImageStream
 metadata:
-  name: maop-evidence-worker
+  name: maop-evidence-agent
   labels:
-    app.kubernetes.io/name: evidence-worker
+    app.kubernetes.io/name: evidence-agent
 spec:
   lookupPolicy:
     local: false
@@ -54,9 +54,9 @@ spec:
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
-  name: evidence-worker
+  name: evidence-agent
   labels:
-    app.kubernetes.io/name: evidence-worker
+    app.kubernetes.io/name: evidence-agent
 spec:
   runPolicy: Serial
   successfulBuildsHistoryLimit: 3
@@ -71,7 +71,7 @@ spec:
   output:
     to:
       kind: ImageStreamTag
-      name: maop-evidence-worker:latest
+      name: maop-evidence-agent:latest
   resources:
     requests:
       cpu: 250m

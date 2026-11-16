@@ -30,11 +30,11 @@ function renderStrip(snap: OpsSnapshot) {
 const nullSnapshot = () =>
   snapshot({
     queues: [
-      { stream: 'MAOP_WORK', consumer: 'evidence-workers', status: 'UNAVAILABLE', pending: null, inFlight: null, redelivered: null, oldestMessageAgeSeconds: null },
+      { stream: 'MAOP_WORK', consumer: 'evidence-agents', status: 'UNAVAILABLE', pending: null, inFlight: null, redelivered: null, oldestMessageAgeSeconds: null },
     ],
     workloads: [
       {
-        name: 'evidence-worker',
+        name: 'evidence-agent',
         status: 'UNAVAILABLE',
         desiredReplicas: null,
         readyReplicas: null,
@@ -61,7 +61,7 @@ describe('operations strip', () => {
       expect(metric).toHaveTextContent('Unavailable');
       expect(metric).not.toHaveTextContent(/\b0\b/);
     }
-    const replicas = screen.getByRole('region', { name: 'Evidence worker replicas' });
+    const replicas = screen.getByRole('region', { name: 'Evidence agent replicas' });
     expect(within(replicas).getByText('Ready / desired').parentElement).toHaveTextContent('Unavailable');
     expect(within(replicas).getByText('Min – max').parentElement).toHaveTextContent('Unavailable');
     expect(within(replicas).getByText('Scaler: Unavailable')).toBeInTheDocument();

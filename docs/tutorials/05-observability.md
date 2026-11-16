@@ -14,7 +14,7 @@ flowchart LR
     CONSOLE[ops-console<br/>HTTP server span] -->|W3C traceparent header| TRIAGE[triage-agent]
     TRIAGE -->|traceparent stored<br/>on the outbox row| OUTBOX[(outbox_event)]
     OUTBOX -->|relay re-injects it<br/>into NATS headers| NATS[(JetStream)]
-    NATS -->|CONSUMER span<br/>subject + process| EVIDENCE[evidence-worker]
+    NATS -->|CONSUMER span<br/>subject + process| EVIDENCE[evidence-agent]
     EVIDENCE -->|mTLS HTTP| TOOLS[tool-service<br/>policy attributes]
     TRIAGE -.->|run stores its root<br/>traceparent for approval<br/>and sweeper spans| TRIAGE
     TRACE([Collector → Jaeger<br/>one trace per run])
@@ -78,7 +78,7 @@ sum by (decision) (increase(maop_tool_invocations_total[15m]))
 ```
 
 ```text
-maop_queue_pending{consumer="evidence-workers"}
+maop_queue_pending{consumer="evidence-agents"}
 ```
 
 | Metric | Source | Meaning |
@@ -90,7 +90,7 @@ maop_queue_pending{consumer="evidence-workers"}
 | `maop_outbox_pending`, `maop_outbox_oldest_age_seconds` | triage-agent, tool-service | Outbox backlog (alert on it, never drop) |
 | `maop_model_calls_total`, `maop_model_tokens_total`, `maop_model_call_duration_seconds`, `maop_model_permits_in_use` | agents | Model usage and per-pod concurrency |
 | `maop_queue_pending`, `maop_queue_ack_pending`, `maop_queue_redelivered`, `maop_queue_oldest_age_seconds` | ops-console | JetStream consumer state, read from consumer info |
-| `maop_evidence_replicas`, `maop_worker_active_tasks` | ops-console, evidence-worker | Desired and ready replicas; active tasks per pod |
+| `maop_evidence_replicas`, `maop_worker_active_tasks` | ops-console, evidence-agent | Desired and ready replicas; active tasks per pod |
 
 ### 4. Open the dashboards
 
@@ -101,7 +101,7 @@ JSON files:
 | Dashboard | Shows |
 | --- | --- |
 | **Run overview** | Runs started and finished, duration p50/p95, tasks by kind and result, redeliveries, outbox backlog |
-| **Queue and scaling** | Pending, in-flight, queue age and redelivered by consumer; desired versus ready evidence-worker replicas; active tasks per pod |
+| **Queue and scaling** | Pending, in-flight, queue age and redelivered by consumer; desired versus ready evidence-agent replicas; active tasks per pod |
 | **Policy and tools** | Invocations and denials, decisions by decision and reason, tool-service latency, span-metric calls by service |
 | **Model usage** | Model calls by service, status, mode and purpose; tokens; latency p95; permits in use |
 
@@ -113,7 +113,7 @@ curl -s http://localhost:8080/api/v1/ops/snapshot | jq '{queues, workloads: [.wo
 
 ## What you should see
 
-- The Jaeger API prints all five services: `ops-console`, `triage-agent`, `evidence-worker`,
+- The Jaeger API prints all five services: `ops-console`, `triage-agent`, `evidence-agent`,
   `recommendation-agent` and `tool-service`. This is end-to-end check 3.
 - The trace view nests `maop.work.v1.evidence process` spans under the triage-agent spans that
   published them, and those contain the tool-service calls.

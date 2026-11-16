@@ -48,7 +48,7 @@ spec:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
-        values: [triage-agent, evidence-worker, recommendation-agent, tool-service, ops-console]
+        values: [triage-agent, evidence-agent, recommendation-agent, tool-service, ops-console]
   policyTypes: ["Egress"]
   egress:
     - to:
@@ -75,7 +75,7 @@ spec:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
-        values: [triage-agent, evidence-worker, recommendation-agent, ops-console]
+        values: [triage-agent, evidence-agent, recommendation-agent, ops-console]
   policyTypes: ["Egress"]
   egress:
     - to:
@@ -114,7 +114,7 @@ spec:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
-        values: [triage-agent, evidence-worker, recommendation-agent]
+        values: [triage-agent, evidence-agent, recommendation-agent]
   policyTypes: ["Egress"]
   egress:
     - ports:
@@ -205,7 +205,7 @@ spec:
             matchExpressions:
               - key: app.kubernetes.io/name
                 operator: In
-                values: [triage-agent, evidence-worker, recommendation-agent, ops-console]
+                values: [triage-agent, evidence-agent, recommendation-agent, ops-console]
         # `./demo.sh verify` starts a short-lived probe pod with this label to show that a
         # connection without a client certificate fails the TLS handshake. Reachability is
         # deliberate: the control under test is mTLS, not the network policy.
@@ -242,7 +242,7 @@ spec:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
-        values: [triage-agent, evidence-worker, recommendation-agent, tool-service, ops-console]
+        values: [triage-agent, evidence-agent, recommendation-agent, tool-service, ops-console]
   policyTypes: ["Ingress"]
   ingress:
     - from:
@@ -269,7 +269,7 @@ spec:
             matchExpressions:
               - key: app.kubernetes.io/name
                 operator: In
-                values: [triage-agent, evidence-worker, recommendation-agent, tool-service, ops-console]
+                values: [triage-agent, evidence-agent, recommendation-agent, tool-service, ops-console]
       ports:
         - { protocol: TCP, port: 4222 }
     - from:

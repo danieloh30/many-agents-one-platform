@@ -19,7 +19,7 @@ labels:
 resources:
   - config
   - apps/triage-agent
-  - apps/evidence-worker
+  - apps/evidence-agent
   - apps/recommendation-agent
   - apps/tool-service
   - apps/ops-console

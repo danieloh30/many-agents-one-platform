@@ -9,7 +9,7 @@ patches:
       group: apps
       version: v1
       kind: Deployment
-      name: "^(triage-agent|evidence-worker|recommendation-agent|tool-service|ops-console)$"
+      name: "^(triage-agent|evidence-agent|recommendation-agent|tool-service|ops-console)$"
     patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/resources

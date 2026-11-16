@@ -20,7 +20,7 @@ dim()  { printf '%s%s%s\n' "$C_DIM" "$*" "$C_RST" >&2; }
 # ----------------------------------------------------------------------------- paths & config
 # REPO_ROOT is set by demo.sh before sourcing.
 MAOP_STATE_DIR="${REPO_ROOT}/.maop"          # git-ignored: rendered manifests, image refs, logs
-MAOP_SERVICES="triage-agent evidence-worker recommendation-agent tool-service ops-console"
+MAOP_SERVICES="triage-agent evidence-agent recommendation-agent tool-service ops-console"
 MAOP_MANAGED_BY="many-agents-one-platform"
 MAOP_PART_OF="maop"
 # Everything this project deploys carries managed-by; workloads may use a per-group part-of on OpenShift

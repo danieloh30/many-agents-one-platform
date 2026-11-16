@@ -2,12 +2,12 @@
 
 ## Goal
 
-Understand how evidence workers are meant to scale on real backlog. A KEDA `ScaledObject` reads the
-lag of the JetStream consumer `evidence-workers`, and a bounded burst fills that queue. Model rate
+Understand how evidence agents are meant to scale on real backlog. A KEDA `ScaledObject` reads the
+lag of the JetStream consumer `evidence-agents`, and a bounded burst fills that queue. Model rate
 limits and per-pod permits put a deliberate ceiling on the scale-out.
 
 > Verified on Kubernetes (Red Hat OpenShift) with upstream KEDA 2.21.0 and the live model: during `./demo.sh verify` the
-> burst took the evidence-worker Deployment from 1 to 5 desired replicas about 18 s after the burst
+> burst took the evidence-agent Deployment from 1 to 5 desired replicas about 18 s after the burst
 > started, and to the ceiling of 6 within about 29 s (ready replicas follow as pods start). Your timings
 > depend on the cluster and image pulls. The local stack proves only the queue part: the burst raises
 > queue depth and all 12 runs drain to `EVIDENCE_ONLY`; replica tiles read **Unavailable** locally.
@@ -18,9 +18,9 @@ limits and per-pod permits put a deliberate ceiling on the scale-out.
 %%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18,"curve":"basis"}}}%%
 flowchart LR
     BURST([POST /api/v1/bursts<br/>capped at 12 runs]) --> TRIAGE[triage-agent<br/>preset plans, outbox]
-    TRIAGE -->|evidence commands| QUEUE[(MAOP_WORK<br/>consumer evidence-workers)]
+    TRIAGE -->|evidence commands| QUEUE[(MAOP_WORK<br/>consumer evidence-agents)]
     KEDA([KEDA nats-jetstream scaler<br/>polls every 5 s]) -.->|lag = pending + in flight| QUEUE
-    KEDA -->|ScaledObject → HPA| DEPLOY[Deployment<br/>evidence-worker 1..6]
+    KEDA -->|ScaledObject → HPA| DEPLOY[Deployment<br/>evidence-agent 1..6]
     DEPLOY -->|pull| QUEUE
     DEPLOY -->|≤ 2 model permits per pod| MODEL{{Model endpoint}}
 
@@ -41,10 +41,10 @@ flowchart LR
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: evidence-worker
+  name: evidence-agent
 spec:
   scaleTargetRef:
-    name: evidence-worker
+    name: evidence-agent
   minReplicaCount: 1
   maxReplicaCount: 6          # demo.sh sets this from MAOP_EVIDENCE_MAX_REPLICAS
   pollingInterval: 5
@@ -60,22 +60,22 @@ spec:
         natsServerMonitoringEndpoint: nats.maop.svc.cluster.local:8222
         account: $G
         stream: MAOP_WORK
-        consumer: evidence-workers
+        consumer: evidence-agents
         lagThreshold: "4"
         activationLagThreshold: "0"
 ```
 
 Lag counts both pending and in-flight messages, so work that has been pulled but not yet
-acknowledged keeps the replicas up. Only `evidence-worker` is autoscaled. If an OpenShift cluster
+acknowledged keeps the replicas up. Only `evidence-agent` is autoscaled. If an OpenShift cluster
 already runs the Custom Metrics Autoscaler (CMA), which does not list the `nats-jetstream` trigger,
 the `openshift-cma` overlay uses a `prometheus` trigger instead:
-`sum(maop_queue_pending{consumer="evidence-workers"}) + sum(maop_queue_ack_pending{consumer="evidence-workers"})`
+`sum(maop_queue_pending{consumer="evidence-agents"}) + sum(maop_queue_ack_pending{consumer="evidence-agents"})`
 with threshold 4. Upstream KEDA and CMA cannot coexist on one cluster.
 
 ## Why the ceiling is deliberate
 
-Every evidence worker can call the model. Each pod holds a fair semaphore of model permits
-(`maop.model.max-concurrent`: 2 for evidence-worker and triage-agent, 1 for recommendation-agent).
+Every evidence agent can call the model. Each pod holds a fair semaphore of model permits
+(`maop.model.max-concurrent`: 2 for evidence-agent and triage-agent, 1 for recommendation-agent).
 A task that cannot get a permit within 10 s is negatively acknowledged with a delay rather than
 piling onto the provider. The cluster-wide ceiling for evidence is therefore `2 × maxReplicaCount`:
 12 concurrent calls at the default maximum of 6. Choose `MAOP_EVIDENCE_MAX_REPLICAS` with your
@@ -107,7 +107,7 @@ After [tutorial 07](07-deploy-to-kubernetes.md), in one terminal:
 
 ```bash
 kubectl get scaledobject,hpa -n maop
-kubectl get pods -n maop -l app.kubernetes.io/name=evidence-worker -w
+kubectl get pods -n maop -l app.kubernetes.io/name=evidence-agent -w
 ```
 
 On OpenShift, `oc` accepts the same arguments.
@@ -130,7 +130,7 @@ curl -s -X POST "$CONSOLE_URL/api/v1/bursts" -H "Authorization: Bearer $TOKEN" \
 ./demo.sh verify
 ```
 
-Check 5 of `verify` starts a burst, records the evidence-worker replica timeline to
+Check 5 of `verify` starts a burst, records the evidence-agent replica timeline to
 `artifacts/verify-<timestamp>/05-scale-out.tsv`, and passes only if replicas rose above the minimum.
 
 ## What you should see

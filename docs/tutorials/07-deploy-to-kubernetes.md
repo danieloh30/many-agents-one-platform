@@ -109,7 +109,7 @@ on observed data:
 | 2 | Connected trace | The run's Jaeger trace and the services in it |
 | 3 | Policy denial | A `DENIED` `remediation.*` invocation with reason `approval_required` and `sideEffect: null` |
 | 4 | Identity enforcement | The TLS refusal of a certificate-less client from inside the cluster, plus verified SPIFFE IDs in the audit |
-| 5 | Scale-out | The evidence-worker replica timeline under a burst |
+| 5 | Scale-out | The evidence-agent replica timeline under a burst |
 | 6 | Redelivery dedup | A task with `deliveries >= 2` and an invocation with `requests >= 2`, `executions = 1` |
 
 `./demo.sh verify --quick` runs checks 1 to 4, which is the smoke test `up` ends with.
@@ -120,7 +120,7 @@ on observed data:
 ./demo.sh open      # prints (and on macOS opens) the console, Jaeger and Grafana URLs
 ./demo.sh token     # prints the presenter token (the only command that does)
 ./demo.sh status    # workloads, replicas, ScaledObject/HPA, routes, platform state, last runs
-./demo.sh logs evidence-worker
+./demo.sh logs evidence-agent
 ./demo.sh reset     # clears demonstration state only: runs, audit, simulated actions, queued messages
 ```
 

@@ -103,7 +103,7 @@ updates:
   - package-ecosystem: "docker"            # Dockerfiles and Kubernetes manifests with image: fields
     directories:
       - "/triage-agent/src/main/docker"
-      - "/evidence-worker/src/main/docker"
+      - "/evidence-agent/src/main/docker"
       - "/recommendation-agent/src/main/docker"
       - "/tool-service/src/main/docker"
       - "/ops-console/src/main/docker"

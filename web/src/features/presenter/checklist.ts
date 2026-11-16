@@ -20,8 +20,8 @@ export interface GuideStep {
 export const GUIDE_STEPS: GuideStep[] = [
   { id: 'SUCCESS', number: 1, title: 'Success', optional: false, focus: 'triage' },
   { id: 'POLICY_DENIAL', number: 2, title: 'Policy denial', optional: false, focus: 'tool-service' },
-  { id: 'BURST', number: 3, title: 'Burst', optional: false, focus: 'evidence-workers' },
-  { id: 'REDELIVERY', number: 4, title: 'Redelivery', optional: true, focus: 'evidence-workers' },
+  { id: 'BURST', number: 3, title: 'Burst', optional: false, focus: 'evidence-agents' },
+  { id: 'REDELIVERY', number: 4, title: 'Redelivery', optional: true, focus: 'evidence-agents' },
 ];
 
 export interface ChecklistContext {
@@ -87,7 +87,7 @@ export function checklist(step: GuideStep['id'], ctx: ChecklistContext): CheckIt
       const back = scaleIdx >= 0 && pts.slice(scaleIdx + 1).some((p) => p.desired !== null && p.min !== null && p.desired === p.min);
       return [
         { id: 'depth', label: 'Queue depth rises', done: riseIdx >= 0 },
-        { id: 'scaled', label: 'Evidence workers scaled above minimum', done: scaleIdx >= 0 },
+        { id: 'scaled', label: 'Evidence agents scaled above minimum', done: scaleIdx >= 0 },
         { id: 'drained', label: 'Queue drained', done: drained },
         { id: 'back', label: 'Replicas back at minimum', done: back },
       ];

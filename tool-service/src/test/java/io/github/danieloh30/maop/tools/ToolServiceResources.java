@@ -35,16 +35,16 @@ public class ToolServiceResources implements QuarkusTestResourceLifecycleManager
     @SuppressWarnings("resource")
     public Map<String, String> start() {
         TestPki pki = new TestPki("maop.test CA").save(PKI.resolve("ca"));
-        for (String w : List.of("tool-service", "evidence-worker", "recommendation-agent", "triage-agent", "ops-console",
+        for (String w : List.of("tool-service", "evidence-agent", "recommendation-agent", "triage-agent", "ops-console",
                 "intruder")) {
             pki.issue(dir(w), id(w), w, "localhost");
         }
         // A certificate from the trusted CA but with two URI SANs (not a valid SVID).
-        pki.issue(dir("two-sans"), Duration.ofHours(1), List.of(id("evidence-worker"), id("ops-console")), List.of());
+        pki.issue(dir("two-sans"), Duration.ofHours(1), List.of(id("evidence-agent"), id("ops-console")), List.of());
         // A workload from a different trust domain signed by the same CA.
-        pki.issue(dir("foreign-domain"), "spiffe://evil.example/ns/maop/sa/evidence-worker");
+        pki.issue(dir("foreign-domain"), "spiffe://evil.example/ns/maop/sa/evidence-agent");
         // A completely separate CA (attacker).
-        new TestPki("attacker CA").issue(dir("attacker"), id("evidence-worker"));
+        new TestPki("attacker CA").issue(dir("attacker"), id("evidence-agent"));
 
         Path policy = Path.of(System.getProperty("maop.policy.dir", "../policy/maop")).toAbsolutePath();
         if (!Files.isDirectory(policy)) {

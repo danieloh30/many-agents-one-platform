@@ -26,7 +26,7 @@ import jakarta.inject.Inject;
 import java.util.Map;
 import org.jboss.logging.Logger;
 
-/** Consumes task.evidence.requested from the shared durable consumer "evidence-workers". */
+/** Consumes task.evidence.requested from the shared durable consumer "evidence-agents". */
 @ApplicationScoped
 public class EvidenceHandler implements MessageHandler {
 

@@ -15,7 +15,7 @@ decision's intent.
 | 6 | Streams/consumers created by a `nats-setup` Job (deployment §2) | Every service provisions the topology idempotently at startup (ops-console excepted: read-only) | Fresh brokers work regardless of start order; no extra Job. |
 | 7 | SPA API types generated from OpenAPI (contracts §4.3) | Hand-written TypeScript types in `web/src/api/types.ts`, validated with zod at the SSE boundary | Avoided a generator toolchain for a single consumer. Contract tests on the Java side remain. |
 | 8 | Consumers with `BackOff` lists | No `BackOff`; delayed negative acknowledgements (2 s, then 5 s) and in-progress acknowledgements | JetStream `BackOff` replaces `AckWait` and does not apply to naks. |
-| 9 | Evidence worker relies on the model to choose tools | Baseline tool calls per topic are made deterministically; the model may request at most the remaining tool-call budget as follow-ups | Evidence never depends on a live model choosing to call a tool; the scenario stays reliable. |
+| 9 | Evidence agent relies on the model to choose tools | Baseline tool calls per topic are made deterministically; the model may request at most the remaining tool-call budget as follow-ups | Evidence never depends on a live model choosing to call a tool; the scenario stays reliable. |
 
 Consequences: fewer framework features in use (no ORM, no AI-service proxies), more explicit code, and the
 same external contracts. Revisit item 4 if a future Quarkus BOM aligns `cloudevents-api` with SDK 5.x.

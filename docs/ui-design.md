@@ -62,7 +62,7 @@ is 1920×1080 and 1280×720 projector output.
 A fixed-layout graph (React Flow, positions hand-authored for legibility — no auto-layout jitter):
 
 ```
- Console ──▶ Triage agent ──▶ [ work queue: evidence ] ──▶ Evidence workers ×N ──┐
+ Console ──▶ Triage agent ──▶ [ work queue: evidence ] ──▶ Evidence agents ×N ──┐
                  │  ▲                                                            ├─▶ Tool service ─▶ OPA
                  │  └──────────── results (events) ◀─────────────────────────────┤     (mTLS, SVID)
                  └─▶ [ work queue: recommendation ] ──▶ Recommendation agent ────┘
@@ -70,7 +70,7 @@ A fixed-layout graph (React Flow, positions hand-authored for legibility — no 
 ```
 
 - **Nodes**: services (with ready/desired replicas from the ops snapshot), queues (pending /
-  in-flight), tool service with OPA attached, model endpoint. Evidence workers render as one node
+  in-flight), tool service with OPA attached, model endpoint. Evidence agents render as one node
   with a pod strip: one pill per real pod (`Pending`, `Running`, `Ready`), added and removed as the
   snapshot changes.
 - **Edges** animate only when a matching event arrives for the selected run (or any run when none
@@ -122,7 +122,7 @@ application error — policy working is a success state for the operator.
 
 Fed by `ops-snapshot` SSE events (2 s cadence):
 
-- **Queue depth** (pending) and **in-flight** for `evidence-workers`, with a 5-minute sparkline
+- **Queue depth** (pending) and **in-flight** for `evidence-agents`, with a 5-minute sparkline
   built from snapshots received in this browser session (labelled "since page load").
 - **Queue age**: age of the oldest unacknowledged message.
 - **Replicas**: `ready / desired` with min–max range and the scaler's active flag; a step chart of

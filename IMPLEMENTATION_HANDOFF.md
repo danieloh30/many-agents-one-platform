@@ -45,7 +45,7 @@ order, and how each item is accepted.
 pom.xml                      # parent: Java 25, quarkus.platform.version, module list
 .mvn/ mvnw                   # Maven Wrapper
 maop-common/                 # contracts, CloudEvents mapping, JetStream adapter, tracing, outbox/inbox support
-triage-agent/  evidence-worker/  recommendation-agent/  tool-service/  ops-console/
+triage-agent/  evidence-agent/  recommendation-agent/  tool-service/  ops-console/
 web/                         # React + TypeScript + Vite SPA
 contracts/openapi/  contracts/events/
 policy/maop/                 # Rego, data, tests
@@ -100,7 +100,7 @@ do not touch the same module.
 | B-16 | triage-agent persistence: schema, entities, state machine with the transition table as data | Property-style test: every transition not in architecture §4.1 is rejected; terminal states are immutable. |
 | B-17 | triage-agent API, idempotent run creation, admission limits | Contract tests against OpenAPI; duplicate `Idempotency-Key` returns the same run; limits return `429`. |
 | B-18 | Triage AI service → `TriagePlan`; dispatch through outbox; budgets | Deterministic-mode test produces the documented plan; plan over budget is truncated and recorded; invalid output gets one repair attempt then `NEEDS_REVIEW`. |
-| B-19 | evidence-worker: consumer, AI service with tool methods calling tool-service, validation, result publication, heartbeat, model permit semaphore | Integration test with real NATS + tool-service + OPA: task completes; facts reference real `invocationId`s; deadline and tool-call caps enforced; `DROP_ACK_ONCE` produces two deliveries and one execution. |
+| B-19 | evidence-agent: consumer, AI service with tool methods calling tool-service, validation, result publication, heartbeat, model permit semaphore | Integration test with real NATS + tool-service + OPA: task completes; facts reference real `invocationId`s; deadline and tool-call caps enforced; `DROP_ACK_ONCE` produces two deliveries and one execution. |
 | B-20 | Result folding in triage: inbox, optimistic concurrency, quorum, late events, dead-letter and advisory handling, deadline sweeper | Tests: N parallel results dispatch exactly one recommendation command; duplicate result ignored; lost task → `TIMED_OUT` by sweeper; exhausted deliveries → `NEEDS_REVIEW` with DLQ record and the message removed from the work stream. |
 | B-21 | recommendation-agent: recommendation with citation validation; `ATTEMPT_UNAPPROVED`; approved action execution | Tests: citations to unknown evidence fail validation; unapproved attempt yields a `DENIED` attempt in the result and run lands in `AWAITING_APPROVAL`; approval path ends `COMPLETED (REMEDIATION_SIMULATED)` with exactly one simulated action even when the action command is redelivered. |
 | B-22 | Burst endpoint and preset plans | Capped, single active burst; runs tagged `planSource: PRESET`, end `EVIDENCE_ONLY`. |
@@ -121,7 +121,7 @@ do not touch the same module.
 | --- | --- | --- |
 | B-28 | Dockerfiles, Kustomize base, kind overlay, NetworkPolicies, `nats-setup` Job | `kustomize build` valid for every overlay; all containers meet the restricted pod security profile (checked by a manifest policy test). |
 | B-29 | Platform scripts: `preflight.sh`, `platform-install.sh` (KEDA, SPIRE via pinned Helm charts), `deploy.sh`, `smoke.sh`, `demo-reset.sh`, `uninstall.sh` | Scripts are idempotent (run twice, no diff/no error); mutating scripts print the target context and require confirmation; `shellcheck` clean. |
-| B-30 | `e2e-kind` CI job | On kind at the pinned Kubernetes version: SPIRE issues SVIDs to all five workloads; smoke suite passes: success run with complete trace, policy denial with no side effect, burst scales evidence-worker above 1 and back, redelivery with one execution. This job joins `compat-gate`. |
+| B-30 | `e2e-kind` CI job | On kind at the pinned Kubernetes version: SPIRE issues SVIDs to all five workloads; smoke suite passes: success run with complete trace, policy denial with no side effect, burst scales evidence-agent above 1 and back, redelivery with one execution. This job joins `compat-gate`. |
 | B-31 | Grafana dashboards, Prometheus config, Collector config, Jaeger config | Dashboards load without datasource errors in the e2e job; panels query metric names that exist (checked by a script against the live Prometheus in e2e). |
 | B-32 | OpenShift overlay(s): Routes, ImageStreams, BuildConfigs, CMA variant, OpenShift values for KEDA and SPIRE | `kustomize build` valid; documented dry-run (`oc apply --dry-run=server`) procedure. **Not applied to any cluster without the user's instruction.** |
 | B-33 | Cluster verification on the user's OpenShift cluster, **with the user** | Every item C1–C10 in deployment §8 and S2–S5 in security §9 is resolved and the outcome recorded in the docs; runbook §7 table filled with measured timings. |

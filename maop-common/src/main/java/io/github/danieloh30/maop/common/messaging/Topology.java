@@ -13,6 +13,13 @@ public final class Topology {
     public static final Duration DUPLICATE_WINDOW = Duration.ofMinutes(2);
     public static final long MAX_DELIVER = 3;
 
+    /**
+     * Durable consumers from earlier releases, deleted at provisioning. The work stream uses WorkQueue retention,
+     * which rejects a second consumer on the same subject, so a renamed consumer must replace its predecessor
+     * ({@code evidence-workers} became {@code evidence-agents}, ADR-0017).
+     */
+    public static final List<String> RETIRED_WORK_CONSUMERS = List.of("evidence-workers");
+
     private Topology() {
     }
 

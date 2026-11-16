@@ -45,11 +45,11 @@ spec:
                 secretKeyRef:
                   name: nats-auth
                   key: triage-agent
-            - name: EVIDENCE_WORKER_PASSWORD
+            - name: EVIDENCE_AGENT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: nats-auth
-                  key: evidence-worker
+                  key: evidence-agent
             - name: RECOMMENDATION_AGENT_PASSWORD
               valueFrom:
                 secretKeyRef:

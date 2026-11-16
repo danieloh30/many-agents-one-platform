@@ -21,7 +21,7 @@ patches:
       group: keda.sh
       version: v1alpha1
       kind: ScaledObject
-      name: evidence-worker
+      name: evidence-agent
     patch: |-
       - op: replace
         path: /spec/triggers
@@ -29,7 +29,7 @@ patches:
           - type: prometheus
             metadata:
               serverAddress: http://prometheus.maop.svc:9090
-              query: sum(maop_queue_pending{consumer="evidence-workers"}) + sum(maop_queue_ack_pending{consumer="evidence-workers"})
+              query: sum(maop_queue_pending{consumer="evidence-agents"}) + sum(maop_queue_ack_pending{consumer="evidence-agents"})
               threshold: "4"
               activationThreshold: "0"
 

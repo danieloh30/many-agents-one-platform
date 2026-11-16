@@ -26,7 +26,7 @@ public interface IncidentTriageAgent {
              "confidence": number 0..1,
              "rationale": "one or two sentences for an operator (max 300 chars)",
              "tasks": [{"topic": one of SERVICE_CATALOG|DEPLOYMENT_HISTORY|CONFIG_DIFF|ERROR_SUMMARY,
-                        "question": "what the evidence worker should find out (max 200 chars)"}]}
+                        "question": "what the evidence agent should find out (max 200 chars)"}]}
             Plan between 1 and {{maxTasks}} tasks with distinct topics. Do not include reasoning steps.""")
     @UserMessage("""
             Incident title: {{title}}

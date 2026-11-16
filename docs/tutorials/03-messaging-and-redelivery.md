@@ -18,7 +18,7 @@ tool call has committed, and idempotency keys keep the effect from happening twi
 | Durable pull consumer | Filter | Owner | AckWait | MaxDeliver |
 | --- | --- | --- | --- | --- |
 | `triage-workers` | `maop.work.v1.triage` | triage-agent | 30 s | 3 |
-| `evidence-workers` | `maop.work.v1.evidence` | evidence-worker | 20 s | 3 |
+| `evidence-agents` | `maop.work.v1.evidence` | evidence-agent | 20 s | 3 |
 | `recommendation-workers` | `maop.work.v1.recommendation` | recommendation-agent | 30 s | 3 |
 | `triage-results` | `maop.events.v1.task.*` results | triage-agent | 30 s | 5 |
 
@@ -31,11 +31,11 @@ so a fresh broker works whatever order the services start in.
 ```mermaid
 %%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18,"curve":"basis"}}}%%
 flowchart LR
-    WORK[(MAOP_WORK<br/>evidence command)] -->|delivery 1| E1[evidence-worker<br/>DROP_ACK_ONCE]
+    WORK[(MAOP_WORK<br/>evidence command)] -->|delivery 1| E1[evidence-agent<br/>DROP_ACK_ONCE]
     E1 -->|Idempotency-Key K| TOOLS[tool-service]
     TOOLS -->|EXECUTED · invocation I| DB[(tools.tool_invocation)]
     E1 -.->|abandons: no ack, no result| WORK
-    WORK -->|AckWait expires · delivery 2| E2[evidence-worker]
+    WORK -->|AckWait expires · delivery 2| E2[evidence-agent]
     E2 -->|same key K| TOOLS
     TOOLS -->|replayed: true · same I| E2
     E2 -->|task.evidence.completed<br/>id = UUIDv5 of taskId and type| EVENTS[(MAOP_EVENTS)]
@@ -118,7 +118,7 @@ curl -s "http://localhost:8080/api/v1/audit/invocations?runId=$RUN" | jq '.items
 
 ### 4. Follow the idempotency chain
 
-On delivery 1, [`EvidenceHandler.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/evidence-worker/src/main/java/io/github/danieloh30/maop/evidence/service/EvidenceHandler.java)
+On delivery 1, [`EvidenceHandler.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/evidence-agent/src/main/java/io/github/danieloh30/maop/evidence/service/EvidenceHandler.java)
 makes its baseline tool calls, then deliberately abandons the message: no acknowledgement and no
 result. After `AckWait`, JetStream redelivers it, and the second delivery repeats the same tool calls.
 Three layers stop a duplicate effect:

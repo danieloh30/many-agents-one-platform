@@ -50,7 +50,7 @@ certs() {
   openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out "$PKI/ca_key.pem" 2>/dev/null
   openssl req -x509 -new -key "$PKI/ca_key.pem" -subj "/CN=maop local trust domain CA" -days 2 -sha256 \
     -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" -out "$PKI/ca.pem" 2>/dev/null
-  for w in tool-service triage-agent evidence-worker recommendation-agent ops-console; do issue "$w"; done
+  for w in tool-service triage-agent evidence-agent recommendation-agent ops-console; do issue "$w"; done
   log "issued local SVIDs for trust domain $TD"
 }
 
@@ -100,7 +100,7 @@ up() {
   svc tool-service tool-service $db MAOP_OPA_URL=http://localhost:8181 QUARKUS_MANAGEMENT_PORT=9001
   # shellcheck disable=SC2086
   svc triage-agent triage-agent $db QUARKUS_HTTP_PORT=8081 QUARKUS_MANAGEMENT_PORT=9002
-  svc evidence-worker evidence-worker QUARKUS_HTTP_PORT=8082 QUARKUS_MANAGEMENT_PORT=9003 HOSTNAME=evidence-worker-local-1
+  svc evidence-agent evidence-agent QUARKUS_HTTP_PORT=8082 QUARKUS_MANAGEMENT_PORT=9003 HOSTNAME=evidence-agent-local-1
   svc recommendation-agent recommendation-agent QUARKUS_HTTP_PORT=8083 QUARKUS_MANAGEMENT_PORT=9004 HOSTNAME=recommendation-agent-local-1
   svc ops-console ops-console QUARKUS_HTTP_PORT=8080 QUARKUS_MANAGEMENT_PORT=9005 MAOP_TRIAGE_URL=http://localhost:8081 \
     MAOP_PRESENTER_TOKEN="$(cat "$TOKEN_FILE")" MAOP_PRESENTER_AUTH="${MAOP_PRESENTER_AUTH:-false}" MAOP_IDENTITY_MODE=DEV_STATIC MAOP_JAEGER_URL=http://localhost:16686 \
@@ -195,7 +195,7 @@ e2e() {
   local burst; burst="$(jq -r .burstId "$out/burst.json")"
   local maxdepth=0 d
   for _ in $(seq 1 50); do
-    d="$(api GET /api/v1/ops/snapshot | jq '.queues[] | select(.consumer=="evidence-workers") | ((.pending // 0) + (.inFlight // 0))')"
+    d="$(api GET /api/v1/ops/snapshot | jq '.queues[] | select(.consumer=="evidence-agents") | ((.pending // 0) + (.inFlight // 0))')"
     if [ "${d:-0}" -gt "$maxdepth" ]; then maxdepth="$d"; fi
     sleep 0.05
   done

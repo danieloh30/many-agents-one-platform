@@ -32,7 +32,7 @@ patches:
       - op: replace
         path: /metadata/labels/app.kubernetes.io~1part-of
         value: agent-services
-  - target: {kind: Deployment, name: evidence-worker}
+  - target: {kind: Deployment, name: evidence-agent}
     patch: |-
       - op: replace
         path: /metadata/labels/app.kubernetes.io~1part-of

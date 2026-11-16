@@ -13,7 +13,7 @@ A decision is changed by adding a new record that supersedes the old one, not by
 | [0006](0006-cloudevents-nats-binary.md) | CloudEvents in binary mode on NATS, mapped by hand | Accepted |
 | [0007](0007-opa-pep-at-tool-service.md) | OPA sidecar as decision point; tool-service as fail-closed enforcement point | Accepted |
 | [0008](0008-spiffe-helper-tls-registry.md) | SPIFFE mTLS through spiffe-helper and the Quarkus TLS registry, scoped to the tool API | Accepted |
-| [0009](0009-keda-jetstream-scaling.md) | KEDA NATS JetStream scaler for evidence workers; upstream KEDA on OpenShift | Accepted |
+| [0009](0009-keda-jetstream-scaling.md) | KEDA NATS JetStream scaler for evidence agents; upstream KEDA on OpenShift | Accepted |
 | [0010](0010-observability-pipeline.md) | Traces over OTLP through the Collector to Jaeger; metrics through Micrometer and Prometheus | Accepted |
 | [0011](0011-kustomize-helm-openshift-builds.md) | Kustomize for the application, Helm for cluster platforms, in-cluster binary builds on OpenShift | Accepted |
 | [0012](0012-agent-substrate-optional-future.md) | Agent Substrate is an optional future execution integration | Accepted |

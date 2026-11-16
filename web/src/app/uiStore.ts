@@ -8,7 +8,7 @@ export type TopologyNodeId =
   | 'console'
   | 'triage'
   | 'evidence-queue'
-  | 'evidence-workers'
+  | 'evidence-agents'
   | 'recommendation-queue'
   | 'recommendation'
   | 'tool-service'

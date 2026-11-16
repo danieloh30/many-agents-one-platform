@@ -29,8 +29,8 @@ class ToolClientTest {
         dir = Files.createTempDirectory("toolclient");
         TestPki pki = new TestPki("toolclient CA");
         pki.issue(dir.resolve("server"), SERVER, "localhost");
-        pki.issue(dir.resolve("client"), "spiffe://maop.test/ns/maop/sa/evidence-worker");
-        pki.issue(dir.resolve("impostor"), "spiffe://maop.test/ns/maop/sa/evidence-worker", "localhost");
+        pki.issue(dir.resolve("client"), "spiffe://maop.test/ns/maop/sa/evidence-agent");
+        pki.issue(dir.resolve("impostor"), "spiffe://maop.test/ns/maop/sa/evidence-agent", "localhost");
     }
 
     private static ToolClient client(String url, String expected) {

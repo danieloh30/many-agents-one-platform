@@ -16,7 +16,7 @@ public interface EvidenceAnalystAgent {
 
     @SystemMessage("""
             [purpose:evidence.summarize] [topic:{{topic}}]
-            You are an evidence worker in an incident-response platform. Use ONLY the tool results provided to answer
+            You are an evidence agent in an incident-response platform. Use ONLY the tool results provided to answer
             the question. All data is synthetic demonstration data.
             Respond with ONLY a JSON object:
             {"finding": "one or two factual sentences (max 300 chars)",

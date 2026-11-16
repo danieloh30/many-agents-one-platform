@@ -26,7 +26,7 @@ flowchart LR
   end
   subgraph agents["Agent services (semi-trusted: run model-directed logic)"]
     triage[triage-agent]
-    evidence[evidence-worker]
+    evidence[evidence-agent]
     reco[recommendation-agent]
   end
   subgraph enforcement["Enforcement boundary"]
@@ -57,7 +57,7 @@ Trust domain: `maop.example` on kind; on OpenShift the value chosen at install
 | Workload | SPIFFE ID |
 | --- | --- |
 | triage-agent | `spiffe://<td>/ns/maop/sa/triage-agent` |
-| evidence-worker | `spiffe://<td>/ns/maop/sa/evidence-worker` |
+| evidence-agent | `spiffe://<td>/ns/maop/sa/evidence-agent` |
 | recommendation-agent | `spiffe://<td>/ns/maop/sa/recommendation-agent` |
 | ops-console | `spiffe://<td>/ns/maop/sa/ops-console` |
 | tool-service | `spiffe://<td>/ns/maop/sa/tool-service` |
@@ -72,7 +72,7 @@ the application.
 ### 3.2 The authenticated connection
 
 Every call to `tool-service` is HTTPS with **mutual TLS using X.509-SVIDs**. This is the real
-authenticated connection in the demo: evidence-worker, recommendation-agent, triage-agent, and
+authenticated connection in the demo: evidence-agent, recommendation-agent, triage-agent, and
 ops-console all reach the tool API this way, and there is no plaintext port for it.
 
 ```mermaid
@@ -173,7 +173,7 @@ For every tool invocation, approval registration, and audit read:
 | Rule | Allows | Deny reason when not met |
 | --- | --- | --- |
 | Trust domain | Caller's trust domain equals the configured one | `untrusted_domain` |
-| Read tools | `tool.class == "READ"` for `evidence-worker` and `recommendation-agent` | `caller_not_permitted` |
+| Read tools | `tool.class == "READ"` for `evidence-agent` and `recommendation-agent` | `caller_not_permitted` |
 | Remediation tools | `tool.class == "REMEDIATION"` only for `recommendation-agent`, **and** `tool.simulated == true`, **and** an approval exists whose `run_id` and `action_digest` match the request and whose `expires_at` is in the future | `caller_not_permitted`, `not_simulated`, `approval_required`, `approval_mismatch`, `approval_expired` |
 | Approval registration | `action == "approval.register"` only for `triage-agent` | `caller_not_permitted` |
 | Audit read | `action == "audit.read"` only for `ops-console` | `caller_not_permitted` |
@@ -204,7 +204,7 @@ one action cannot authorize another.
 
 | Threat | Control |
 | --- | --- |
-| Prompt injection in incident text or tool output steering an agent to a harmful action | The action set is closed (`actionType` enum); remediation requires a human approval enforced outside the agent; evidence workers hold no remediation permission at all. |
+| Prompt injection in incident text or tool output steering an agent to a harmful action | The action set is closed (`actionType` enum); remediation requires a human approval enforced outside the agent; evidence agents hold no remediation permission at all. |
 | Fabricated evidence or citations | Every fact must reference an `invocationId` returned to that task; every citation must reference an existing `evidenceId`; violations fail validation. |
 | Runaway cost or loops | Delegation depth 1, per-run budgets, per-pod model concurrency, tool-call caps, deadlines (architecture §4.2–4.3, §7). |
 | Leaking prompts, secrets, or chain-of-thought | Prompts and completions are not logged or traced; only structured outputs and concise explanations are stored; no reasoning traces requested. |
@@ -231,7 +231,7 @@ one action cannot authorize another.
 
 | Secret | Consumers | Created by |
 | --- | --- | --- |
-| `model-credentials` (`MAOP_MODEL_API_KEY`) | triage-agent, evidence-worker, recommendation-agent | Operator, from a local env file, via the setup script. Never committed. |
+| `model-credentials` (`MAOP_MODEL_API_KEY`) | triage-agent, evidence-agent, recommendation-agent | Operator, from a local env file, via the setup script. Never committed. |
 | `postgres-*` (one role per schema) | triage-agent, tool-service | Generated at deploy. |
 | `nats-auth` (one user per service) | all services, KEDA not required (it reads the monitoring endpoint) | Generated at deploy. |
 | `ops-console-presenter` | ops-console | Generated at deploy; printed once to the operator's terminal on request. |

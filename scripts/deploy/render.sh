@@ -152,7 +152,7 @@ render_manifests() {
 
     printf 'patches:\n'
     # ScaledObject bounds.
-    printf '  - target: {group: keda.sh, kind: ScaledObject, name: evidence-worker}\n    patch: |-\n'
+    printf '  - target: {group: keda.sh, kind: ScaledObject, name: evidence-agent}\n    patch: |-\n'
     printf '      - {op: replace, path: /spec/minReplicaCount, value: %s}\n' "$profile_min"
     printf '      - {op: replace, path: /spec/maxReplicaCount, value: %s}\n' "$MAOP_EVIDENCE_MAX_REPLICAS"
     # Policy volume items: every key mounted under maop/ (data.json -> data.maop).
@@ -197,8 +197,8 @@ render_manifests() {
       field="spec.triggers.0.metadata.natsServerMonitoringEndpoint"   # nats.<ns>.svc.cluster.local:8222
     fi
     printf 'replacements:\n'
-    printf '  - source: {group: keda.sh, kind: ScaledObject, name: evidence-worker, fieldPath: metadata.namespace}\n'
-    printf '    targets:\n      - select: {group: keda.sh, kind: ScaledObject, name: evidence-worker}\n'
+    printf '  - source: {group: keda.sh, kind: ScaledObject, name: evidence-agent, fieldPath: metadata.namespace}\n'
+    printf '    targets:\n      - select: {group: keda.sh, kind: ScaledObject, name: evidence-agent}\n'
     printf '        fieldPaths: [%s]\n        options: {delimiter: ".", index: 1}\n' "$field"
   } > "$app/kustomization.yaml"
 

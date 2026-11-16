@@ -20,7 +20,7 @@ flowchart LR
     subgraph JVMS[Local JVMs]
         CONSOLE[ops-console<br/>:8080]
         TRIAGE[triage-agent<br/>:8081]
-        EVIDENCE[evidence-worker]
+        EVIDENCE[evidence-agent]
         RECO[recommendation-agent]
         TOOLS[tool-service<br/>:8443 mTLS]
     end

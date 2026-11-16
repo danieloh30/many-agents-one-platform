@@ -19,7 +19,7 @@ identity, runtime policy enforcement, connected telemetry, and demand-driven sca
 | --- | --- |
 | Successful run | Triage, evidence, and recommendation agents — separate services — complete a durable run; one trace connects every hop. |
 | Policy denial | An agent attempts a simulated remediation without approval; the tool service verifies its identity and policy denies the call before anything executes. |
-| Queue burst | A bounded burst of evidence work raises queue lag; evidence workers scale out and back. |
+| Queue burst | A bounded burst of evidence work raises queue lag; evidence agents scale out and back. |
 | Redelivery (optional) | A worker abandons a task after its tool call commits; the task is redelivered and the effect is still recorded once. |
 
 Tool data is synthetic and remediation is simulated — the system cannot change a real cluster.
@@ -35,7 +35,7 @@ flowchart LR
 
     subgraph AGENTS[Agent services]
         TRIAGE[triage-agent<br/>owns the durable run]
-        EVIDENCE[evidence-worker x N]
+        EVIDENCE[evidence-agent x N]
         RECO[recommendation-agent]
     end
 
@@ -78,7 +78,7 @@ flowchart LR
 | OpenTelemetry, Collector, Jaeger, Prometheus, Grafana | Traces, metrics, dashboards |
 | SPIFFE/SPIRE | Workload identity on the mTLS connection to the tool service |
 | Open Policy Agent | Runtime authorization at the tool service |
-| KEDA | Scaling evidence workers on queue lag |
+| KEDA | Scaling evidence agents on queue lag |
 | Kubernetes, OpenShift | Deployment targets |
 
 ## Documentation
@@ -115,7 +115,7 @@ Copy `.env.example` to the git-ignored `.env.local`. Variables already in the en
 | `MAOP_MODEL_NAME` | `gpt-4o-mini` | Model name |
 | `MAOP_MODEL_API_KEY` | value of `OPENAI_API_KEY` | Secret; stored only in the `model-credentials` Secret |
 | `MAOP_NAMESPACE` | `maop` | Dedicated namespace |
-| `MAOP_EVIDENCE_MAX_REPLICAS` | `6` | KEDA ceiling for evidence workers (respect model rate limits) |
+| `MAOP_EVIDENCE_MAX_REPLICAS` | `6` | KEDA ceiling for evidence agents (respect model rate limits) |
 | `MAOP_PRESENTER_AUTH` | `false` | `true` requires the presenter token (`./demo.sh token`) for runs, approvals, bursts and reset. Turn on for shared or public clusters |
 | `MAOP_SPIRE_TRUST_DOMAIN` | detected / cluster apps domain | Needed with an existing SPIRE whose trust domain cannot be detected |
 | `MAOP_EXPOSE_OBSERVABILITY` | `true` | Routes/Ingresses for Jaeger and Grafana |

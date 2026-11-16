@@ -3,7 +3,7 @@ import type { ConsoleConfig, InvocationList, OpsSnapshot, Run, RunList, RunTimel
 export const RUN_ID = '0197a6f2-6c1e-7b3a-9d2e-3f1c5a7b9e10';
 export const DENIED_RUN_ID = '0197a6f2-7000-7b3a-9d2e-3f1c5a7b9e11';
 export const SPIFFE_REC = 'spiffe://maop.example/ns/maop/sa/recommendation-agent';
-export const SPIFFE_EVIDENCE = 'spiffe://maop.example/ns/maop/sa/evidence-worker';
+export const SPIFFE_EVIDENCE = 'spiffe://maop.example/ns/maop/sa/evidence-agent';
 
 export function config(overrides: Partial<ConsoleConfig> = {}): ConsoleConfig {
   return {
@@ -166,18 +166,18 @@ export function snapshot(overrides: Partial<OpsSnapshot> = {}): OpsSnapshot {
   return {
     observedAt: new Date().toISOString(),
     queues: [
-      { stream: 'MAOP_WORK', consumer: 'evidence-workers', status: 'OK', pending: 3, inFlight: 1, redelivered: 0, oldestMessageAgeSeconds: 2.5 },
+      { stream: 'MAOP_WORK', consumer: 'evidence-agents', status: 'OK', pending: 3, inFlight: 1, redelivered: 0, oldestMessageAgeSeconds: 2.5 },
     ],
     workloads: [
       {
-        name: 'evidence-worker',
+        name: 'evidence-agent',
         status: 'OK',
         desiredReplicas: 1,
         readyReplicas: 1,
         minReplicas: 1,
         maxReplicas: 6,
         scaler: { kind: 'KEDA', active: false, ready: true },
-        pods: [{ name: 'evidence-worker-7c9d', phase: 'Running', ready: true, startedAt: '2026-01-01T14:00:00Z', activeTasks: 1 }],
+        pods: [{ name: 'evidence-agent-7c9d', phase: 'Running', ready: true, startedAt: '2026-01-01T14:00:00Z', activeTasks: 1 }],
       },
     ],
     platform: [

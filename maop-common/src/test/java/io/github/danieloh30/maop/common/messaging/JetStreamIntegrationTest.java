@@ -72,6 +72,18 @@ class JetStreamIntegrationTest {
     }
 
     @Test
+    void provisioningReplacesARetiredWorkConsumer() throws Exception {
+        var mgmt = js.management();
+        mgmt.deleteConsumer(Subjects.WORK_STREAM, Subjects.CONSUMER_EVIDENCE);
+        mgmt.addOrUpdateConsumer(Subjects.WORK_STREAM, io.nats.client.api.ConsumerConfiguration.builder()
+                .durable("evidence-workers").filterSubjects(Subjects.WORK_EVIDENCE)
+                .ackPolicy(io.nats.client.api.AckPolicy.Explicit).build());
+        js.provisionTopology();
+        assertTrue(!mgmt.getConsumerNames(Subjects.WORK_STREAM).contains("evidence-workers"));
+        assertEquals(0, js.consumerInfo(Subjects.WORK_STREAM, Subjects.CONSUMER_EVIDENCE).getNumPending());
+    }
+
+    @Test
     void duplicatePublishWithSameIdIsDeduplicatedByTheBroker() throws Exception {
         CloudEvent e = command(Ids.v7(), Ids.v7());
         PublishAck first = js.publish(Subjects.WORK_EVIDENCE, e);

@@ -42,7 +42,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @ApplicationScoped
 public class SnapshotService {
 
-    static final List<String> WORKLOADS = List.of("triage-agent", "evidence-worker", "recommendation-agent", "tool-service",
+    static final List<String> WORKLOADS = List.of("triage-agent", "evidence-agent", "recommendation-agent", "tool-service",
             "ops-console");
 
     record Heartbeat(String service, int activeTasks, int permits, Instant at) {
@@ -180,7 +180,7 @@ public class SnapshotService {
         for (String name : WORKLOADS) {
             ObjectNode w = out.addObject();
             w.put("name", name);
-            boolean scaled = name.equals("evidence-worker");
+            boolean scaled = name.equals("evidence-agent");
             if (k == null) {
                 w.put("status", "UNAVAILABLE");
                 w.put("detail", "Kubernetes API not configured (local mode)");
@@ -266,7 +266,7 @@ public class SnapshotService {
     private void scaler(KubernetesClient k, ObjectNode w) {
         try {
             GenericKubernetesResource so = k.genericKubernetesResources("keda.sh/v1alpha1", "ScaledObject")
-                    .inNamespace(namespace).withName("evidence-worker").get();
+                    .inNamespace(namespace).withName("evidence-agent").get();
             if (so == null) {
                 w.put("minReplicas", evidenceMin);
                 w.put("maxReplicas", evidenceMax);

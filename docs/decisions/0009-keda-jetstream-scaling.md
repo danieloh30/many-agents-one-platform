@@ -1,4 +1,4 @@
-# 0009 — KEDA scales evidence workers on JetStream lag
+# 0009 — KEDA scales evidence agents on JetStream lag
 
 **Status:** Accepted
 
@@ -8,8 +8,8 @@ Metrics Autoscaler operator is the supported KEDA distribution but does not list
 JetStream trigger, and it cannot coexist with upstream KEDA.
 
 ## Decision
-- A KEDA `ScaledObject` with the `nats-jetstream` trigger scales the `evidence-worker` Deployment
-  between 1 and 6 replicas on the lag of consumer `evidence-workers`.
+- A KEDA `ScaledObject` with the `nats-jetstream` trigger scales the `evidence-agent` Deployment
+  between 1 and 6 replicas on the lag of consumer `evidence-agents`.
 - Minimum 1 (no scale to zero) for demo responsiveness; maximum bounded by model rate limits.
 - Upstream KEDA from its Helm chart on both profiles. If a cluster already runs the Custom Metrics
   Autoscaler, use the `openshift-cma` overlay with a `prometheus` trigger on the NATS exporter's

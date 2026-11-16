@@ -7,7 +7,7 @@ export const NODE_POSITIONS: Record<TopologyNodeId, { x: number; y: number }> = 
   console: { x: 0, y: 210 },
   triage: { x: 230, y: 210 },
   'evidence-queue': { x: 490, y: 60 },
-  'evidence-workers': { x: 750, y: 40 },
+  'evidence-agents': { x: 750, y: 40 },
   'recommendation-queue': { x: 490, y: 360 },
   recommendation: { x: 750, y: 360 },
   'tool-service': { x: 1030, y: 210 },
@@ -19,7 +19,7 @@ export const NODE_LABELS: Record<TopologyNodeId, string> = {
   console: 'Agent Operations Console',
   triage: 'Triage agent',
   'evidence-queue': 'Work queue: evidence',
-  'evidence-workers': 'Evidence workers',
+  'evidence-agents': 'Evidence agents',
   'recommendation-queue': 'Work queue: recommendation',
   recommendation: 'Recommendation agent',
   'tool-service': 'Tool service',
@@ -32,7 +32,7 @@ export const NODE_ORDER: TopologyNodeId[] = [
   'console',
   'triage',
   'evidence-queue',
-  'evidence-workers',
+  'evidence-agents',
   'recommendation-queue',
   'recommendation',
   'tool-service',
@@ -53,16 +53,16 @@ export interface EdgeDef {
 export const EDGES: EdgeDef[] = [
   { id: 'console-triage', source: 'console', target: 'triage', kind: 'http', label: 'Submit incident' },
   { id: 'triage-evq', source: 'triage', target: 'evidence-queue', kind: 'async', label: 'Evidence command' },
-  { id: 'evq-workers', source: 'evidence-queue', target: 'evidence-workers', kind: 'async', label: 'Task delivered' },
-  { id: 'workers-tool', source: 'evidence-workers', target: 'tool-service', kind: 'mtls', label: 'Tool call (mTLS)' },
+  { id: 'evq-workers', source: 'evidence-queue', target: 'evidence-agents', kind: 'async', label: 'Task delivered' },
+  { id: 'workers-tool', source: 'evidence-agents', target: 'tool-service', kind: 'mtls', label: 'Tool call (mTLS)' },
   { id: 'tool-opa', source: 'tool-service', target: 'opa', kind: 'policy', label: 'Policy query' },
   { id: 'triage-recq', source: 'triage', target: 'recommendation-queue', kind: 'async', label: 'Recommendation command' },
   { id: 'recq-rec', source: 'recommendation-queue', target: 'recommendation', kind: 'async', label: 'Task delivered' },
   { id: 'rec-tool', source: 'recommendation', target: 'tool-service', kind: 'mtls', label: 'Tool call (mTLS)' },
-  { id: 'workers-triage', source: 'evidence-workers', target: 'triage', kind: 'result', label: 'Results (events)' },
+  { id: 'workers-triage', source: 'evidence-agents', target: 'triage', kind: 'result', label: 'Results (events)' },
   { id: 'rec-triage', source: 'recommendation', target: 'triage', kind: 'result', label: 'Results (events)' },
   { id: 'triage-model', source: 'triage', target: 'model', kind: 'model', label: 'Model call' },
-  { id: 'workers-model', source: 'evidence-workers', target: 'model', kind: 'model', label: 'Model call' },
+  { id: 'workers-model', source: 'evidence-agents', target: 'model', kind: 'model', label: 'Model call' },
   { id: 'rec-model', source: 'recommendation', target: 'model', kind: 'model', label: 'Model call' },
 ];
 
@@ -88,7 +88,7 @@ export function edgesForEvent(e: LiveEvent): string[] {
       return [isRecommendationKind(e.data.kind) ? 'recq-rec' : 'evq-workers'];
     case 'tool.invocation.completed.v1': {
       const caller = workloadOf(e.data.callerSpiffeId);
-      const callerEdge = caller === 'recommendation-agent' ? 'rec-tool' : caller === 'evidence-worker' ? 'workers-tool' : null;
+      const callerEdge = caller === 'recommendation-agent' ? 'rec-tool' : caller === 'evidence-agent' ? 'workers-tool' : null;
       const out = callerEdge ? [callerEdge] : [];
       out.push('tool-opa');
       return out;
@@ -96,7 +96,7 @@ export function edgesForEvent(e: LiveEvent): string[] {
     case 'model.call.completed.v1': {
       const s = serviceOf(e);
       if (s === 'triage-agent') return ['triage-model'];
-      if (s === 'evidence-worker') return ['workers-model'];
+      if (s === 'evidence-agent') return ['workers-model'];
       if (s === 'recommendation-agent') return ['rec-model'];
       return [];
     }
@@ -123,7 +123,7 @@ export function nodesForEvent(e: LiveEvent): TopologyNodeId[] {
     }
   }
   if (e.type === 'worker.heartbeat.v1') {
-    if (e.data.service === 'evidence-worker') ids.add('evidence-workers');
+    if (e.data.service === 'evidence-agent') ids.add('evidence-agents');
     if (e.data.service === 'recommendation-agent') ids.add('recommendation');
     if (e.data.service === 'triage-agent') ids.add('triage');
   }

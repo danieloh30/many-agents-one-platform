@@ -8,12 +8,12 @@ import { describeEvent, eventMatchesRun, NODE_LABELS, nodesForEvent } from './gr
 
 const WORKLOAD_FOR: Partial<Record<TopologyNodeId, string>> = {
   triage: 'triage-agent',
-  'evidence-workers': 'evidence-worker',
+  'evidence-agents': 'evidence-agent',
   recommendation: 'recommendation-agent',
   'tool-service': 'tool-service',
 };
 const QUEUE_FOR: Partial<Record<TopologyNodeId, string>> = {
-  'evidence-queue': 'evidence-workers',
+  'evidence-queue': 'evidence-agents',
   'recommendation-queue': 'recommendation-workers',
 };
 

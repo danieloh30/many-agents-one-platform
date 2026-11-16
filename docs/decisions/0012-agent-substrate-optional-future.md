@@ -32,7 +32,7 @@ runtime for sandboxed, stateful, suspendable agent *actors*. Facts checked on 20
 - If integrated later, it sits **behind tool-service**: tool-service remains the enforcement point
   (identity, OPA, idempotency, audit) and would dispatch an approved execution to a Substrate actor.
   Run state stays in PostgreSQL; an actor snapshot is a runtime artefact, never business state.
-- KEDA in this design scales the `evidence-worker` Deployment. It does **not** manage Substrate
+- KEDA in this design scales the `evidence-agent` Deployment. It does **not** manage Substrate
   actors or worker pools, and the documentation must not suggest that it does.
 - Any future spike targets kind or a cluster that meets the prerequisites, not the demo's OpenShift cluster.
 

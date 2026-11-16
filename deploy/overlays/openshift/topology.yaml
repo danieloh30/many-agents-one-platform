@@ -28,7 +28,7 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: evidence-worker
+  name: evidence-agent
   labels:
     app.openshift.io/runtime: quarkus
   annotations:
@@ -95,7 +95,7 @@ metadata:
   labels:
     app.openshift.io/runtime: golang
   annotations:
-    app.openshift.io/connects-to: '[{"apiVersion":"apps/v1","kind":"Deployment","name":"triage-agent"},{"apiVersion":"apps/v1","kind":"Deployment","name":"evidence-worker"},{"apiVersion":"apps/v1","kind":"Deployment","name":"recommendation-agent"},{"apiVersion":"apps/v1","kind":"Deployment","name":"tool-service"},{"apiVersion":"apps/v1","kind":"Deployment","name":"ops-console"},{"apiVersion":"apps/v1","kind":"StatefulSet","name":"nats"},{"apiVersion":"apps/v1","kind":"Deployment","name":"otel-collector"}]'
+    app.openshift.io/connects-to: '[{"apiVersion":"apps/v1","kind":"Deployment","name":"triage-agent"},{"apiVersion":"apps/v1","kind":"Deployment","name":"evidence-agent"},{"apiVersion":"apps/v1","kind":"Deployment","name":"recommendation-agent"},{"apiVersion":"apps/v1","kind":"Deployment","name":"tool-service"},{"apiVersion":"apps/v1","kind":"Deployment","name":"ops-console"},{"apiVersion":"apps/v1","kind":"StatefulSet","name":"nats"},{"apiVersion":"apps/v1","kind":"Deployment","name":"otel-collector"}]'
 ---
 apiVersion: apps/v1
 kind: Deployment

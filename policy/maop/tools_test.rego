@@ -21,20 +21,20 @@ base(name, action, class) := {
 grant := {"run_id": "run-1", "action_digest": "sha256:abc", "expires_at": "2026-01-01T12:10:00Z"}
 
 callers := {
-	"evidence-worker": ["tool.read", "tools.list"],
+	"evidence-agent": ["tool.read", "tools.list"],
 	"recommendation-agent": ["tool.read", "tool.remediate", "tools.list"],
 	"triage-agent": ["approval.register", "tools.list"],
 	"ops-console": ["audit.read", "admin.reset", "tools.list"],
 }
 
-test_evidence_worker_may_read if {
-	d := tools.decision with input as base("evidence-worker", "tool.invoke", "READ") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
+test_evidence_agent_may_read if {
+	d := tools.decision with input as base("evidence-agent", "tool.invoke", "READ") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	d.allow
 	d.reasons == []
 }
 
-test_evidence_worker_may_not_remediate if {
-	d := tools.decision with input as object.union(base("evidence-worker", "tool.invoke", "REMEDIATION"), {"approval": grant})
+test_evidence_agent_may_not_remediate if {
+	d := tools.decision with input as object.union(base("evidence-agent", "tool.invoke", "REMEDIATION"), {"approval": grant})
 		with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	not d.allow
 	"caller_not_permitted" in d.reasons
@@ -87,7 +87,7 @@ test_non_simulated_remediation_denied if {
 }
 
 test_untrusted_domain_denied if {
-	i := object.union(base("evidence-worker", "tool.invoke", "READ"), {"caller": {"spiffe_id": "spiffe://evil.example/ns/maop/sa/evidence-worker", "trust_domain": "evil.example"}})
+	i := object.union(base("evidence-agent", "tool.invoke", "READ"), {"caller": {"spiffe_id": "spiffe://evil.example/ns/maop/sa/evidence-agent", "trust_domain": "evil.example"}})
 	d := tools.decision with input as i with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	not d.allow
 	"untrusted_domain" in d.reasons
@@ -100,7 +100,7 @@ test_unknown_workload_denied if {
 }
 
 test_malformed_spiffe_path_denied if {
-	i := object.union(base("evidence-worker", "tool.invoke", "READ"), {"caller": {"spiffe_id": sprintf("spiffe://%s/evidence-worker", [td]), "trust_domain": td}})
+	i := object.union(base("evidence-agent", "tool.invoke", "READ"), {"caller": {"spiffe_id": sprintf("spiffe://%s/evidence-agent", [td]), "trust_domain": td}})
 	d := tools.decision with input as i with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	not d.allow
 }
@@ -108,13 +108,13 @@ test_malformed_spiffe_path_denied if {
 test_only_triage_registers_approvals if {
 	tools.decision.allow with input as base("triage-agent", "approval.register", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	not tools.decision.allow with input as base("recommendation-agent", "approval.register", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
-	not tools.decision.allow with input as base("evidence-worker", "approval.register", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
+	not tools.decision.allow with input as base("evidence-agent", "approval.register", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 }
 
 test_only_console_reads_audit_and_resets if {
 	tools.decision.allow with input as base("ops-console", "audit.read", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	tools.decision.allow with input as base("ops-console", "admin.reset", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
-	not tools.decision.allow with input as base("evidence-worker", "audit.read", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
+	not tools.decision.allow with input as base("evidence-agent", "audit.read", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	not tools.decision.allow with input as base("recommendation-agent", "admin.reset", "") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 }
 
@@ -124,13 +124,13 @@ test_console_cannot_invoke_tools if {
 }
 
 test_empty_trust_domain_config_accepts_configured_caller_domain if {
-	d := tools.decision with input as base("evidence-worker", "tool.invoke", "READ")
+	d := tools.decision with input as base("evidence-agent", "tool.invoke", "READ")
 		with data.maop.trust_domain as ""
 		with data.maop.callers as callers
 	d.allow
 }
 
 test_decision_carries_revision if {
-	d := tools.decision with input as base("evidence-worker", "tool.invoke", "READ") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
+	d := tools.decision with input as base("evidence-agent", "tool.invoke", "READ") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	d.revision == "t"
 }

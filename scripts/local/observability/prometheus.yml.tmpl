@@ -12,7 +12,7 @@ scrape_configs:
       - targets: ["HOST_ALIAS:9002"]
         labels: { namespace: maop, app: triage-agent, pod: triage-agent-local-1 }
       - targets: ["HOST_ALIAS:9003"]
-        labels: { namespace: maop, app: evidence-worker, pod: evidence-worker-local-1 }
+        labels: { namespace: maop, app: evidence-agent, pod: evidence-agent-local-1 }
       - targets: ["HOST_ALIAS:9004"]
         labels: { namespace: maop, app: recommendation-agent, pod: recommendation-agent-local-1 }
       - targets: ["HOST_ALIAS:9005"]
