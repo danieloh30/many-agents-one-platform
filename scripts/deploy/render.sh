@@ -223,6 +223,16 @@ render_manifests() {
     printf -- '---\n'
     "${kz[@]}" "$idn"
   } > "$out" || die "kustomize rendering failed (generated sources in ${root})"
+
+  # MAOP_NETWORK_POLICIES=false drops the NetworkPolicies (default: enforced). Only for clusters whose
+  # policy engine misbehaves; on kind (kindnet) the application pods could not resolve DNS with them.
+  if [[ "${MAOP_NETWORK_POLICIES:-true}" == "false" ]]; then
+    warn "MAOP_NETWORK_POLICIES=false: rendering WITHOUT NetworkPolicies (namespace traffic is not restricted)"
+    python3 -I -c 'import re,sys
+p=sys.argv[1]; docs=re.split(r"(?m)^---[ \t]*$", open(p).read())
+keep=[d for d in docs if not re.search(r"(?m)^kind: NetworkPolicy[ \t]*$", d)]
+open(p, "w").write("---".join(keep))' "$out"
+  fi
 }
 
 # ./demo.sh render — offline rendering (no cluster access). Uses the last build record for image

@@ -8,8 +8,8 @@ existing KEDA and SPIRE installations are reused, and what evidence `verify` col
 
 > Verified end to end on OpenShift 4.22 (as cluster admin, with `--install-platform-components`):
 > in-cluster binary builds, Routes, `restricted-v2` pods with the SPIFFE CSI volume, SPIRE-issued SVIDs,
-> upstream KEDA scale-out, and all six `./demo.sh verify` checks. Other Kubernetes distributions
-> (`--platform kubernetes`) are not yet verified end to end. Treat `./demo.sh verify` as the acceptance
+> upstream KEDA scale-out, and all six `./demo.sh verify` checks. On kind, `scripts/local/kind.sh up` and
+> `verify` pass all six checks with NetworkPolicies switched off (`MAOP_NETWORK_POLICIES=false`, see the README). Treat `./demo.sh verify` as the acceptance
 > step on your own cluster.
 
 ## The `up` flow

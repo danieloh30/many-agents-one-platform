@@ -149,6 +149,10 @@ cmd_up() {
   kn delete job postgres-setup --ignore-not-found --wait=true >/dev/null
   log "applying manifests (server-side apply)"
   "$KC" apply --server-side --force-conflicts --field-manager=maop-demo -f "$rendered"
+  if [[ "${MAOP_NETWORK_POLICIES:-true}" == "false" ]]; then
+    # Server-side apply never deletes: remove this project's policies explicitly.
+    "$KC" delete networkpolicy -n "$MAOP_NAMESPACE" -l app.kubernetes.io/part-of=maop --ignore-not-found >/dev/null
+  fi
 
   wait_rollouts
 

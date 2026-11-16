@@ -285,8 +285,8 @@ OpenShift-assigned UIDs), C7 (scale-out within the runbook target), C8 (live mod
 C9 (OVN-Kubernetes enforced the NetworkPolicies without blocking any edge), C10 (public images pulled). C2 is
 not exercised (CMA path) and C6 (SSE through the router for 30 min) was not measured.
 
-On kind, kindnet's NetworkPolicy enforcement blocked DNS for the application pods; see the kind notes in the
-README before relying on `--platform kubernetes` with kind.
+On kind (`scripts/local/kind.sh`), all six verify checks also pass, with `MAOP_NETWORK_POLICIES=false`: with
+kindnet's NetworkPolicy enforcement the application pods could not resolve DNS (root cause not identified).
 
 
 | # | Item | Section |

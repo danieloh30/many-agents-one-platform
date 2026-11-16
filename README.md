@@ -155,6 +155,29 @@ platform components only with `--uninstall-platform-components`). Without `--ins
 `up` reuses existing KEDA/SPIRE (or the Custom Metrics Autoscaler) and fails with an actionable message if they
 are missing. Details: [docs/deployment.md](docs/deployment.md).
 
+## Fully local Kubernetes (kind)
+
+Runs the complete runbook locally, including KEDA scale-out and SPIRE-issued identities, on a kind cluster with
+a local registry. The cluster uses its own kubeconfig (`.maop/kind/kubeconfig`); your default context is not
+changed. Requires kind (for example `brew install kind`) and podman or docker with about 8 CPUs and 16 GB.
+
+```bash
+scripts/local/kind.sh up
+```
+
+```bash
+scripts/local/kind.sh verify
+```
+
+```bash
+scripts/local/kind.sh down
+```
+
+Use `eval "$(scripts/local/kind.sh env)"` before `./demo.sh status`, `open`, `logs` or `token`. On kind the
+NetworkPolicies are rendered off (`MAOP_NETWORK_POLICIES=false`): with kindnet's policy enforcement the
+application pods could not resolve DNS in testing, and the root cause was not identified. OpenShift enforces the
+same policies without issues.
+
 ## Local stack (no cluster)
 
 ```bash
@@ -211,7 +234,7 @@ Live-model tests are separate: `./mvnw -B verify -Plive-model` or the `live-mode
 | OPA policy tests | Pass locally, 100 % coverage |
 | Local end-to-end (5 services, real NATS/PostgreSQL/OPA/Jaeger, mTLS) | Pass with the deterministic model and with live `gpt-4o-mini` |
 | OpenShift 4.22 (`./demo.sh up` + `./demo.sh verify`) | All six checks pass: success run, one trace across six services, policy denial, SPIRE identity enforcement, KEDA scale-out 1 → 6, redelivery without a duplicate effect |
-| Other Kubernetes (`--platform kubernetes`) | Automated; a kind run is in progress and not yet verified |
+| kind (`scripts/local/kind.sh`) | All six checks pass (KEDA scale-out 1 → 5, SPIRE identities, live model), with NetworkPolicies off |
 | GitHub Actions | `compat-gate` green; Dependabot, auto-merge classification and GitHub Pages deploy run on GitHub |
 
 ## Safety notes

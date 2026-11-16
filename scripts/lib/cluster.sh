@@ -171,7 +171,8 @@ plan_platform() {
       PLAN_CLASS_NAME="${PLAN_CLASS_NAME:-$SPIRE_CLASS_NAME}"
     fi
     PLAN_CLASS_NAME="${PLAN_CLASS_NAME:-$SPIRE_DETECTED_CLASS_NAME}"
-    PLAN_TRUST_DOMAIN="${MAOP_SPIRE_TRUST_DOMAIN:-$SPIRE_DETECTED_TRUST_DOMAIN}"
+    # Detected from the running SPIRE, else what this project recorded when it installed SPIRE.
+    PLAN_TRUST_DOMAIN="${MAOP_SPIRE_TRUST_DOMAIN:-${SPIRE_DETECTED_TRUST_DOMAIN:-$(installed_components_get spire-trust-domain)}}"
     if [[ -n "$MAOP_SPIRE_TRUST_DOMAIN" && -n "$SPIRE_DETECTED_TRUST_DOMAIN" && "$MAOP_SPIRE_TRUST_DOMAIN" != "$SPIRE_DETECTED_TRUST_DOMAIN" ]]; then
       PLAN_PROBLEMS+="MAOP_SPIRE_TRUST_DOMAIN=${MAOP_SPIRE_TRUST_DOMAIN} differs from the existing SPIRE trust domain ${SPIRE_DETECTED_TRUST_DOMAIN}."$'\n'
     fi
