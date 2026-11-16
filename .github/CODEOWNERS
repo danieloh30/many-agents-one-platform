@@ -1,0 +1,6 @@
+# Default owner for everything in the repository.
+* @danieloh30
+
+# Automation and dependency ownership rules.
+/.github/ @danieloh30
+/scripts/maintenance/ @danieloh30

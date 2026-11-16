@@ -1,0 +1,60 @@
+# What the upgrade-compat workflow owns (docs/dependency-maintenance.md §2).
+# Every version has exactly one owner. scripts/maintenance/ownership-check.sh (CI job
+# `ownership-check`) verifies this file against .github/dependabot.yml.
+version: 1
+workflow: .github/workflows/upgrade-compat.yml
+
+# Maven coordinates whose updates (of the listed types; all types when omitted) belong to the
+# workflow. Each needs an identical `ignore` rule in the dependabot.yml maven entry.
+maven:
+  - dependency-name: "io.quarkus.platform:*"
+    update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    concern: quarkus-stream
+  - dependency-name: "io.quarkus:*"
+    update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    concern: quarkus-stream
+  - dependency-name: "org.apache.maven:apache-maven"
+    concern: maven-wrapper
+  - dependency-name: "org.apache.maven.wrapper:maven-wrapper"
+    concern: maven-wrapper
+
+# Files whose versions belong to the workflow. `not-covered-by` lists Dependabot ecosystems that
+# would parse the file if their entry covered its directory; the check fails if one does.
+files:
+  - path: deploy/platform/versions.env
+    concern: platform-charts
+    not-covered-by: ["docker", "docker-compose", "helm"]
+  - path: .mvn/wrapper/maven-wrapper.properties
+    concern: maven-wrapper
+    # Covered by the maven entry at "/"; protected by the two maven-wrapper ignore rules above.
+    not-covered-by: []
+  - path: .sdkmanrc
+    concern: toolchain
+    not-covered-by: []
+  - path: web/.nvmrc
+    concern: toolchain
+    not-covered-by: []
+
+# Fixed branch per concern; the workflow updates the open PR in place.
+branches:
+  quarkus-stream: upgrade/quarkus-stream
+  platform-charts: upgrade/platform-charts
+  maven-wrapper: upgrade/maven-wrapper
+  toolchain: upgrade/toolchain   # reserved: toolchain drift is report-only today
+
+# Files under deploy/ with image references that Dependabot's docker ecosystem cannot parse
+# (Kustomize patches embed manifests as strings; Helm values use repository/tag maps).
+# Each must name who keeps it current. ownership-check fails on any undeclared one.
+blind-spots:
+  - path: deploy/components/spiffe/kustomization.yaml
+    owner: "manual — spiffe-helper image inside a JSON patch; keep in step with docs/versions.md §3 (consider moving it to a plain manifest under deploy/base so Dependabot sees it)"
+  - path: deploy/platform/spire/values.yaml
+    owner: "upgrade-compat (platform-charts) — spiffe-csi-driver tag mirrors SPIFFE_CSI_DRIVER_TAG in versions.env; the PR must update both"
+
+# Dependabot ignore rules that are temporary holds, not workflow ownership. Every ignore rule in
+# dependabot.yml must be listed either under `maven` above or here.
+holds:
+  - ecosystem: npm
+    dependency-name: "typescript"
+    update-types: ["version-update:semver-major"]
+    reason: "typescript-eslint peer range blocks TypeScript 7 (docs/versions.md V3)"

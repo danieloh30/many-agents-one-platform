@@ -1,0 +1,133 @@
+# Dependabot configuration. Design: docs/dependency-maintenance.md §2–§3.
+#
+# Ownership: Dependabot owns Maven dependencies/plugins (including Quarkus PATCH releases in the
+# current stream), npm, GitHub Actions, and image tags in Dockerfiles and deploy/base/** manifests.
+# Everything listed in .github/upgrade-ownership.yml is owned by the upgrade-compat workflow and
+# has a matching `ignore` rule here; CI job `ownership-check` fails if the two files disagree.
+#
+# Schedule: `interval: "cron"` + `cronjob` for every ecosystem so updates run every calendar day,
+# weekends included. GitHub documents `interval: "daily"` as "every weekday, Monday to Friday".
+# Reference: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#schedule-
+#
+# Cooldown: semver-*-days are supported for maven and npm only; docker and github-actions accept
+# `default-days` only (same reference, "cooldown" support table).
+version: 2
+updates:
+  # ---------------------------------------------------------------- Maven
+  # One entry at the root: Dependabot's Maven file fetcher reads the root pom.xml and recursively
+  # fetches every child pom listed under <modules> (dependabot-core maven/file_fetcher.rb,
+  # recursively_fetch_child_poms). Listing module directories as well would be an overlapping
+  # entry for the same ecosystem, which GitHub rejects ("no overlap in directories defined").
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "cron"
+      cronjob: "0 4 * * *"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "maven"]
+    cooldown:
+      default-days: 3
+      semver-patch-days: 1
+      semver-minor-days: 3
+      semver-major-days: 7
+    groups:
+      # BOM, LangChain4j member BOM, and plugin share the quarkus.platform.version property, so
+      # they move together. Quarkiverse/LangChain4j artifacts carry no explicit version (managed by
+      # the platform member BOM) and therefore move only with this property.
+      quarkus-platform:
+        patterns: ["io.quarkus.platform:*", "io.quarkus:*"]
+        update-types: ["patch"]
+      maven-minor-patch:
+        patterns: ["*"]
+        exclude-patterns: ["io.quarkus.platform:*", "io.quarkus:*"]
+        update-types: ["minor", "patch"]
+      maven-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      # Quarkus stream changes (minor/major) are owned by upgrade-compat (quarkus-stream).
+      - dependency-name: "io.quarkus.platform:*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "io.quarkus:*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # The Maven Wrapper is owned by upgrade-compat (maven-wrapper). Dependabot's Maven updater
+      # can parse .mvn/wrapper/maven-wrapper.properties (experiment "maven_wrapper_updater" in
+      # dependabot-core), so its coordinates are ignored explicitly.
+      - dependency-name: "org.apache.maven:apache-maven"
+      - dependency-name: "org.apache.maven.wrapper:maven-wrapper"
+
+  # ---------------------------------------------------------------- npm (web/)
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "cron"
+      cronjob: "15 4 * * *"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "npm"]
+    cooldown:
+      default-days: 3
+      semver-patch-days: 1
+      semver-minor-days: 3
+      semver-major-days: 7
+    groups:
+      web-production:
+        dependency-type: "production"
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      web-development:
+        dependency-type: "development"
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      web-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      # Hold (not ownership): typescript-eslint's peer range blocks TypeScript 7 (docs/versions.md V3).
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+
+  # ---------------------------------------------------------------- GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "cron"
+      cronjob: "30 4 * * *"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "github-actions"]
+    cooldown:
+      default-days: 3
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      actions-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # ---------------------------------------------------------------- Container images
+  # Dockerfiles (<module>/src/main/docker) and Kubernetes manifests with plain `image:` fields
+  # under deploy/base/**. `directories` supports globs and globstar (`**/*`) per the reference
+  # above. deploy/platform/** (Helm values) and deploy/overlays/** are intentionally not listed.
+  - package-ecosystem: "docker"
+    directories:
+      - "/*/src/main/docker"
+      - "/deploy/base"
+      - "/deploy/base/**/*"
+    schedule:
+      interval: "cron"
+      cronjob: "45 4 * * *"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker"]
+    cooldown:
+      default-days: 3
+    groups:
+      images:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # docker-compose: no compose file exists yet. ownership-check fails if one is added without an
+  # entry here (design: compose.dev.yaml at the root).

@@ -1,0 +1,57 @@
+# Live-model check against a real OpenAI-compatible endpoint. Deliberately separate from the
+# compatibility gate (it depends on an external service) and never required for merging.
+#
+# Secrets live in the `live-model` environment (Settings > Environments > live-model):
+#   MAOP_MODEL_BASE_URL, MAOP_MODEL_NAME, MAOP_MODEL_API_KEY
+# They are passed only as environment variables to Maven and are never echoed. GitHub masks
+# secret values in logs; tests must not log prompts, completions, or keys (CLAUDE.md rule 8).
+name: live-model-check
+
+on:
+  workflow_dispatch:
+  # Nightly run, enable once the live tests exist and the endpoint budget allows it:
+  # schedule:
+  #   - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-model-check
+  cancel-in-progress: false
+
+jobs:
+  live-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: live-model
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Require the environment secrets
+        env:
+          MAOP_MODEL_BASE_URL: ${{ secrets.MAOP_MODEL_BASE_URL }}
+          MAOP_MODEL_NAME: ${{ secrets.MAOP_MODEL_NAME }}
+          MAOP_MODEL_API_KEY: ${{ secrets.MAOP_MODEL_API_KEY }}
+        run: |
+          missing=""
+          for v in MAOP_MODEL_BASE_URL MAOP_MODEL_NAME MAOP_MODEL_API_KEY; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::missing secrets in environment live-model:$missing"; exit 1
+          fi
+          echo "All three live-model secrets are set (values not shown)."
+      - name: Live-model tests (tag "live")
+        env:
+          MAOP_MODEL_MODE: live
+          MAOP_MODEL_BASE_URL: ${{ secrets.MAOP_MODEL_BASE_URL }}
+          MAOP_MODEL_NAME: ${{ secrets.MAOP_MODEL_NAME }}
+          MAOP_MODEL_API_KEY: ${{ secrets.MAOP_MODEL_API_KEY }}
+        run: ./mvnw -B -ntp -pl triage-agent -am verify -Dgroups=live -Dmaop.model.mode=live -Dmaop.live-model=true -Dsurefire.failIfNoSpecifiedTests=false

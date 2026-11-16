@@ -1,0 +1,202 @@
+# Classify Dependabot (and upgrade-compat) pull requests and enable native auto-merge for
+# eligible ones (docs/dependency-maintenance.md §1, §5.2).
+#
+# Safety model
+# - Trigger is `pull_request`, never `pull_request_target`. This workflow never checks out or runs
+#   PR code: the classifier script is read from the BASE commit (trusted, already on main).
+# - Dependabot-triggered runs get a read-only GITHUB_TOKEN and only Dependabot secrets by default;
+#   the job-level `permissions` below raise it to exactly contents: write + pull-requests: write.
+# - `gh pr merge --auto` only queues the merge; GitHub merges after the required checks pass.
+#   That is safe ONLY if (a) "Allow auto-merge" is enabled and (b) a ruleset or branch protection
+#   on the base branch requires `compat-gate`. Both are checked first; if either is missing the PR
+#   is labelled `automerge:blocked-config` and nothing is merged. `--admin` is never used.
+# - Without branch protection (e.g. private repository on the free plan) the optional
+#   automerge-fallback.yml can merge after CI instead (repository variable MAOP_AUTOMERGE_FALLBACK).
+name: dependabot-automerge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  classify:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository && (
+        (github.event.pull_request.user.login == 'dependabot[bot]' && github.actor == 'dependabot[bot]')
+        || (startsWith(github.event.pull_request.head.ref, 'upgrade/')
+            && contains(github.event.pull_request.labels.*.name, 'automerge:eligible'))
+      )
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      IS_DEPENDABOT: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+      FALLBACK_ENABLED: ${{ vars.MAOP_AUTOMERGE_FALLBACK == 'true' }}
+      REQUIRED_CHECK: compat-gate
+    steps:
+      - name: Dependabot metadata
+        id: meta
+        if: env.IS_DEPENDABOT == 'true'
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Check out the classifier from the base commit (not PR code)
+        if: env.IS_DEPENDABOT == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/maintenance
+
+      - name: Classify
+        id: classify
+        env:
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          PACKAGE_ECOSYSTEM: ${{ steps.meta.outputs.package-ecosystem }}
+          DEPENDENCY_NAMES: ${{ steps.meta.outputs.dependency-names }}
+          PREVIOUS_VERSION: ${{ steps.meta.outputs.previous-version }}
+          NEW_VERSION: ${{ steps.meta.outputs.new-version }}
+          UPDATED_DEPS_JSON: ${{ steps.meta.outputs.updated-dependencies-json }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          if [ "$IS_DEPENDABOT" = "true" ]; then
+            if [ -f scripts/maintenance/classify-update.sh ]; then
+              MAINT_OUT_DIR="$RUNNER_TEMP/maintenance" bash scripts/maintenance/classify-update.sh
+            else
+              echo "eligible=false" >>"$GITHUB_OUTPUT"
+              echo "reason=classifier not present on the base branch yet" >>"$GITHUB_OUTPUT"
+            fi
+          else
+            # upgrade-compat PRs declare their level by label when they are created.
+            case ",$PR_LABELS," in
+              *,needs-review,*|*,hold,*)
+                echo "eligible=false" >>"$GITHUB_OUTPUT"
+                echo "reason=upgrade PR is labelled needs-review or hold" >>"$GITHUB_OUTPUT" ;;
+              *)
+                echo "eligible=true" >>"$GITHUB_OUTPUT"
+                echo "reason=upgrade-compat declared a same-major change (automerge:eligible)" >>"$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
+      - name: Check auto-merge prerequisites (repository settings)
+        id: prereq
+        if: steps.classify.outputs.eligible == 'true'
+        run: |
+          missing=""
+          # 1. "Allow auto-merge" (repository setting). The field may be absent for tokens that
+          #    cannot read settings; then it is "unknown" and the merge call below decides.
+          if allow="$(gh api "repos/$REPO" --jq '.allow_auto_merge' 2>/dev/null)"; then :; else allow="unknown"; fi
+          if [ -z "$allow" ] || [ "$allow" = "null" ]; then allow="unknown"; fi
+          if [ "$allow" = "false" ]; then
+            missing="${missing}- Settings > General > Pull Requests > **Allow auto-merge** is disabled.\n"
+          fi
+          # 2. A required status check named compat-gate on the base branch, from rulesets ...
+          required="no"
+          if rules="$(gh api "repos/$REPO/rules/branches/$BASE_REF" 2>/dev/null)"; then
+            if echo "$rules" | jq -e --arg c "$REQUIRED_CHECK" \
+                 '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[]?.context] | index($c)' >/dev/null; then
+              required="ruleset"
+            fi
+          else
+            echo "::notice::rules endpoint not readable (403/404); trying branch protection"
+          fi
+          # ... or classic branch protection (readable through the public branch endpoint).
+          if [ "$required" = "no" ]; then
+            if branch="$(gh api "repos/$REPO/branches/$BASE_REF" 2>/dev/null)"; then
+              if echo "$branch" | jq -e --arg c "$REQUIRED_CHECK" \
+                   '((.protection.required_status_checks.contexts // []) + [(.protection.required_status_checks.checks // [])[].context]) | index($c)' >/dev/null; then
+                required="branch-protection"
+              fi
+            else
+              echo "::notice::branch endpoint not readable (403/404)"
+            fi
+          fi
+          if [ "$required" = "no" ]; then
+            missing="${missing}- No ruleset or branch protection on \`$BASE_REF\` requires the status check **$REQUIRED_CHECK**.\n"
+          fi
+          if [ -z "$missing" ]; then ready=true; else ready=false; fi
+          {
+            echo "allow_auto_merge=$allow"
+            echo "required_check=$required"
+            echo "ready=$ready"
+            echo "missing<<EOF"
+            printf '%b' "$missing"
+            echo "EOF"
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Apply labels, merge or explain
+        env:
+          ELIGIBLE: ${{ steps.classify.outputs.eligible }}
+          REASON: ${{ steps.classify.outputs.reason }}
+          READY: ${{ steps.prereq.outputs.ready }}
+          MISSING: ${{ steps.prereq.outputs.missing }}
+          REQUIRED_SOURCE: ${{ steps.prereq.outputs.required_check }}
+        run: |
+          marker="<!-- maop-automerge -->"
+          label() { gh label create "$1" --repo "$REPO" --color "$2" --description "$3" --force >/dev/null; }
+          label "automerge:eligible" 0E8A16 "Patch/minor update; merges after compat-gate passes"
+          label "automerge:blocked-config" D93F0B "Eligible, but repository auto-merge settings are missing"
+          label "needs-review" FBCA04 "Needs a human review before merging"
+          comment() { # upsert one bot comment per PR
+            body="$(printf '%s\n%s\n' "$marker" "$1")"
+            id="$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" \
+                  --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"$marker\"))) | .id" | head -n1)"
+            if [ -n "$id" ]; then
+              gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$body" >/dev/null
+            else
+              gh pr comment "$PR_URL" --body "$body" >/dev/null
+            fi
+          }
+          summary() { printf '%s\n' "$1" >>"$GITHUB_STEP_SUMMARY"; }
+
+          if [ "$ELIGIBLE" != "true" ]; then
+            gh pr edit "$PR_URL" --add-label needs-review --remove-label automerge:eligible >/dev/null || true
+            comment "**Needs review** — not auto-merged: ${REASON}."
+            summary "needs-review: ${REASON}"
+            exit 0
+          fi
+
+          gh pr edit "$PR_URL" --add-label automerge:eligible --remove-label needs-review >/dev/null || true
+
+          if [ "$READY" != "true" ]; then
+            if [ "$FALLBACK_ENABLED" = "true" ]; then
+              gh pr edit "$PR_URL" --remove-label automerge:blocked-config >/dev/null || true
+              comment "**Auto-merge eligible** (${REASON}). Native auto-merge is not configured; automerge-fallback.yml will merge after CI passes on this exact commit."
+              summary "eligible; fallback merge after CI (MAOP_AUTOMERGE_FALLBACK=true)"
+              exit 0
+            fi
+            gh pr edit "$PR_URL" --add-label automerge:blocked-config >/dev/null || true
+            # shellcheck disable=SC2016  # backticks are Markdown, not command substitution
+            msg="$(printf '**Auto-merge eligible, but NOT enabled** (%s).\n\nMissing repository configuration:\n%s\nNothing was merged. After fixing the settings, re-run this workflow or push to the PR. Alternative without branch protection: set the repository variable `MAOP_AUTOMERGE_FALLBACK=true` (see automerge-fallback.yml).' "$REASON" "$MISSING")"
+            comment "$msg"
+            summary "$msg"
+            exit 0
+          fi
+
+          gh pr edit "$PR_URL" --remove-label automerge:blocked-config >/dev/null || true
+          if out="$(gh pr merge --auto --squash --match-head-commit "$HEAD_SHA" "$PR_URL" 2>&1)"; then
+            comment "**Auto-merge enabled** (squash) — ${REASON}. GitHub merges once \`compat-gate\` (required via ${REQUIRED_SOURCE}) passes."
+            summary "auto-merge enabled for $HEAD_SHA"
+          else
+            echo "$out"
+            gh pr edit "$PR_URL" --add-label automerge:blocked-config >/dev/null || true
+            comment "**Auto-merge could not be enabled**: \`$(echo "$out" | tail -n1)\`. Check Settings > General > Pull Requests > Allow auto-merge. Nothing was merged."
+            summary "gh pr merge --auto failed: $out"
+            exit 1
+          fi

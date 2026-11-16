@@ -1,0 +1,399 @@
+# Compatibility gate (docs/dependency-maintenance.md §4, §5.1).
+#
+# Job ids are stable: they are the check names used by branch protection / rulesets and by
+# automerge-fallback.yml. Do not add `name:` overrides or rename jobs without updating both.
+# The single required status is `compat-gate`.
+#
+# No job needs a secret: model calls run in deterministic mode (MAOP_MODEL_MODE=deterministic).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 2 * * *" # nightly: full gate + e2e-kind
+  workflow_dispatch:
+    inputs:
+      run-e2e:
+        description: "Also run the e2e-kind job"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  MAOP_MODEL_MODE: deterministic
+  KUBECONFORM_VERSION: v0.8.0
+  # sha256 of kubeconform-linux-amd64.tar.gz from the v0.8.0 release CHECKSUMS file.
+  KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
+  # datreeio/CRDs-catalog pinned commit (CRD JSON schemas, e.g. keda.sh/ScaledObject).
+  CRDS_CATALOG_REF: 3e8a8916ca1b7af6464606c2c2f5869dbafa9653
+  KUBERNETES_VERSION: 1.35.8
+  OPA_VERSION: 1.22.4
+  HELM_VERSION: v3.22.1
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      images: ${{ steps.detect.outputs.images }}
+    steps:
+      - id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "images=true" >>"$GITHUB_OUTPUT"; exit 0
+          fi
+          files="$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename')"
+          if printf '%s\n' "$files" | grep -Eq '(^|/)(pom\.xml|Dockerfile[^/]*|Containerfile)$|^\.mvn/|^mvnw|/src/main/docker/'; then
+            echo "images=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "images=false" >>"$GITHUB_OUTPUT"
+          fi
+
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Build and test (unit + integration with Testcontainers)
+        run: ./mvnw -B -ntp verify
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-test-reports
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: open-policy-agent/setup-opa@b2b258e089860efaadaaf71bf6e3aecb4a3eeff1 # v2.4.0
+        with:
+          version: ${{ env.OPA_VERSION }}
+          static: true
+      - name: opa fmt
+        run: opa fmt --list --fail policy/
+      - name: opa check
+        run: opa check --strict policy/
+      - name: opa test
+        run: opa test -v policy/
+      - name: Coverage >= 90%
+        run: |
+          coverage="$(opa test --coverage --format=json policy/ | jq -r '.coverage // 0')"
+          echo "Policy coverage: ${coverage}%" | tee -a "$GITHUB_STEP_SUMMARY"
+          awk -v c="$coverage" 'BEGIN { exit !(c >= 90) }' || { echo "::error::policy coverage ${coverage}% < 90%"; exit 1; }
+
+  manifests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: ${{ env.HELM_VERSION }}
+      - name: Install kubeconform (checksum verified)
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -fsSLo kubeconform.tar.gz \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          echo "${KUBECONFORM_SHA256}  kubeconform.tar.gz" | sha256sum --check --strict
+          tar -xzf kubeconform.tar.gz kubeconform
+          install -m 0755 kubeconform /usr/local/bin/kubeconform
+          kubeconform -v
+      - name: Generate policy files for Kustomize (if the sync script exists)
+        run: |
+          if [ -x scripts/deploy/sync-policy.sh ]; then
+            scripts/deploy/sync-policy.sh
+          else
+            echo "scripts/deploy/sync-policy.sh not present; skipping"
+          fi
+      - name: Render and validate overlays
+        run: |
+          out="$RUNNER_TEMP/rendered"; mkdir -p "$out"
+          found=0
+          for k in deploy/overlays/*/kustomization.yaml deploy/overlays/*/kustomization.yml; do
+            [ -f "$k" ] || continue
+            dir="$(dirname "$k")"; name="$(basename "$dir")"; found=$((found + 1))
+            echo "::group::kubectl kustomize $dir"
+            kubectl kustomize "$dir" >"$out/$name.yaml"
+            # CRDs without a published schema (Route, BuildConfig, ImageStream, ClusterSPIFFEID)
+            # are skipped by -ignore-missing-schemas; KEDA ScaledObject comes from the CRDs catalog.
+            kubeconform -strict -summary -output pretty \
+              -kubernetes-version "$KUBERNETES_VERSION" \
+              -schema-location default \
+              -schema-location "https://raw.githubusercontent.com/datreeio/CRDs-catalog/${CRDS_CATALOG_REF}/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
+              -ignore-missing-schemas \
+              "$out/$name.yaml"
+            echo "::endgroup::"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "::error::no overlay with a kustomization file under deploy/overlays"; exit 1
+          fi
+      - name: Render pinned Helm charts with project values
+        # Mirrors scripts/deploy/platform.sh: spire-crds without values; spire with values.yaml
+        # (+ values-openshift.yaml for the OpenShift profile) and the same --set-string flags,
+        # using a placeholder trust domain and cluster name.
+        run: |
+          env_file=deploy/platform/versions.env
+          [ -f "$env_file" ] || { echo "::error::$env_file missing"; exit 1; }
+          val() { grep -E "^$1=" "$env_file" | tail -n1 | cut -d= -f2-; }
+          tpl() { echo "::group::helm template $*"; helm template "$@" >/dev/null; echo "::endgroup::"; }
+          for v in deploy/platform/keda/values*.yaml; do
+            tpl "$(val KEDA_RELEASE)" "$(val KEDA_CHART)" --repo "$(val KEDA_CHART_REPO_URL)" \
+              --version "$(val KEDA_CHART_VERSION)" --namespace "$(val KEDA_NAMESPACE)" -f "$v"
+          done
+          spire_repo="$(val SPIRE_CHART_REPO_URL)"; ns="$(val SPIRE_RELEASE_NAMESPACE)"
+          tpl "$(val SPIRE_CRDS_RELEASE)" "$(val SPIRE_CRDS_CHART)" --repo "$spire_repo" \
+            --version "$(val SPIRE_CRDS_CHART_VERSION)" --namespace "$ns"
+          spire_flags=(--repo "$spire_repo" --version "$(val SPIRE_CHART_VERSION)" --namespace "$ns"
+            --set-string global.spire.trustDomain=ci.maop.test
+            --set-string global.spire.clusterName=ci
+            --set-string "spire-server.controllerManager.className=$(val SPIRE_CLASS_NAME)"
+            --set-string "spiffe-csi-driver.image.tag=$(val SPIFFE_CSI_DRIVER_TAG)")
+          tpl "$(val SPIRE_RELEASE)" "$(val SPIRE_CHART)" "${spire_flags[@]}" -f deploy/platform/spire/values.yaml
+          if [ -f deploy/platform/spire/values-openshift.yaml ]; then
+            tpl "$(val SPIRE_RELEASE)" "$(val SPIRE_CHART)" "${spire_flags[@]}" \
+              -f deploy/platform/spire/values.yaml -f deploy/platform/spire/values-openshift.yaml
+          fi
+
+  shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: shellcheck (preinstalled on the runner)
+        # Entry points (executable files, demo.sh) are checked with -x so sourced libraries are
+        # analysed in context. Non-executable *.sh files are sourced libraries: checked on their
+        # own as well, without SC2034 (variables consumed by the sourcing script).
+        run: |
+          shellcheck --version
+          exe=(); lib=()
+          while IFS= read -r f; do
+            if [ -x "$f" ]; then exe+=("$f"); else lib+=("$f"); fi
+          done < <(find . \( -path ./web/node_modules -o -path '*/target' -o -path ./.git \) -prune \
+                     -o -type f \( -name '*.sh' -o -name demo.sh \) -print | sort)
+          echo "entry points: ${exe[*]:-none}"
+          echo "libraries:    ${lib[*]:-none}"
+          rc=0
+          if [ "${#exe[@]}" -gt 0 ]; then shellcheck -x -P SCRIPTDIR "${exe[@]}" || rc=1; fi
+          if [ "${#lib[@]}" -gt 0 ]; then shellcheck -x -P SCRIPTDIR --exclude=SC2034 "${lib[@]}" || rc=1; fi
+          exit "$rc"
+
+  java-version-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: scripts/maintenance/java-version-guard.sh
+
+  ownership-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Dependabot / upgrade-compat ownership invariants
+        run: scripts/maintenance/ownership-check.sh
+        env:
+          MAINT_OUT_DIR: ${{ runner.temp }}/maintenance
+      - name: Auto-merge classifier tests
+        run: scripts/maintenance/test-classify-update.sh
+
+  images:
+    needs: changes
+    if: needs.changes.outputs.images == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Package (no tests; the backend job runs them)
+        run: ./mvnw -B -ntp package -DskipTests
+      - name: Build service images (no push)
+        run: |
+          built=0
+          for df in */src/main/docker/Dockerfile.jvm; do
+            [ -f "$df" ] || continue
+            module="${df%%/*}"
+            echo "::group::docker build $module"
+            docker build -f "$df" -t "maop/$module:ci" "$module"
+            echo "::endgroup::"
+            built=$((built + 1))
+          done
+          echo "Built $built image(s)" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write # comment-summary-in-pr
+    steps:
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+      - name: Not a pull request
+        if: github.event_name != 'pull_request'
+        run: echo "Dependency review applies to pull requests; CodeQL runs in codeql.yml."
+
+  # Aggregator: the only required status check.
+  compat-gate:
+    if: always()
+    needs: [changes, backend, frontend, policy, manifests, shell, java-version-guard, ownership-check, images, security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every gate job to succeed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          # `images` is path-filtered: skipped is acceptable only when `changes` succeeded and
+          # reported no image-relevant change. Every other job must be `success`.
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key)\t\(.value.result)"' | tee "$RUNNER_TEMP/results.tsv"
+          images_flag="$(echo "$NEEDS" | jq -r '.changes.outputs.images // ""')"
+          bad=0
+          while IFS=$'\t' read -r job result; do
+            if [ "$result" = "success" ]; then continue; fi
+            if [ "$job" = "images" ] && [ "$result" = "skipped" ] && [ "$images_flag" = "false" ]; then continue; fi
+            echo "::error::$job: $result"; bad=1
+          done <"$RUNNER_TEMP/results.tsv"
+          exit "$bad"
+
+  # ---------------------------------------------------------------------------------------------
+  # e2e-kind: NOT part of compat-gate yet (backlog B-30 adds it once proven).
+  # Why: it needs the real demo.sh kubernetes path, a local registry, and the smoke suite, which
+  # are being built in parallel; until it has passed repeatedly it would block every update.
+  # Runs nightly, on demand (workflow_dispatch input run-e2e), and on PRs labelled `run-e2e`
+  # (add the label, then push or re-run; the label alone does not trigger a run).
+  # UNVERIFIED: written without a run on GitHub. It drives demo.sh's kubernetes path
+  # (`up --platform kubernetes --install-platform-components`, then `verify --quick`) against a
+  # kind cluster with kind-action's local registry; the registry address MAOP_REGISTRY and the
+  # demo.sh flags were taken from `./demo.sh --help` and have not been exercised on kind here.
+  e2e-kind:
+    if: >-
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.run-e2e) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-e2e'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: ${{ env.HELM_VERSION }}
+      - name: Create kind cluster with a local registry (pinned node image)
+        uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          version: v0.33.0
+          node_image: kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0
+          cluster_name: maop
+          registry: true
+          wait: 120s
+      - name: Resolve the kind registry name on the runner
+        # kind-action configures nodes to pull from kind-registry:5000 (bound to host port 5000);
+        # the same name must work for pushes from the runner.
+        run: echo "127.0.0.1 kind-registry" | sudo tee -a /etc/hosts
+      - name: demo.sh up (kubernetes, installs pinned KEDA + SPIRE charts, deterministic model)
+        env:
+          MAOP_PLATFORM: kubernetes
+          MAOP_REGISTRY: kind-registry:5000/maop
+          MAOP_SPIRE_TRUST_DOMAIN: e2e.maop.test
+        run: ./demo.sh up --platform kubernetes --profile dev --install-platform-components --skip-model-probe --yes
+      - name: demo.sh verify --quick (smoke subset)
+        env:
+          MAOP_PLATFORM: kubernetes
+        run: ./demo.sh verify --quick
+      - name: Cluster state on failure
+        if: failure()
+        run: |
+          kubectl get pods -A -o wide || true
+          kubectl get events -A --sort-by=.lastTimestamp | tail -n 100 || true
+      - name: Upload verify artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-kind-verify
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Note: CodeQL lives in codeql.yml.

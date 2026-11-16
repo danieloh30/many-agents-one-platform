@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <style>
+    :root { --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --border: #d1d9e0; --code: #f6f8fa; --link: #0969da; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #3d444d; --code: #151b23; --link: #4493f8; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg);
+           font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    header { border-bottom: 1px solid var(--border); padding: 12px 16px; }
+    header nav { display: flex; flex-wrap: wrap; gap: 4px 16px; max-width: 980px; margin: 0 auto; }
+    header a { color: var(--muted); text-decoration: none; font-size: 14px; }
+    header a:hover { color: var(--link); }
+    main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; overflow-wrap: anywhere; }
+    a { color: var(--link); }
+    pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+    pre { background: var(--code); padding: 12px; overflow-x: auto; border-radius: 6px; }
+    code { background: var(--code); padding: 0.1em 0.3em; border-radius: 4px; }
+    pre code { background: none; padding: 0; }
+    pre.mermaid { background: none; text-align: center; }
+    table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; }
+    th, td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; vertical-align: top; }
+    blockquote { margin: 0; padding: 0 16px; color: var(--muted); border-left: 4px solid var(--border); }
+    img { max-width: 100%; }
+    noscript pre { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <header><nav>{{NAV}}</nav></header>
+  <main id="content"><noscript><p>JavaScript renders this page; raw Markdown follows.</p></noscript></main>
+  <script type="text/markdown" id="source">{{MARKDOWN}}</script>
+  <!-- Pinned versions with Subresource Integrity. -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@18.1.2/lib/marked.umd.js"
+          integrity="sha384-nCN5FOaVTXXYilftBH/VQuC9ypBYOxrctAZn2x7ggYClXaporWSzM0y+ODhb8MTi"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@12.2.0/dist/mermaid.min.js"
+          integrity="sha384-8xUhuLNMjW/cI2Dacg3DR4WliYznvIg0LVG1stctThKD/YVrJFI9TNCFxft5NYgp"
+          crossorigin="anonymous"></script>
+  <script>
+    (function () {
+      var md = document.getElementById("source").textContent.replace(/<\\\/script/g, "<" + "/script");
+      var main = document.getElementById("content");
+      if (!window.marked) {
+        var pre = document.createElement("pre");
+        pre.textContent = md;
+        main.appendChild(pre);
+        return;
+      }
+      main.innerHTML = window.marked.parse(md, { gfm: true });
+      main.querySelectorAll("pre > code.language-mermaid").forEach(function (code) {
+        var div = document.createElement("pre");
+        div.className = "mermaid";
+        div.textContent = code.textContent;
+        code.parentNode.replaceWith(div);
+      });
+      main.querySelectorAll("h1, h2, h3, h4").forEach(function (h) {
+        if (!h.id) {
+          h.id = h.textContent.trim().toLowerCase().replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-");
+        }
+      });
+      if (window.mermaid) {
+        var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        window.mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: dark ? "dark" : "default" });
+        window.mermaid.run({ querySelector: "pre.mermaid" });
+      }
+      if (location.hash) {
+        var target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        if (target) { target.scrollIntoView(); }
+      }
+    })();
+  </script>
+</body>
+</html>

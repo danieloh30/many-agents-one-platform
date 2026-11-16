@@ -1,0 +1,82 @@
+# Fallback merge for repositories WITHOUT branch protection/rulesets (for example a private
+# repository on the free plan, where native auto-merge with required checks is unavailable).
+# Disabled unless the repository variable MAOP_AUTOMERGE_FALLBACK is 'true'.
+#
+# Trade-off: `workflow_run` runs in the default-branch context with a write token, and GitHub does
+# not enforce any required check here; this workflow is the only guard. Therefore it
+#   - never checks out or executes PR code (GitHub API calls only);
+#   - acts only on PRs authored by dependabot[bot], from this repository, labelled
+#     automerge:eligible, without hold/needs-review labels;
+#   - re-verifies through the Checks API that backend, frontend, policy, manifests and compat-gate
+#     concluded `success` on the exact head SHA of the PR;
+#   - merges with `gh pr merge --squash --match-head-commit <sha>`, so a commit pushed after CI
+#     cannot be merged unverified.
+# Merges made with GITHUB_TOKEN do not trigger the `push` run of ci.yml on main.
+# Prefer native auto-merge + a ruleset requiring compat-gate whenever the plan allows it.
+name: automerge-fallback
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  merge:
+    if: >-
+      vars.MAOP_AUTOMERGE_FALLBACK == 'true' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      PR_FROM_EVENT: ${{ github.event.workflow_run.pull_requests[0].number }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      REQUIRED_JOBS: "backend frontend policy manifests compat-gate"
+    steps:
+      - name: Verify and merge (API only)
+        run: |
+          pr="$PR_FROM_EVENT"
+          if [ -z "$pr" ]; then
+            pr="$(gh api "repos/$REPO/commits/$HEAD_SHA/pulls" --jq '[.[] | select(.state == "open")][0].number // empty')"
+          fi
+          [ -n "$pr" ] || { echo "No open PR for $HEAD_SHA; nothing to do."; exit 0; }
+
+          info="$(gh api "repos/$REPO/pulls/$pr")"
+          field() { echo "$info" | jq -r "$1"; }
+          author="$(field .user.login)"; state="$(field .state)"; head="$(field .head.sha)"
+          head_repo="$(field .head.repo.full_name)"; base="$(field .base.ref)"; url="$(field .html_url)"
+          labels="$(field '[.labels[].name] | join(",")')"
+
+          skip() { echo "Skip PR #$pr: $1"; echo "Skipped PR #$pr: $1" >>"$GITHUB_STEP_SUMMARY"; exit 0; }
+          [ "$state" = "open" ] || skip "not open"
+          [ "$author" = "dependabot[bot]" ] || skip "author is $author"
+          [ "$head_repo" = "$REPO" ] || skip "head repository is $head_repo"
+          [ "$base" = "$DEFAULT_BRANCH" ] || skip "base is $base"
+          [ "$head" = "$HEAD_SHA" ] || skip "PR head moved to $head after CI ran on $HEAD_SHA"
+          case ",$labels," in *,automerge:eligible,*) ;; *) skip "not labelled automerge:eligible" ;; esac
+          case ",$labels," in *,hold,*|*,needs-review,*) skip "labelled hold/needs-review" ;; esac
+
+          # Latest check run per name on this exact SHA, from GitHub Actions.
+          runs="$(gh api --paginate "repos/$REPO/commits/$HEAD_SHA/check-runs?per_page=100" \
+                  --jq '.check_runs[] | select(.app.slug == "github-actions") | {name, conclusion, id}' | jq -s .)"
+          bad=""
+          for job in $REQUIRED_JOBS; do
+            c="$(echo "$runs" | jq -r --arg n "$job" '[.[] | select(.name == $n)] | sort_by(.id) | last | .conclusion // "missing"')"
+            echo "$job: $c"
+            [ "$c" = "success" ] || bad="$bad $job=$c"
+          done
+          [ -z "$bad" ] || skip "required checks not green on $HEAD_SHA:$bad"
+
+          gh pr merge "$url" --squash --match-head-commit "$HEAD_SHA"
+          echo "Merged PR #$pr at $HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
