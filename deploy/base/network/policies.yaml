@@ -154,6 +154,12 @@ spec:
               app.kubernetes.io/name: jaeger
       ports:
         - { protocol: TCP, port: 16686 }
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: grafana
+      ports:
+        - { protocol: TCP, port: 3000 }
     # Component health of the in-namespace services (management port).
     - to:
         - podSelector:
@@ -414,3 +420,22 @@ spec:
               app.kubernetes.io/name: jaeger
       ports:
         - { protocol: TCP, port: 16686 }
+
+---
+# The console probes Grafana's /api/health for the platform panel.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: grafana-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ops-console
+      ports:
+        - { protocol: TCP, port: 3000 }
