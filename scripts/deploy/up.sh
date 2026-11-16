@@ -88,13 +88,14 @@ current_console_config() {
 # Workloads renamed in later releases (evidence-worker -> evidence-agent, ADR-0017). apply does not prune, so the
 # old objects would keep running next to the new ones. Only objects carrying this project's ownership labels go.
 remove_retired_workloads() {
-  local kind kinds="deployment scaledobject.keda.sh service serviceaccount"
-  [[ "$MAOP_PLATFORM" == "openshift" ]] && kinds="$kinds buildconfig.build.openshift.io imagestream.image.openshift.io"
-  for kind in $kinds; do
+  local item kind name items="deployment:evidence-worker scaledobject.keda.sh:evidence-worker service:evidence-worker serviceaccount:evidence-worker"
+  [[ "$MAOP_PLATFORM" == "openshift" ]] && items="$items buildconfig.build.openshift.io:evidence-worker imagestream.image.openshift.io:maop-evidence-worker"
+  for item in $items; do
+    kind="${item%%:*}"; name="${item#*:}"
     if [[ -n "$("$KC" get "$kind" -n "$MAOP_NAMESPACE" -l "$MAOP_OWNED_SELECTOR" \
-      --field-selector metadata.name=evidence-worker -o name 2>/dev/null)" ]]; then
-      "$KC" delete "$kind" evidence-worker -n "$MAOP_NAMESPACE" --ignore-not-found --wait=false >/dev/null
-      info "removed retired $kind evidence-worker (renamed to evidence-agent)"
+      --field-selector "metadata.name=${name}" -o name 2>/dev/null)" ]]; then
+      "$KC" delete "$kind" "$name" -n "$MAOP_NAMESPACE" --ignore-not-found --wait=false >/dev/null
+      info "removed retired $kind $name (renamed to evidence-agent)"
     fi
   done
 }
