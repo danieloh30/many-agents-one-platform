@@ -2,7 +2,7 @@
   "_note": "SYNTHETIC demonstration data. Times are minute offsets relative to the request time so the scenario always looks current. No real system is queried.",
   "services": {
     "checkout": {
-      "owner": "team-checkout-web", "tier": 1, "runtime": "Quarkus / Java 25",
+      "owner": "team-checkout-web", "tier": 1, "runtime": "Quarkus / Java",
       "upstream": ["web-frontend", "mobile-bff"],
       "downstream": ["payment-gateway", "cart", "inventory", "pricing"],
       "featureFlags": {"new-checkout-flow": true}
@@ -11,9 +11,9 @@
       "owner": "team-payments", "tier": 1, "runtime": "Go", "upstream": ["checkout"],
       "downstream": ["card-processor-sandbox"], "featureFlags": {}
     },
-    "cart": {"owner": "team-checkout-web", "tier": 2, "runtime": "Quarkus / Java 25", "upstream": ["checkout"], "downstream": ["pricing"], "featureFlags": {}},
+    "cart": {"owner": "team-checkout-web", "tier": 2, "runtime": "Quarkus / Java", "upstream": ["checkout"], "downstream": ["pricing"], "featureFlags": {}},
     "inventory": {"owner": "team-fulfilment", "tier": 2, "runtime": "Node.js", "upstream": ["checkout"], "downstream": [], "featureFlags": {}},
-    "pricing": {"owner": "team-pricing", "tier": 2, "runtime": "Quarkus / Java 25", "upstream": ["checkout", "cart"], "downstream": [], "featureFlags": {}}
+    "pricing": {"owner": "team-pricing", "tier": 2, "runtime": "Quarkus / Java", "upstream": ["checkout", "cart"], "downstream": [], "featureFlags": {}}
   },
   "deployments": {
     "checkout": [

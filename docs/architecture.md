@@ -508,7 +508,7 @@ messages, so the first remaining message for the subject is the oldest unacknowl
 
 | Concern | Choice | Rationale (details in ADRs) |
 | --- | --- | --- |
-| Language/runtime | Java 25, JVM mode, no preview features | Baseline requirement; virtual threads for blocking consumers; records and sealed types for contracts. |
+| Language/runtime | Java (minimum release in [versions.md](versions.md)), JVM mode, no preview features | Baseline requirement; virtual threads for blocking consumers; records and sealed types for contracts. |
 | Framework | Quarkus LTS platform BOM | Stability across future reuse of the demo. |
 | Agents | LangChain4j `@Agent` interfaces (quarkus-langchain4j-agentic, **platform member BOM**) behind `ModelGateway` (ADR-0017) | Guaranteed compatible with the platform; orchestration is explicit and durable, not an in-process agent graph. |
 | Messaging | `jnats` client behind a thin adapter | Full control of pull consumers, ack/nak/in-progress, headers; avoids a fast-moving connector outside the BOM. |

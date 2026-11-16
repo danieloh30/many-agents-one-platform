@@ -1,6 +1,6 @@
 # Many Agents, One Platform
 
-A hands-on path through an **operable Java 25 multi-agent system** built from CNCF building blocks.
+A hands-on path through an **operable Java multi-agent system** built from CNCF building blocks.
 An incident assistant investigates increased checkout errors after a release. The model calls are
 the least interesting part: these tutorials are about everything around them that lets you run
 agents like any other production workload. That means durable workflow state, asynchronous work
@@ -84,7 +84,7 @@ flowchart LR
 
 | Building block | Role |
 | --- | --- |
-| Java 25, Quarkus, Quarkus LangChain4j | Agent services; the OpenAI-compatible model is configured through `quarkus.langchain4j.openai.*` |
+| Java, Quarkus, Quarkus LangChain4j | Agent services; the OpenAI-compatible model is configured through `quarkus.langchain4j.openai.*` |
 | React, TypeScript, Vite | The Agent Operations Console |
 | PostgreSQL | Durable run records, audit, outbox and inbox |
 | NATS JetStream + CloudEvents | Durable asynchronous work and events |

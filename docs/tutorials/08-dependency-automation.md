@@ -73,7 +73,7 @@ is the single required status. It needs these jobs:
 
 | Job | Proves |
 | --- | --- |
-| `backend` | `./mvnw -B verify` on JDK 25 with real PostgreSQL, NATS and OPA containers |
+| `backend` | `./mvnw -B verify` on the project's JDK with real PostgreSQL, NATS and OPA containers |
 | `frontend` | `npm ci`, typecheck, lint, unit tests, production build |
 | `policy` | `opa fmt`, `opa check --strict`, `opa test` with coverage |
 | `manifests` | Every overlay renders and validates with kubeconform; the pinned KEDA and SPIRE charts template with the project values |

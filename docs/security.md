@@ -253,7 +253,7 @@ non-secret configuration (ConfigMap `model-config`).
   `horizontalpodautoscalers`, and `scaledobjects.keda.sh` in `maop` only.
 - NetworkPolicy: default deny ingress and egress in `maop`; explicit allows per edge of the
   architecture diagram; DNS allowed; model egress allowed only from the three agents.
-- Images: pinned by digest, built from a minimal UBI OpenJDK 25 runtime base, scanned in CI.
+- Images: pinned by digest, built from a minimal UBI OpenJDK runtime base, scanned in CI.
 
 ## 9. Residual risks and items needing cluster verification
 

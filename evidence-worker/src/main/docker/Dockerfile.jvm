@@ -1,4 +1,4 @@
-# evidence-worker — Quarkus JVM mode on Java 25 (Red Hat UBI OpenJDK runtime).
+# evidence-worker — Quarkus JVM mode on Java (Red Hat UBI OpenJDK runtime).
 # Build the application first: ./mvnw -B package -DskipTests (see demo.sh build).
 # Runs as a non-root user and supports OpenShift's arbitrary UIDs (group 0 owns the files).
 FROM registry.access.redhat.com/ubi9/openjdk-25-runtime:1.24

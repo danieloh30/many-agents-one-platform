@@ -58,7 +58,7 @@ pull from) and `MAOP_INGRESS_DOMAIN` (hosts become `console.<domain>`, `jaeger.<
 ./demo.sh doctor
 ```
 
-`doctor` checks your local tools (JDK 25, Node 24, `oc` or `kubectl`, `helm`), your cluster login and
+`doctor` checks your local tools (JDK, Node.js, `oc` or `kubectl`, `helm`, each at its minimum version), your cluster login and
 permissions, the KEDA/CMA and SPIRE state, a default StorageClass, ownership of the `maop` namespace
 (it refuses to touch a namespace it does not own), and the model configuration with one minimal
 request (skip it with `--skip-model-probe`).

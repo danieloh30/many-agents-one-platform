@@ -70,7 +70,7 @@ flowchart LR
 
 | Building block | Role |
 | --- | --- |
-| Java 25, Quarkus, Quarkus LangChain4j (`@Agent`) | Agent services: declarative agents with typed outputs, behind a gateway that enforces deadlines, budgets and model limits |
+| Java, Quarkus, Quarkus LangChain4j (`@Agent`) | Agent services: declarative agents with typed outputs, behind a gateway that enforces deadlines, budgets and model limits |
 | React, TypeScript, Vite | Agent Operations Console |
 | PostgreSQL | Durable run records, audit, outbox/inbox |
 | NATS JetStream + CloudEvents | Durable asynchronous work and events |
@@ -230,7 +230,7 @@ Live-model tests are separate: `./mvnw -B verify -Plive-model` or the `live-mode
 
 | Area | Status |
 | --- | --- |
-| Java build and tests (JDK 25) | Pass locally |
+| Java build and tests | Pass locally |
 | SPA typecheck, lint, tests, build | Pass locally |
 | OPA policy tests | Pass locally, 100 % coverage |
 | Local end-to-end (5 services, real NATS/PostgreSQL/OPA/Jaeger, mTLS) | Pass with the deterministic model and with live `gpt-4o-mini` |

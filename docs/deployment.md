@@ -192,7 +192,7 @@ Decision: **in-cluster binary Docker builds** into the internal registry.
 - The developer machine (or CI) runs `./mvnw -B package` and `npm ci && npm run build`; the SPA
   bundle is copied into ops-console's static resources before packaging.
 - For each service the overlay defines an `ImageStream` and a `BuildConfig` (Docker strategy,
-  binary source, `Dockerfile` = `src/main/docker/Dockerfile.jvm` on the UBI OpenJDK 25 runtime image).
+  binary source, `Dockerfile` = `src/main/docker/Dockerfile.jvm` on the UBI OpenJDK runtime image).
 - `scripts/build-images.sh openshift` runs `oc start-build <svc> --from-dir=<module> --follow`.
 - Deployments reference the ImageStream through the `image.openshift.io/triggers` annotation, so a
   finished build rolls the Deployment.
@@ -235,7 +235,7 @@ arrows.
 | KEDA/CMA state | §5.1 |
 | SPIRE/CSI driver state | §5.2 |
 | Namespace `maop` absent or labelled as managed by this project | Refuses to touch a foreign namespace |
-| Local tools: JDK 25, Node 24, `oc`/`kubectl`, `helm` | README |
+| Local tools: JDK, Node.js, `oc`/`kubectl`, `helm` | README |
 | Model endpoint reachable with the provided key (one minimal request from the workstation) | README configuration |
 
 The preflight is read-only. `platform-install.sh` and `deploy.sh` are the only scripts that change

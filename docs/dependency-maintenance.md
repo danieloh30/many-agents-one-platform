@@ -144,7 +144,7 @@ touches anything but `docs/**` and `*.md`.
 
 | Job | Proves |
 | --- | --- |
-| `backend` | `./mvnw -B verify` on JDK 25: unit tests, contract golden-file tests, integration tests with real PostgreSQL, NATS, and OPA containers (outbox, inbox, redelivery, idempotency, mTLS with rotating test certificates). |
+| `backend` | `./mvnw -B verify` on the project's JDK: unit tests, contract golden-file tests, integration tests with real PostgreSQL, NATS, and OPA containers (outbox, inbox, redelivery, idempotency, mTLS with rotating test certificates). |
 | `frontend` | `npm ci`, typecheck, lint, unit tests, production build. |
 | `contracts` | OpenAPI/JSON Schema lint and backward-compatibility diff against `main`. |
 | `policy` | `opa fmt`, `opa check --strict`, `opa test` with coverage threshold. |
