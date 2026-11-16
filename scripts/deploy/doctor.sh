@@ -157,7 +157,12 @@ doctor_cluster() {
   case "$PLAN_SPIRE_ACTION" in
     reuse) d_pass "SPIRE" "existing (${SPIRE_DETAIL}); trust domain ${PLAN_TRUST_DOMAIN}; className '${PLAN_CLASS_NAME:-<none>}'"
       [[ -z "$PLAN_CLASS_NAME" ]] && d_warn "SPIRE controller class" "no className detected; set MAOP_SPIRE_CLASS_NAME if the existing controller manager ignores classless ClusterSPIFFEIDs";;
-    install) d_pass "SPIRE" "none -> will install ${SPIRE_CRDS_CHART} ${SPIRE_CRDS_CHART_VERSION} + ${SPIRE_CHART} ${SPIRE_CHART_VERSION}; trust domain ${PLAN_TRUST_DOMAIN}";;
+    install)
+      if [[ "$SPIRE_STATE" == "incomplete" ]]; then
+        d_pass "SPIRE" "${SPIRE_DETAIL} -> will repair (${SPIRE_CHART} ${SPIRE_CHART_VERSION}); trust domain ${PLAN_TRUST_DOMAIN}"
+      else
+        d_pass "SPIRE" "none -> will install ${SPIRE_CRDS_CHART} ${SPIRE_CRDS_CHART_VERSION} + ${SPIRE_CHART} ${SPIRE_CHART_VERSION}; trust domain ${PLAN_TRUST_DOMAIN}"
+      fi;;
     blocked) d_fail "SPIRE" "${SPIRE_DETAIL}";;
   esac
   local line

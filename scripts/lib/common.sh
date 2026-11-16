@@ -98,7 +98,7 @@ version_ge() {
   return 0
 }
 
-rand_hex() { openssl rand -hex "${1:-24}"; }
+rand_hex() { printf %s "$(openssl rand -hex "${1:-24}")"; }   # no trailing newline in generated secrets
 
 json_str() { jq -Rn --arg v "$1" '$v'; }
 

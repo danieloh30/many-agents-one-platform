@@ -24,13 +24,15 @@ public class PresenterAuth {
         if (!path.startsWith("/api/") || !(mutation || path.equals("/api/v1/session"))) {
             return Optional.empty();
         }
-        if (token.isEmpty() || token.get().isBlank()) {
+        String expected = token.map(String::strip).orElse("");
+        if (expected.isEmpty()) {
             return Optional.of(Problems.of(403, "PRESENTER_TOKEN_NOT_CONFIGURED",
                     "Mutations are disabled: no presenter token is configured for this deployment."));
         }
         String header = ctx.getHeaderString("Authorization");
         String presented = header != null && header.startsWith("Bearer ") ? header.substring(7).trim() : "";
-        if (!MessageDigest.isEqual(presented.getBytes(StandardCharsets.UTF_8), token.get().getBytes(StandardCharsets.UTF_8))) {
+        // Compare trimmed values: secrets created from files often carry a trailing newline.
+        if (!MessageDigest.isEqual(presented.getBytes(StandardCharsets.UTF_8), expected.getBytes(StandardCharsets.UTF_8))) {
             return Optional.of(Problems.of(401, "PRESENTER_TOKEN_REQUIRED", "A valid presenter token is required."));
         }
         return Optional.empty();

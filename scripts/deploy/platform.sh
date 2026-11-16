@@ -38,13 +38,23 @@ install_spire() {
   record_installed_component spire-crds "helm:${SPIRE_RELEASE_NAMESPACE}/${SPIRE_CRDS_RELEASE}@${SPIRE_CRDS_CHART_VERSION}"
   local values=(-f "${REPO_ROOT}/deploy/platform/spire/values.yaml")
   [[ "$MAOP_PLATFORM" == "openshift" ]] && values+=(-f "${REPO_ROOT}/deploy/platform/spire/values-openshift.yaml")
-  helm upgrade --install "$SPIRE_RELEASE" "${SPIRE_CHART_REPO_NAME}/${SPIRE_CHART}" \
-    --version "$SPIRE_CHART_VERSION" -n "$SPIRE_RELEASE_NAMESPACE" "${values[@]}" \
-    --set-string "global.spire.trustDomain=${td}" \
-    --set-string "global.spire.clusterName=${cluster_name}" \
-    --set-string "spire-server.controllerManager.className=${SPIRE_CLASS_NAME}" \
-    --set-string "spiffe-csi-driver.image.tag=${SPIFFE_CSI_DRIVER_TAG}" \
-    --wait --timeout 15m
+  spire_chart() {
+    helm upgrade --install "$SPIRE_RELEASE" "${SPIRE_CHART_REPO_NAME}/${SPIRE_CHART}" \
+      --version "$SPIRE_CHART_VERSION" -n "$SPIRE_RELEASE_NAMESPACE" "${values[@]}" \
+      --set-string "global.spire.trustDomain=${td}" \
+      --set-string "global.spire.clusterName=${cluster_name}" \
+      --set-string "spire-server.controllerManager.className=${SPIRE_CLASS_NAME}" \
+      --set-string "spiffe-csi-driver.image.tag=${SPIFFE_CSI_DRIVER_TAG}" \
+      --wait --timeout 15m
+  }
+  # On a fresh OpenShift cluster Helm creates the CSIDriver (an unordered kind) after the Deployments,
+  # so admission rejects pods that mount csi.spiffe.io inline until the labelled CSIDriver exists.
+  # Observed on OpenShift 4.22: the first attempt fails, a retry once the CSIDriver exists succeeds.
+  if ! spire_chart; then
+    "$KC" get csidriver csi.spiffe.io >/dev/null 2>&1 || die "SPIRE chart install failed (see above)"
+    warn "SPIRE chart failed before its CSIDriver existed; retrying now that csi.spiffe.io is present"
+    spire_chart || die "SPIRE chart install failed on retry (see above)"
+  fi
   record_installed_component spire "helm:${SPIRE_RELEASE_NAMESPACE}/${SPIRE_RELEASE}@${SPIRE_CHART_VERSION}"
   record_installed_component spire-trust-domain "$td"
 

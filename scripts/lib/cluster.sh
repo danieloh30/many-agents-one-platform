@@ -57,6 +57,16 @@ detect_spire() {
     SPIRE_STATE=existing
     local IFS=", "
     SPIRE_DETAIL="${parts[*]}"
+    # A SPIRE release that this project started but that did not finish (status failed/pending) is
+    # repaired rather than reused.
+    local rel_status
+    rel_status="$(helm status "${SPIRE_RELEASE:-spire}" -n "${SPIRE_RELEASE_NAMESPACE:-spire-mgmt}" -o json 2>/dev/null \
+      | jq -r '.info.status // empty' 2>/dev/null || true)"
+    if [[ -n "$rel_status" && "$rel_status" != "deployed" ]]; then
+      SPIRE_STATE=incomplete
+      SPIRE_DETAIL="project SPIRE release ${SPIRE_RELEASE:-spire} is '${rel_status}' (${SPIRE_DETAIL})"
+      return 0
+    fi
   else
     SPIRE_DETAIL="no SPIFFE CSI driver, no ClusterSPIFFEID CRD, no ZTWIM operator"
     return 0
@@ -142,7 +152,19 @@ plan_platform() {
 
   detect_spire
   PLAN_CLASS_NAME="${MAOP_SPIRE_CLASS_NAME:-}"
-  if [[ "$SPIRE_STATE" == "existing" ]]; then
+  if [[ "$SPIRE_STATE" == "incomplete" ]]; then
+    PLAN_CLASS_NAME="${PLAN_CLASS_NAME:-$SPIRE_CLASS_NAME}"
+    PLAN_TRUST_DOMAIN="${MAOP_SPIRE_TRUST_DOMAIN:-$(installed_components_get spire-trust-domain)}"
+    if [[ -z "$PLAN_TRUST_DOMAIN" ]]; then
+      if [[ "$MAOP_PLATFORM" == "openshift" ]]; then PLAN_TRUST_DOMAIN="$(openshift_apps_domain)"; else PLAN_TRUST_DOMAIN="maop.example"; fi
+    fi
+    if [[ "${OPT_INSTALL_PLATFORM:-false}" == "true" && -n "$PLAN_TRUST_DOMAIN" ]]; then
+      PLAN_SPIRE_ACTION=install
+    else
+      PLAN_SPIRE_ACTION=blocked
+      PLAN_PROBLEMS+="${SPIRE_DETAIL}; rerun with --install-platform-components to repair it."$'\n'
+    fi
+  elif [[ "$SPIRE_STATE" == "existing" ]]; then
     PLAN_SPIRE_ACTION=reuse
     # A previous run of this project installed it: we know the class name.
     if [[ -n "$(installed_components_get spire)" ]]; then
