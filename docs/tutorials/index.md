@@ -7,14 +7,13 @@ agents like any other production workload. That means durable workflow state, as
 with bounded retries, verified workload identity, runtime policy enforcement, connected telemetry,
 and scaling driven by demand.
 
-> **Status.** The whole system runs end to end on a local stack. `scripts/local/stack.sh e2e` passes
-> all 9 checks with both the deterministic model and live `gpt-4o-mini`. The automated tests pass:
-> 67 backend, 75 SPA, and 16 OPA tests (100 % policy coverage). The GitHub CI `compat-gate` is green.
-> On a cluster, `./demo.sh verify` passes all six checks on OpenShift 4.22 (KEDA scale-out of
-> evidence-worker from 1 to 6, SPIRE-issued SVIDs for every workload, NetworkPolicies enforced, live model) and
-> on a local kind cluster (with NetworkPolicies switched off). Not yet exercised: the Custom Metrics Autoscaler
-> path (`openshift-cma` overlay) and a 30-minute live update stream through the OpenShift router; see
-> [deployment.md §8](../deployment.md#8-items-that-require-cluster-verification-summary). This is a demonstration, not a production system.
+[![ci](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/ci.yml) [![Deploy docs to GitHub Pages](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/pages.yml/badge.svg)](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/pages.yml)
+
+> **Where it has been tested.** The badges above show the current build. Beyond CI, the project has been
+> run end to end on a local stack (`scripts/local/stack.sh e2e`), on OpenShift 4.22 and on a local kind
+> cluster (`./demo.sh verify`, six checks). The cluster results, and what has not been exercised yet, are
+> recorded in [deployment.md §8](../deployment.md#8-items-that-require-cluster-verification-summary). Run
+> `./demo.sh verify` to check your own cluster. This is a demonstration, not a production system.
 
 ## What the application demonstrates
 

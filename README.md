@@ -1,5 +1,6 @@
 # Many Agents, One Platform
 
+[![ci](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/ci.yml)
 [![Deploy docs to GitHub Pages](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/pages.yml/badge.svg)](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/pages.yml)
 
 A reference demonstration of **operationally maintainable Java multi-agent services** on
@@ -8,8 +9,8 @@ increased checkout errors after a release — and the interesting part is everyt
 model calls: durable workflow state, asynchronous work with bounded retries, verified workload
 identity, runtime policy enforcement, connected telemetry, and demand-driven scaling.
 
-> **Status:** implemented and verified end to end on OpenShift 4.22 and on a local stack, with a live model.
-> See [Verification status](#verification-status) and the [tutorials](https://danieloh30.github.io/many-agents-one-platform/).
+> Tested end to end on a local stack, on OpenShift 4.22 and on kind, with a live model. See
+> [Where it has been verified](#where-it-has-been-verified) and the [tutorials](https://danieloh30.github.io/many-agents-one-platform/).
 > This is a demonstration, not a production system.
 
 ## What it demonstrates
@@ -226,17 +227,20 @@ cd web && npm ci && npm run typecheck && npm run lint && npm test && npm run bui
 Backend tests use real PostgreSQL, NATS and OPA containers (Testcontainers) and a deterministic model.
 Live-model tests are separate: `./mvnw -B verify -Plive-model` or the `live-model-check` workflow.
 
-## Verification status
+## Where it has been verified
 
-| Area | Status |
+The badges at the top show the current CI and Pages state; the build, unit, contract, integration, SPA and
+OPA tests (with 100 % policy coverage) all run in CI on every change. These end-to-end runs were done by hand
+and are not re-run automatically:
+
+| Environment | Result |
 | --- | --- |
-| Java build and tests | Pass locally |
-| SPA typecheck, lint, tests, build | Pass locally |
-| OPA policy tests | Pass locally, 100 % coverage |
-| Local end-to-end (5 services, real NATS/PostgreSQL/OPA/Jaeger, mTLS) | Pass with the deterministic model and with live `gpt-4o-mini` |
+| Local stack (`scripts/local/stack.sh e2e`) | All 9 checks pass with the deterministic model and with live `gpt-4o-mini` |
 | OpenShift 4.22 (`./demo.sh up` + `./demo.sh verify`) | All six checks pass: success run, one trace across six services, policy denial, SPIRE identity enforcement, KEDA scale-out 1 → 6, redelivery without a duplicate effect |
-| kind (`scripts/local/kind.sh`) | All six checks pass (KEDA scale-out 1 → 5, SPIRE identities, live model), with NetworkPolicies off |
-| GitHub Actions | `compat-gate` green; Dependabot, auto-merge classification and GitHub Pages deploy run on GitHub |
+| kind (`scripts/local/kind.sh`) | All six checks pass, with NetworkPolicies off |
+
+Details and the items not yet exercised: [deployment.md §8](docs/deployment.md#8-items-that-require-cluster-verification-summary).
+`./demo.sh verify` writes its evidence to `artifacts/verify-<timestamp>/` so you can check your own cluster.
 
 ## Safety notes
 
