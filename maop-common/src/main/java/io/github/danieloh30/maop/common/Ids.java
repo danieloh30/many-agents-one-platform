@@ -14,10 +14,27 @@ public final class Ids {
     private Ids() {
     }
 
-    /** RFC 9562 UUID version 7 (48-bit Unix millisecond timestamp + random bits). */
-    public static UUID v7() {
+    private static long lastMillis;
+    private static int counter;
+
+    /**
+     * RFC 9562 UUID version 7. Monotonic within the process: rand_a carries a counter within the same millisecond
+     * (RFC 9562 method 1), so ids generated in sequence sort in creation order (the outbox relies on this).
+     */
+    public static synchronized UUID v7() {
         long millis = System.currentTimeMillis();
-        long randA = RANDOM.nextInt(1 << 12);
+        if (millis <= lastMillis) {
+            counter++;
+            if (counter > 0xFFF) {
+                lastMillis++;
+                counter = 0;
+            }
+            millis = lastMillis;
+        } else {
+            lastMillis = millis;
+            counter = RANDOM.nextInt(1 << 10);
+        }
+        long randA = counter;
         long msb = (millis << 16) | 0x7000L | randA;
         long lsb = (RANDOM.nextLong() & 0x3FFFFFFFFFFFFFFFL) | 0x8000000000000000L;
         return new UUID(msb, lsb);

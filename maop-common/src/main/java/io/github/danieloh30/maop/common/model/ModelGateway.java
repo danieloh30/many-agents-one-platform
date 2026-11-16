@@ -82,6 +82,11 @@ public class ModelGateway {
         LOG.infof("Model mode %s, model %s, max concurrent calls %d", mode, displayName(), maxConcurrent);
     }
 
+    /** Test hook: use a specific model instance. */
+    void useModel(ChatModel m) {
+        this.model = m;
+    }
+
     public ModelMode mode() {
         return mode;
     }

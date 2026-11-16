@@ -14,6 +14,9 @@
     <module>maop-common</module>
     <module>maop-outbox</module>
     <module>tool-service</module>
+    <module>triage-agent</module>
+    <module>evidence-worker</module>
+    <module>recommendation-agent</module>
     
   </modules>
 

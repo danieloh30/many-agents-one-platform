@@ -29,7 +29,8 @@ public final class Topology {
                         Subjects.EVENTS_PREFIX + "task.recommendation.completed",
                         Subjects.EVENTS_PREFIX + "task.action.completed",
                         Subjects.EVENTS_PREFIX + "task.failed",
-                        Subjects.EVENTS_PREFIX + "task.dead_lettered"), Duration.ofSeconds(30), 5, 64));
+                        Subjects.EVENTS_PREFIX + "task.dead_lettered",
+                        Subjects.EVENTS_PREFIX + "task.started"), Duration.ofSeconds(30), 5, 64));
     }
 
     public static ConsumerSpec consumer(String durable, Duration evidenceAckWait) {
