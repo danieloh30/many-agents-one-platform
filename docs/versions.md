@@ -14,13 +14,14 @@ implementation time (they are not recorded here because they were not pulled in 
 | Item | Version | Notes |
 | --- | --- | --- |
 | JDK | **25** (Temurin 25 LTS for build; `maven.compiler.release=25`) | Baseline. Never lower. No `--enable-preview`. |
-| Maven | 3.9.x via Maven Wrapper (3.9.16 proposed by Quarkus) | Quarkus supports `[3.9.0,)`. |
+| Maven | 3.9.16 via Maven Wrapper (`.mvn/wrapper/maven-wrapper.properties`) | Quarkus supports `[3.9.0,)`. |
 | Quarkus platform BOM | `io.quarkus.platform:quarkus-bom:3.40.1.2` | 3.40 is the current stream and an LTS. 4.0 is a release candidate — not used. |
 | Quarkus Maven plugin | `io.quarkus.platform:quarkus-maven-plugin:3.40.1.2` | Shares the `quarkus.platform.version` property with the BOM. |
 | Quarkus LangChain4j | `io.quarkus.platform:quarkus-langchain4j-bom:3.40.1.2` → `io.quarkiverse.langchain4j:*` **1.13.4** (LangChain4j 1.19.3) | Taken from the platform member BOM, same property. The newer standalone 1.15.1 is intentionally not used. |
 | Model provider extension | `io.quarkiverse.langchain4j:quarkus-langchain4j-openai` | Any OpenAI-compatible endpoint. |
 | NATS client | `io.nats:jnats:2.26.4` | Own property `jnats.version` (independently versioned). |
-| CloudEvents | `io.cloudevents:cloudevents-core:5.1.0`, `cloudevents-json-jackson:5.1.0` | Own property. Use the Jackson 2 module (Quarkus manages Jackson 2.21.x), not `-jackson3`. |
+| CloudEvents | In-repo envelope and NATS binary-binding codec (`maop-common`) | The SDK is not used: the Quarkus BOM pins `cloudevents-api` 3.0.0 (ADR-0016). |
+| Test PKI | `org.bouncycastle:bcpkix-lts8on:2.73.12` (test scope only) | LTS line matching the `bcprov-lts8on` that jnats brings in. |
 | Managed by the Quarkus BOM (no explicit version) | `quarkus-rest`, `quarkus-rest-jackson`, `quarkus-rest-client-jackson`, `quarkus-hibernate-orm-panache`, `quarkus-jdbc-postgresql`, `quarkus-flyway`, `quarkus-scheduler`, `quarkus-smallrye-fault-tolerance`, `quarkus-smallrye-health`, `quarkus-opentelemetry`, `quarkus-micrometer`, `quarkus-micrometer-registry-prometheus`, `quarkus-tls-registry`, `quarkus-kubernetes-client` (ops-console only) | OpenTelemetry 1.62.0, Hibernate ORM 7.4.9, Flyway 12.0.0, Testcontainers 2.0.5 come with the BOM. |
 | Runtime base image | `registry.access.redhat.com/ubi9/openjdk-25-runtime:1.24` | JVM mode. Native image is out of scope. |
 
@@ -65,6 +66,7 @@ compatible.
 | Jaeger v2 | 2.23.0 | `docker.io/jaegertracing/jaeger:2.23.0` |
 | Prometheus | 3.16.0 | `docker.io/prom/prometheus:v3.16.0` |
 | Grafana OSS | 13.3.1 | `docker.io/grafana/grafana:13.3.1` |
+| curl (identity probe in `demo.sh verify`) | 8.23.0 | `docker.io/curlimages/curl:8.23.0` |
 
 ## 4. Cluster-scoped platform (Helm, pinned in `deploy/platform/versions.env`)
 

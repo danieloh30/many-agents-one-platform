@@ -101,9 +101,10 @@ Mechanics, using only documented names:
 - Server (tool-service): `quarkus.http.tls-configuration-name=spiffe`,
   `quarkus.http.ssl.client-auth=required`, `quarkus.http.insecure-requests=disabled` on the tool
   listener. Health and metrics are served on the separate management interface.
-- Clients: the REST client's `tls-configuration-name=spiffe`. Hostname verification is replaced
-  by SPIFFE ID verification: the client checks that the server certificate's URI SAN equals the
-  expected tool-service SPIFFE ID.
+- Clients: `SpiffeHttpClient` (JDK `HttpClient`) loads the same PEM files and rebuilds its TLS context when
+  spiffe-helper rotates them. Hostname verification is replaced by SPIFFE ID verification: an
+  `X509ExtendedTrustManager` validates the chain against the trust bundle and requires the server's single URI
+  SAN to equal `MAOP_TOOL_SERVICE_SPIFFE_ID` (ADR-0016 item 5).
 - Server-side identity extraction: a `SecurityIdentityAugmentor` reads the peer certificate from
   `CertificateCredential`, takes the single URI SAN, requires the `spiffe://<td>/` prefix of the
   configured trust domain, and exposes it as the principal. A certificate with zero or more than
@@ -189,8 +190,9 @@ one action cannot authorize another.
 - Source: `policy/maop/tools.rego`, `policy/maop/data.json`, tests in `policy/maop/tools_test.rego`.
 - CI: `opa fmt --fail`, `opa check --strict`, `opa test policy/ --coverage` with a required
   threshold; a decision-table test enumerates every caller × tool-class × approval combination.
-- Delivery: Kustomize generates a ConfigMap (content-hashed name, so a policy change rolls the
-  pod); OPA runs `opa run --server --addr=127.0.0.1:8181 --bundle /policy` as a sidecar.
+- Delivery: `demo.sh` generates the `opa-policy` ConfigMap from `policy/maop/` at render time (content-hashed
+  name, so a policy change rolls the pod) and fills `trust_domain` in the rendered `data.json` with the
+  deployment's trust domain; OPA runs `opa run --server --addr=127.0.0.1:8181 --config-file=… --ignore=.* /policy`.
 - `policyRevision` in audit records is the content hash of the bundle.
 - OPA config: `decision_logs.console: true` (decisions in pod logs, correlated by `decision_id`),
   `distributed_tracing` to the Collector, `status.prometheus: true`.

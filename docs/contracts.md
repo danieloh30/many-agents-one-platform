@@ -385,7 +385,7 @@ user-facing text. Reasoning traces are never requested, stored, or displayed.
    retyping a field in a `v1` contract fails the build.
 2. Every event type in §3.4 has a schema and a producer serialization test plus a consumer
    deserialization test that read the same golden sample file.
-3. The SPA's TypeScript types are generated from the OpenAPI documents, not hand-written.
+3. The SPA's TypeScript types (`web/src/api/types.ts`) are hand-written from this document and SSE payloads are validated with zod (ADR-0016 item 7).
 
 ## 5. Implementation-level details (normative for code and SPA)
 

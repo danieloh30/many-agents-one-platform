@@ -72,27 +72,25 @@ writing code.
 
 ## Verification commands
 
-Run the relevant ones before declaring a task done, and report real output. Commands marked
-*(planned)* exist once the corresponding backlog item is implemented.
+Run the relevant ones before declaring a task done, and report real output.
 
 ```bash
 java -version                                  # must report 25 or newer
-./mvnw -B verify                               # (planned) build, unit, contract, integration tests
-./mvnw -B -pl <module> -am verify              # (planned) one service and its dependencies
-(cd web && npm ci && npm run typecheck && npm run lint && npm test && npm run build)   # (planned)
-opa fmt --fail policy/ && opa check --strict policy/ && opa test policy/ --coverage    # (planned)
-kubectl kustomize deploy/overlays/kind > /dev/null       # (planned) manifests render
-kubectl kustomize deploy/overlays/openshift > /dev/null  # (planned)
-make e2e-kind                                  # (planned) full scenario suite on kind, deterministic mode
-make smoke                                     # (planned) against the current kube context — ask first
+./mvnw -B verify                               # build, unit, contract and integration tests (Testcontainers)
+./mvnw -B -pl <module> -am verify              # one service and its dependencies
+(cd web && npm ci && npm run typecheck && npm run lint && npm test && npm run build)
+podman run --rm -v "$PWD/policy":/policy:Z docker.io/openpolicyagent/opa:1.22.4-static test /policy --coverage
+./demo.sh render --platform openshift          # manifests render offline (no cluster access)
+scripts/local/stack.sh up && scripts/local/stack.sh e2e   # cluster-free end-to-end evidence
+./demo.sh verify                               # against the current cluster context — ask first
 ```
 
-Design-phase checks that work today:
+Attribution checks before pushing:
 
 ```bash
 git log --format='%an <%ae> | %cn <%ce>' | sort -u          # only the owner's identity (and real bots)
 git log --format=%B | grep -i -E 'co-authored-by|claude|anthropic|generated with' && echo "FIX" || echo "clean"
-grep -rIl -i -E 'summit|conference' README.md web 2>/dev/null   # must print nothing
+grep -rIl -i -E 'ai summit|paris|conference|2026' README.md web/src 2>/dev/null   # must print nothing (the `summit` profile name is allowed)
 ```
 
 ## When unsure

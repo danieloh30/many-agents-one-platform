@@ -19,21 +19,21 @@ Timings below are design targets. They become facts only after rehearsal on the 
 
 ### T-1 day
 
-1. `make preflight` → all green. Resolve every `verify on cluster` item in [deployment.md](deployment.md) §8.
-2. `make platform && make build && make deploy && make smoke`.
+1. `./demo.sh doctor` → all green. Resolve every `verify on cluster` item in [deployment.md](deployment.md) §8.
+2. `./demo.sh up --platform openshift --profile summit --install-platform-components` (ends with smoke checks), then `./demo.sh verify`.
 3. Rehearse all scenarios twice end to end; fill in §7.
 4. Confirm the model provider key has quota and a rate limit of at least 12 concurrent requests.
 5. Pre-pull: scale `evidence-worker` to 6 once so every node has the image, then let it return to 1.
 
 ### T-30 minutes
 
-1. `make reset` (clears runs, audit, queues; leaves the platform).
-2. `make smoke` → pass. Then `make reset` again so the console starts clean.
+1. `./demo.sh reset` (clears runs, audit, queues; leaves the platform).
+2. `./demo.sh verify --quick` → pass. Then `./demo.sh reset` again so the console starts clean (or use **Reset** in the presenter controls).
 3. Open three browser tabs: **Console** (presenter mode `P`, full screen `F`), **Jaeger**, **Grafana →
    "Queue and scaling"** (auto-refresh 5 s, last 15 min).
 4. In the console, open the presenter preflight panel: every component `OK`; model badge shows
    `LIVE <model>`; stream status `Live`.
-5. Enter the presenter token. Print it with `make presenter-token` (it is never shown in the UI).
+5. Enter the presenter token. Print it with `./demo.sh token` (it is never shown in the UI).
 6. Check projector legibility in both themes; pick one and stay with it.
 7. Terminal ready (large font) with: `oc get pods -n maop -l app=evidence-worker -w` — optional
    corroboration for scenario 3.
@@ -133,15 +133,14 @@ not happened yet.
 
 ## 5. Reset between rehearsals
 
-`make reset`, then reload the console. Reset takes under 30 s and leaves platform components and
+`./demo.sh reset` (or the console's Reset control), then reload the console. Reset takes under 30 s and leaves platform components and
 images in place. Do not reset on stage.
 
 ## 6. Failure handling on stage
 
 ### 6.1 Model endpoint unavailable
 
-`make model-mode MODE=deterministic` patches the `model-config` ConfigMap and restarts the three
-agents (about 30 s). The console shows `DETERMINISTIC` in the top bar and on every model-derived
+Set `MAOP_MODEL_MODE=deterministic` in `.env.local` and run `./demo.sh up --skip-build` (about a minute). The console shows `DETERMINISTIC` in the top bar and on every model-derived
 card. State it out loud. Policy, identity, messaging, tracing, and scaling remain fully real.
 
 ### 6.2 A scenario does not produce the expected result

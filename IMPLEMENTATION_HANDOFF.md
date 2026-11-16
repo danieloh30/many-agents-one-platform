@@ -1,7 +1,14 @@
 # Implementation handoff
 
+> **Implementation status (2026-11-15):** M0–M4 and M6 are implemented and pass locally; M5 deployment
+> automation is implemented and renders offline, but every cluster item (B-30 kind e2e in CI, B-33 cluster
+> verification) is still **unverified**. Deviations from the design are recorded in
+> [ADR-0016](docs/decisions/0016-implementation-adjustments.md). B-03 resolved: deterministic/live selection is
+> done by `ModelGateway` at startup. B-04 resolved: JetStream semantics are covered by
+> `JetStreamIntegrationTest` (no `BackOff`; nak-with-delay; advisory backstop).
+
 The design phase is complete. This file tells the implementing model what to build, in what
-order, and how each item is accepted. No application code exists yet.
+order, and how each item is accepted.
 
 ## 1. Read first, in this order
 
@@ -146,7 +153,7 @@ do not touch the same module.
 
 ## 6. Decisions changed during implementation
 
-None yet. Record: date, ADR number, what changed, why.
+- 2026-11-15, ADR-0016: JDBC instead of Panache; direct `ChatModel` with an explicit tool loop instead of AI services; in-repo CloudEvents codec (BOM conflict); SPIFFE HTTP client for agents; services provision JetStream; hand-written SPA types; no `BackOff`; deterministic baseline tool calls.
 
 ## 7. Open prerequisites for the repository owner
 

@@ -9,27 +9,36 @@ Versions are in [versions.md](versions.md).
 ## 1. Layout
 
 ```
-deploy/
-  base/                      # Kustomize base: everything inside the maop namespace
-    namespace.yaml
-    apps/{triage-agent,evidence-worker,recommendation-agent,tool-service,ops-console}/
-    nats/  postgres/  observability/{otel-collector,jaeger,prometheus,grafana}/
-    policy/                  # configMapGenerator over ../../policy/maop
-    identity/                # ClusterSPIFFEID, spiffe-helper config
-    scaling/                 # KEDA ScaledObject for evidence-worker
-    network/                 # NetworkPolicies
-  overlays/
-    kind/                    # Ingress, local image names, small resources
-    openshift/               # Routes, ImageStreams + BuildConfigs, OpenShift patches
-    openshift-cma/           # Variant: Custom Metrics Autoscaler with a prometheus trigger (§5.1)
-  platform/
-    versions.env             # Pinned chart versions for KEDA and SPIRE
-    keda/values.yaml  keda/values-openshift.yaml
-    spire/values.yaml spire/values-openshift.yaml
+demo.sh                      # the operator CLI: doctor | build | up | status | verify | open | logs | reset | token | down | render
+.env.example                 # configuration variable names (copy to the git-ignored .env.local)
 scripts/
-  preflight.sh  platform-install.sh  build-images.sh  deploy.sh  smoke.sh  demo-reset.sh  uninstall.sh
-Makefile                     # Thin wrapper: make preflight | platform | build | deploy | smoke | reset
+  lib/        common.sh (logging, safe .env.local loader, confirmations), cluster.sh (read-only KEDA/CMA/SPIRE detection)
+  deploy/     render.sh doctor.sh platform.sh build.sh up.sh console.sh verify.sh ops.sh
+  local/      stack.sh       # cluster-free full stack (podman/docker + local JVMs) and end-to-end checks
+  maintenance/               # dependency automation used by GitHub Actions
+deploy/
+  base/                      # Kustomize base for the application namespace
+    apps/{triage-agent,evidence-worker,recommendation-agent,tool-service,ops-console}/
+    config/  nats/  postgres/ (StatefulSet + setup Job)  observability/{otel-collector,jaeger,prometheus,grafana}/
+    scaling/                 # KEDA ScaledObject for evidence-worker
+    network/                 # default-deny NetworkPolicies plus one allow per edge
+    identity/                # ClusterSPIFFEID (rendered separately: it is cluster-scoped)
+  components/
+    spiffe/                  # spiffe-helper native sidecar + CSI socket volume for all five Deployments
+    profile-dev/             # smaller resources
+  overlays/
+    openshift/               # Routes, router NetworkPolicy, build/ (ImageStreams + BuildConfigs)
+    openshift-cma/           # Custom Metrics Autoscaler variant (prometheus trigger)
+    kubernetes/              # Ingresses, non-root UID patch, external registry images
+  platform/
+    versions.env             # pinned chart versions and repos for KEDA and SPIRE
+    keda/values.yaml  spire/values.yaml  spire/values-openshift.yaml
 ```
+
+`demo.sh` renders into the git-ignored `.maop/render/<namespace>/`: it sets the namespace, image references
+(by build digest), deploy-time ConfigMap values, the ScaledObject bounds, and generates the OPA policy
+ConfigMap from `policy/maop/` (content-hashed, so a policy change rolls tool-service). Tracked files are never
+edited by the CLI. `oc kustomize deploy/overlays/<overlay>` still renders valid defaults for namespace `maop`.
 
 Decisions:
 
@@ -54,7 +63,7 @@ Decisions:
 | jaeger | Deployment | 1 | 16686 UI, 4317 OTLP | In-memory trace store (bounded) | — |
 | prometheus | Deployment | 1 | 9090 | emptyDir (retention 6 h) | — |
 | grafana | Deployment | 1 | 3000 | emptyDir; dashboards and datasources provisioned from ConfigMaps | — |
-| nats-setup | Job | — | — | — | Uses nats-box to create streams and consumers idempotently |
+| postgres-setup | Job | — | — | — | Creates the `triage` and `tools` roles and schemas idempotently (re-run on every `up`) |
 
 Common pod settings: resource requests and limits on every container; `startupProbe`,
 `readinessProbe`, `livenessProbe` on `/q/health/*` (management port 9000);
@@ -100,7 +109,7 @@ about one to two minutes after the queue drains.
 
 | Data | Where | Class | Loss impact |
 | --- | --- | --- | --- |
-| Run records, audit, outbox/inbox | PostgreSQL PVC (5 Gi, RWO, default StorageClass) | Durable | Demo history lost; `make reset` recreates seed data. |
+| Run records, audit, outbox/inbox | PostgreSQL PVC (5 Gi, RWO, default StorageClass) | Durable | Demo history lost; `./demo.sh reset` clears it; synthetic data is static. |
 | JetStream streams | NATS PVC (2 Gi, RWO) | Durable | In-flight work lost; sweeper times runs out. |
 | Traces | Jaeger memory | Ephemeral | Old traces gone after restart. |
 | Metrics | Prometheus emptyDir | Ephemeral | Dashboards restart empty. |
@@ -148,7 +157,7 @@ metrics API service). The preflight therefore checks for the CMA operator and ex
 | --- | --- |
 | No KEDA, no CMA | Install upstream KEDA chart (default path). |
 | Upstream KEDA already present at a compatible version | Reuse it; install nothing. |
-| CMA present | Do **not** install upstream KEDA. Deploy the `openshift-cma` overlay, whose `ScaledObject` uses a `prometheus` trigger on `jetstream_consumer_num_pending{consumer_name="evidence-workers"}` (plus `…num_ack_pending`) served by the in-namespace Prometheus. The console shows the scaler kind it actually finds. |
+| CMA present | Do **not** install upstream KEDA. Deploy the `openshift-cma` overlay, whose `ScaledObject` uses a `prometheus` trigger on `maop_queue_pending` + `maop_queue_ack_pending` for `consumer="evidence-workers"` (exported by ops-console from JetStream consumer info) served by the in-namespace Prometheus. The console shows the scaler kind it actually finds. |
 
 **Verify on cluster**: which state applies; KEDA operator pods run under `restricted-v2`; the
 metric name prefix from the NATS exporter (confirm with a live scrape before relying on the CMA variant).
@@ -205,7 +214,7 @@ to the internal registry. **Verify on cluster**: Docker Hub pull limits; pre-pul
 - **Verify on cluster**: NATS, Prometheus, and the spiffe-helper image start cleanly under
   `restricted-v2` with a random UID and a read-only root filesystem.
 
-### 5.5 Prerequisites checked by `scripts/preflight.sh`
+### 5.5 Prerequisites checked by `./demo.sh doctor`
 
 | Check | Failure message points to |
 | --- | --- |
@@ -225,39 +234,41 @@ a cluster; both print the target context and require `--yes` or an interactive c
 
 ```mermaid
 flowchart TD
-  A[make preflight] -->|read-only checks| B{all green?}
+  A["./demo.sh doctor"] -->|read-only checks| B{all green?}
   B -- no --> A1[fix prerequisite]
   A1 --> A
-  B -- yes --> C[make platform<br/>KEDA + SPIRE via Helm, pinned]
-  C --> D[make build<br/>jar + SPA + images]
-  D --> E[make deploy<br/>secrets, kustomize apply, wait for rollouts]
-  E --> F[make smoke<br/>deterministic run + policy denial + identity check]
-  F --> G[Console URL, Jaeger URL, Grafana URL, presenter token]
+  B -- yes --> C["./demo.sh up --platform openshift --profile summit --install-platform-components"]
+  C --> C1[KEDA + SPIRE via pinned Helm charts, only if absent and the flag is given]
+  C1 --> D[build: Maven + Vite, then OpenShift binary Docker builds into ImageStreams]
+  D --> E[secrets if absent, render, server-side apply, wait for StatefulSets, setup Job, Deployments]
+  E --> F[Routes discovered, console links configured, smoke = verify --quick]
+  F --> G["./demo.sh verify — full evidence collection"]
 ```
 
-`make deploy` steps: create the namespace → generate Secrets that do not exist yet (never
-overwriting) → create `model-credentials` from `.env.local` → `kubectl apply -k
-deploy/overlays/<profile>` → wait for StatefulSets → run `nats-setup` Job → wait for Deployments →
-write external URLs into the console ConfigMap → print URLs.
+`up` steps: doctor checks → platform plan (reuse compatible KEDA/CMA/SPIRE; install only with
+`--install-platform-components`, recording what it installed in ConfigMap `maop-installed-components`) →
+namespace with ownership and pod-security labels → Secrets created only when absent (model credentials refreshed
+from `.env.local` or an exported `OPENAI_API_KEY`) → build (skippable with `--skip-build`) → render and
+`apply --server-side` → wait for `postgres`, `nats`, the `postgres-setup` Job, then Deployments → external
+Route hosts written into the console configuration → smoke checks.
 
-`make smoke` runs with the stack's configured model mode and asserts, through the console API
-only: a run reaches `AWAITING_APPROVAL`; a trace with spans from all five services exists in
-Jaeger; a `POLICY_DENIAL` run produces a `DENIED` audit record and no simulated action; every
-audit record carries the expected SPIFFE ID; the ops snapshot reports all components `OK`.
+`./demo.sh verify` collects real evidence into `artifacts/verify-<timestamp>/` (raw JSON plus a PASS/FAIL
+summary): a successful run, its Jaeger trace and the services in it, a policy denial with no side effect,
+TLS refusal of a certificate-less client from inside the cluster, KEDA scale-out of evidence-worker under a
+burst, and a redelivery with one execution. `--quick` runs the first four.
 
-`make reset` truncates demo data (runs, audit, simulated actions), purges the three streams, and
-scales evidence-worker back to its minimum — it never deletes platform components.
-`make uninstall` removes the `maop` namespace and, only with `--platform`, the Helm releases it installed.
+`./demo.sh reset` deletes demonstration state only (runs, audit, simulated actions, queued messages) through the
+console API. `./demo.sh down` removes owned application resources, keeps PVCs and Secrets unless
+`--delete-data`, deletes the namespace only with `--delete-namespace`, and removes project-installed platform
+components only with `--uninstall-platform-components`.
 
 ## 7. Local development (no cluster)
 
-- `./mvnw quarkus:dev` per service with Quarkus Dev Services for PostgreSQL; NATS and OPA from a
-  small `compose.dev.yaml` (pinned images, maintained by Dependabot).
-- SPIFFE in dev: profile `dev` uses a static self-signed PEM set generated by
-  `scripts/dev-certs.sh` with the same URI SANs, through the same TLS registry configuration — the
-  mTLS code path is identical; only the certificate issuer differs. This is labelled in the console
-  (`identity: DEV_STATIC`) and is refused when `MAOP_ENV=cluster`.
-- `npm run dev` in `web/` proxies `/api` to ops-console.
+`scripts/local/stack.sh up` runs PostgreSQL, NATS, OPA and Jaeger in containers (podman or docker) and the five
+services as local JVMs. A local CA issues certificates in the exact spiffe-helper layout with single
+`spiffe://maop.local/...` URI SANs, so the mTLS and SPIFFE-ID checks are the production code paths; the console
+labels this identity mode `DEV_STATIC`. `scripts/local/stack.sh e2e` runs the scenario checks and writes evidence
+to `.maop/local/e2e-<timestamp>/`. `npm run dev` in `web/` proxies `/api` to the console on port 8080.
 
 ## 8. Items that require cluster verification (summary)
 

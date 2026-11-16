@@ -61,7 +61,7 @@ version: 2
 updates:
   - package-ecosystem: "maven"
     directory: "/"
-    schedule: { interval: "daily", time: "04:00", timezone: "Etc/UTC" }
+    schedule: { interval: "cron", cronjob: "0 4 * * *", timezone: "Etc/UTC" }  # every calendar day
     open-pull-requests-limit: 10
     cooldown: { semver-patch-days: 1, semver-minor-days: 3, semver-major-days: 7 }
     groups:
@@ -143,8 +143,8 @@ touches anything but `docs/**` and `*.md`.
 
 | Job | Proves |
 | --- | --- |
-| `java` | `./mvnw -B verify` on JDK 25: unit tests, contract golden-file tests, integration tests with real PostgreSQL, NATS, and OPA containers (outbox, inbox, redelivery, idempotency, mTLS with rotating test certificates). |
-| `web` | `npm ci`, typecheck, lint, unit tests, production build. |
+| `backend` | `./mvnw -B verify` on JDK 25: unit tests, contract golden-file tests, integration tests with real PostgreSQL, NATS, and OPA containers (outbox, inbox, redelivery, idempotency, mTLS with rotating test certificates). |
+| `frontend` | `npm ci`, typecheck, lint, unit tests, production build. |
 | `contracts` | OpenAPI/JSON Schema lint and backward-compatibility diff against `main`. |
 | `policy` | `opa fmt`, `opa check --strict`, `opa test` with coverage threshold. |
 | `manifests` | `kustomize build` for every overlay, schema validation, `helm template` of the pinned KEDA and SPIRE charts with the project values. |
@@ -163,7 +163,7 @@ is **not** a merge gate (it depends on an external service) and reports to the s
 Runs the gate jobs on `pull_request` and on `push` to `main`. Dependabot-triggered runs use only
 Dependabot-scoped secrets; no job in the gate needs a secret (deterministic model).
 
-### 5.2 `automerge.yml`
+### 5.2 `dependabot-automerge.yml` and `automerge-fallback.yml`
 
 Two steps, designed to work **with or without** branch protection (branch protection, rulesets,
 and native auto-merge are not available to private repositories on the free plan):
@@ -219,8 +219,8 @@ that needs cluster verification after an upgrade (for example a KEDA chart bump 
 
 ## 7. After an upgrade, before a demo
 
-An auto-merged upgrade is proven on kind, not on the demo cluster. Before any event: `make
-preflight && make platform && make deploy && make smoke` on the target cluster, then the rehearsal
+An auto-merged upgrade is proven by the compatibility gate, not on the demo cluster. Before any event: run
+`./demo.sh doctor`, `./demo.sh up …` and `./demo.sh verify` on the target cluster, then the rehearsal
 in the [runbook](demo-runbook.md). Tag the rehearsed commit (`demo-YYYYMMDD`) and deploy that tag.
 
 ## 8. Known limits
@@ -233,3 +233,18 @@ in the [runbook](demo-runbook.md). Tag the rehearsed commit (`demo-YYYYMMDD`) an
 | M4 | Auto-merge without branch protection relies on the workflow's own checks. | Enable a ruleset when the plan allows; `--match-head-commit` prevents merging an unverified commit. |
 | M5 | The Quarkus update tooling automates only part of a migration. | Stream PRs carry the migration guide link and fail the gate visibly if incomplete. |
 | M6 | Dependabot's default behaviour and limits change over time. | Re-validate this configuration when the report flags a Dependabot configuration warning. |
+
+## 9. As implemented
+
+- Files: `.github/dependabot.yml`, `.github/upgrade-ownership.yml`, workflows `ci.yml`, `codeql.yml`,
+  `dependabot-automerge.yml`, `automerge-fallback.yml`, `upgrade-compat.yml`, `live-model-check.yml`, `pages.yml`;
+  scripts in `scripts/maintenance/`.
+- Every Dependabot ecosystem uses `interval: cron` with a daily `cronjob` because `daily` means weekdays only.
+- `upgrade-compat.yml` runs daily at 05:30 UTC (and on demand), filters pre-releases unless the
+  `allow-prerelease` input is set, runs the Quarkus update tooling without `-N` (with `-N` the parent POM has no
+  extensions and nothing is migrated), and writes diagnostics (first failing module, compiler and test summary,
+  migration-guide link) into the PR and the standing report issue.
+- `ci.yml` job names: `changes`, `backend`, `frontend`, `policy`, `manifests`, `shell`, `java-version-guard`,
+  `ownership-check`, `images`, `security`, aggregated by the required check `compat-gate`. `e2e-kind` runs nightly
+  or on PRs labelled `run-e2e` and is not part of the gate yet.
+- Repository settings and their verified state are recorded in the final handoff of the implementation phase.
