@@ -21,3 +21,4 @@ A decision is changed by adding a new record that supersedes the old one, not by
 | [0014](0014-dependency-ownership.md) | Dependabot plus one scheduled workflow with disjoint ownership | Accepted |
 | [0015](0015-console-bff-serves-spa.md) | A separate console backend serves the SPA and holds the only Kubernetes API access | Accepted |
 | [0016](0016-implementation-adjustments.md) | Adjustments made during implementation (JDBC, direct ChatModel, in-repo CloudEvents codec, SPIFFE HTTP client) | Accepted |
+| [0017](0017-langchain4j-agent-interfaces.md) | Agents as LangChain4j `@Agent` interfaces behind the model gateway | Accepted |

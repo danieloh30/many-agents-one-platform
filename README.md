@@ -70,7 +70,7 @@ flowchart LR
 
 | Building block | Role |
 | --- | --- |
-| Java 25, Quarkus, Quarkus LangChain4j | Agent services with structured model outputs |
+| Java 25, Quarkus, Quarkus LangChain4j (`@Agent`) | Agent services: declarative agents with typed outputs, behind a gateway that enforces deadlines, budgets and model limits |
 | React, TypeScript, Vite | Agent Operations Console |
 | PostgreSQL | Durable run records, audit, outbox/inbox |
 | NATS JetStream + CloudEvents | Durable asynchronous work and events |

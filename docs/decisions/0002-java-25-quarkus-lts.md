@@ -14,7 +14,8 @@ platform member BOM (verified against the platform).
 - Quarkus LangChain4j from `io.quarkus.platform:quarkus-langchain4j-bom` at the same platform version.
 - One Maven property for BOM, member BOM, and plugin.
 - Use plain AI services (`@RegisterAiService`, `@Tool`, structured outputs). The agentic,
-  A2A, and MCP modules are not used: they are beta/experimental upstream.
+  A2A, and MCP modules are not used: they are beta/experimental upstream. (Superseded in part by ADR-0017:
+  the agents are now `@Agent` interfaces; agentic workflow annotations, A2A and MCP remain unused.)
 
 ## Consequences
 - LangChain4j trails the latest release; accepted.

@@ -84,7 +84,7 @@ identity. A service owns its data exclusively; no service reads another service'
 | --- | --- | --- | --- |
 | **ops-console** | Nothing durable. An in-memory replay buffer of recent events. | Serves the SPA; exposes the console API and SSE; aggregates runtime snapshots from NATS and the Kubernetes API; proxies run commands to triage and audit reads to tool-service; enforces the presenter token. | Call a model. Decide workflow state. Hold write access to any cluster resource. |
 | **triage-agent** | `triage` schema: runs, tasks, timeline, approvals, outbox, inbox, idempotency keys. | Classifies the incident (model call → `TriagePlan`); is the **only** writer of run state; dispatches commands; folds results; enforces deadlines and budgets; registers approval grants. | Call investigation or remediation tools. |
-| **evidence-worker** | Nothing durable (stateless, horizontally scaled). | Consumes evidence tasks; uses a model with read tools to gather facts through tool-service; publishes a structured `EvidenceItem`. | Write to a database. Delegate further work. Call remediation tools (policy would deny). |
+| **evidence-worker** | Nothing durable (stateless, horizontally scaled). | Consumes evidence tasks; calls the read tools through tool-service, then `EvidenceAnalystAgent` (`@Agent`) turns the results into a structured `EvidenceItem`, which it publishes. | Write to a database. Delegate further work. Call remediation tools (policy would deny). |
 | **recommendation-agent** | Nothing durable (stateless). | Produces a `Recommendation` grounded in evidence; in `ATTEMPT_UNAPPROVED` mode or after approval, requests the simulated remediation from tool-service. | Decide whether the action is allowed. Persist run state. |
 | **tool-service** | `tools` schema: invocations (audit + idempotency), approval grants, simulated actions, synthetic catalogue/deployment data, outbox. | Authenticates the caller's SVID, asks OPA, records the decision, executes the simulated tool at most once per idempotency key. | Call a model. Call any cluster or external API. Trust identity from a header. |
 | **OPA** (sidecar) | Policy bundle (from Git via ConfigMap). | Answers allow/deny with reasons and a decision ID. | Hold business state. |
@@ -447,7 +447,7 @@ additionally by the run's model-call and token budgets.
   in an explicit `ScriptedChatModel` and is stamped on every event (`maopmodelmode`), every stored
   result, every span (`maop.model.mode`), and the console top bar. There is **no automatic
   fallback** from live to deterministic: a failing model produces a failed or reviewable run.
-- **Structured output**: AI services return records; outputs are schema-validated and
+- **Structured output**: `@Agent` interfaces return typed records; outputs are schema-validated and
   domain-validated. One repair attempt is allowed (counts against the budget); then
   `MODEL_OUTPUT_INVALID`.
 - Prompts and completions are not logged and not attached to spans
@@ -503,7 +503,7 @@ messages, so the first remaining message for the subject is the oldest unacknowl
 | --- | --- | --- |
 | Language/runtime | Java 25, JVM mode, no preview features | Baseline requirement; virtual threads for blocking consumers; records and sealed types for contracts. |
 | Framework | Quarkus LTS platform BOM | Stability across future reuse of the demo. |
-| Agents | Quarkus LangChain4j AI services from the **platform member BOM** | Guaranteed compatible with the platform; orchestration is explicit and durable, not an in-process agent graph. |
+| Agents | LangChain4j `@Agent` interfaces (quarkus-langchain4j-agentic, **platform member BOM**) behind `ModelGateway` (ADR-0017) | Guaranteed compatible with the platform; orchestration is explicit and durable, not an in-process agent graph. |
 | Messaging | `jnats` client behind a thin adapter | Full control of pull consumers, ack/nak/in-progress, headers; avoids a fast-moving connector outside the BOM. |
 | Envelope | CloudEvents SDK core + Jackson format, hand-mapped NATS binary binding | The SDK has no NATS binding module. |
 | Persistence | Hibernate ORM with Panache, Flyway, PostgreSQL | Transactions, `@Version`, migrations. |
