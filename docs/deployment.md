@@ -264,11 +264,16 @@ components only with `--uninstall-platform-components`.
 
 ## 7. Local development (no cluster)
 
-`scripts/local/stack.sh up` runs PostgreSQL, NATS, OPA and Jaeger in containers (podman or docker) and the five
-services as local JVMs. A local CA issues certificates in the exact spiffe-helper layout with single
+`scripts/local/stack.sh up` runs PostgreSQL, NATS, OPA, Jaeger, Prometheus and Grafana in containers (podman or
+docker; same pinned images, datasources and dashboards as the cluster) and the five services as local JVMs. A local CA issues certificates in the exact spiffe-helper layout with single
 `spiffe://maop.local/...` URI SANs, so the mTLS and SPIFFE-ID checks are the production code paths; the console
 labels this identity mode `DEV_STATIC`. `scripts/local/stack.sh e2e` runs the scenario checks and writes evidence
 to `.maop/local/e2e-<timestamp>/`. `npm run dev` in `web/` proxies `/api` to the console on port 8080.
+
+Quarkus Dev Services are for single-service work (`quarkus:dev`): PostgreSQL and the Grafana LGTM stack start per
+application. They are not used for the five-service stack, because each application would start its own Grafana,
+and the Kubernetes Dev Service defaults to an API server without pods. A fully local run including KEDA scale-out
+and SPIRE uses a local Kubernetes cluster (for example kind) with `./demo.sh up --platform kubernetes`.
 
 ## 8. Items that require cluster verification (summary)
 

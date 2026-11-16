@@ -293,15 +293,25 @@ jobs:
       contents: read
       pull-requests: write # comment-summary-in-pr
     steps:
+      # GitHub dependency review needs the dependency graph plus Advanced Security on private
+      # repositories. It runs on public repositories, or when MAOP_CODE_SCANNING=true is set.
       - name: Dependency review
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && (!github.event.repository.private || vars.MAOP_CODE_SCANNING == 'true')
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
           comment-summary-in-pr: on-failure
-      - name: Not a pull request
-        if: github.event_name != 'pull_request'
-        run: echo "Dependency review applies to pull requests; CodeQL runs in codeql.yml."
+      # Works without Advanced Security: known high/critical advisories in production npm dependencies.
+      # Java dependencies are covered by Dependabot security updates.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+      - name: npm audit (production dependencies)
+        working-directory: web
+        run: npm audit --omit=dev --audit-level=high
 
   # Aggregator: the only required status check.
   compat-gate:

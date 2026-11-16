@@ -1,0 +1,19 @@
+# Local stack only: scrapes the five local JVMs' management endpoints from inside the container.
+# Labels mirror the cluster's relabelling (namespace, pod, app) so the same Grafana dashboards work.
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+scrape_configs:
+  - job_name: maop-local
+    metrics_path: /q/metrics
+    static_configs:
+      - targets: ["HOST_ALIAS:9001"]
+        labels: { namespace: maop, app: tool-service, pod: tool-service-local-1 }
+      - targets: ["HOST_ALIAS:9002"]
+        labels: { namespace: maop, app: triage-agent, pod: triage-agent-local-1 }
+      - targets: ["HOST_ALIAS:9003"]
+        labels: { namespace: maop, app: evidence-worker, pod: evidence-worker-local-1 }
+      - targets: ["HOST_ALIAS:9004"]
+        labels: { namespace: maop, app: recommendation-agent, pod: recommendation-agent-local-1 }
+      - targets: ["HOST_ALIAS:9005"]
+        labels: { namespace: maop, app: ops-console, pod: ops-console-local-1 }
