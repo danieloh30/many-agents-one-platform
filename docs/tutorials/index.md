@@ -19,14 +19,15 @@ and scaling driven by demand.
 
 Five services, each a separate Java application on Quarkus with its own identity, work together on one
 durable *run*. Three of them are agentic AI Java apps: each calls the model through a LangChain4j `@Agent`
-interface that returns a typed result.
+interface that returns a typed result (`IncidentTriageAgent`, `EvidenceAnalystAgent` and
+`RemediationAdvisorAgent`).
 
 | Service | Type | Role |
 | --- | --- | --- |
 | `ops-console` | Java app (web UI + API) | Serves the React **Agent Operations Console** and its API. It proxies run commands and holds no durable state. |
-| `triage-agent` | **Agentic AI Java app** (`@Agent` `IncidentTriageAgent`) | Owns the run. It is the only writer of run state: it classifies the incident, dispatches work, folds results, and enforces deadlines and budgets. |
-| `evidence-worker` | **Agentic AI Java app** (`@Agent` `EvidenceAnalystAgent`) | A stateless worker, scaled horizontally. It gathers facts through read tools and publishes a structured `EvidenceItem`. |
-| `recommendation-agent` | **Agentic AI Java app** (`@Agent` `RemediationAdvisorAgent`) | Proposes a remediation, grounded in the evidence and cited. It can try to execute the proposal only through the tool service. |
+| `triage-agent` | **Agentic AI Java app** (`@Agent`) | Owns the run. It is the only writer of run state: it classifies the incident, dispatches work, folds results, and enforces deadlines and budgets. |
+| `evidence-worker` | **Agentic AI Java app** (`@Agent`) | A stateless worker, scaled horizontally. It gathers facts through read tools and publishes a structured `EvidenceItem`. |
+| `recommendation-agent` | **Agentic AI Java app** (`@Agent`) | Proposes a remediation, grounded in the evidence and cited. It can try to execute the proposal only through the tool service. |
 | `tool-service` | Java app (policy enforcement point, no model) | The protected boundary. It verifies the caller's SPIFFE ID over mTLS, asks OPA for a decision, audits it, and runs only synthetic or simulated tools. |
 
 ### The four scenarios
