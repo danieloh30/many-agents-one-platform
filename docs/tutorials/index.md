@@ -10,8 +10,11 @@ and scaling driven by demand.
 > **Status.** The whole system runs end to end on a local stack. `scripts/local/stack.sh e2e` passes
 > all 9 checks with both the deterministic model and live `gpt-4o-mini`. The automated tests pass:
 > 67 backend, 75 SPA, and 16 OPA tests (100 % policy coverage). The GitHub CI `compat-gate` is green.
-> **KEDA scale-out, SPIRE-issued SVIDs and the OpenShift deployment have not yet been verified on a
-> cluster.** Each tutorial says where this applies. This is a demonstration, not a production system.
+> On a cluster, `./demo.sh verify` passes all six checks on OpenShift 4.22 (KEDA scale-out of
+> evidence-worker from 1 to 6, SPIRE-issued SVIDs for every workload, NetworkPolicies enforced, live model) and
+> on a local kind cluster (with NetworkPolicies switched off). Not yet exercised: the Custom Metrics Autoscaler
+> path (`openshift-cma` overlay) and a 30-minute live update stream through the OpenShift router; see
+> [deployment.md §8](../deployment.md#8-items-that-require-cluster-verification-summary). This is a demonstration, not a production system.
 
 ## What the application demonstrates
 
@@ -102,7 +105,7 @@ Each tutorial follows the same pattern:
 5. **Key takeaways** and links to the design documents and source code.
 
 Tutorial 01 starts the local stack, and tutorials 02 to 05 use it. Tutorials 06 and 07 need a
-Kubernetes or OpenShift cluster, and say clearly which behaviour has not yet been verified there.
+Kubernetes or OpenShift cluster (a local kind cluster works) and show the results observed on OpenShift.
 Tutorial 08 covers how the project stays current without manual upgrades.
 
 | # | Tutorial | Needs |
@@ -112,8 +115,8 @@ Tutorial 08 covers how the project stays current without manual upgrades.
 | 03 | [Messaging and redelivery](03-messaging-and-redelivery.md) | Local stack |
 | 04 | [Identity and policy](04-identity-and-policy.md) | Local stack |
 | 05 | [Observability](05-observability.md) | Local stack |
-| 06 | [Scaling with KEDA](06-scaling-with-keda.md) | Cluster (unverified) |
-| 07 | [Deploy to Kubernetes](07-deploy-to-kubernetes.md) | Cluster (unverified) |
+| 06 | [Scaling with KEDA](06-scaling-with-keda.md) | Cluster (OpenShift or kind) |
+| 07 | [Deploy to Kubernetes](07-deploy-to-kubernetes.md) | Cluster (OpenShift or kind) |
 | 08 | [Dependency automation](08-dependency-automation.md) | GitHub repository |
 
 ## Prerequisites

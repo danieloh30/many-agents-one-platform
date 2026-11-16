@@ -158,7 +158,7 @@ On a cluster (observed on OpenShift 4.22):
   run budgets.
 - Graceful scale-in: on `SIGTERM`, a worker stops pulling, finishes or naks its in-flight tasks within
   60 s, and anything cut off is redelivered safely ([tutorial 03](03-messaging-and-redelivery.md)).
-- Until `./demo.sh verify` passes on a cluster, scale-out remains a design claim.
+- `./demo.sh verify` check 5 is the proof on your own cluster: it passes only if replicas actually rose.
 
 ## Learn more
 
