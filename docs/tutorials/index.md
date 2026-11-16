@@ -32,12 +32,16 @@ interface that returns a typed result (`IncidentTriageAgent`, `EvidenceAnalystAg
 
 ### The four scenarios
 
-| Scenario | What you see | Tutorial |
-| --- | --- | --- |
-| **Successful run** | Triage, evidence and recommendation agents complete a durable run, and one trace connects every hop. | [01](01-run-it-locally.md), [02](02-durable-workflow.md), [05](05-observability.md) |
-| **Policy denial** | The recommendation agent tries a simulated rollback without approval. The tool service verifies its identity, and policy denies the call before anything executes. | [04](04-identity-and-policy.md) |
-| **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence agents out and back in (verified on Red Hat OpenShift: 1 → 6 replicas). | [06](06-scaling-with-keda.md) |
-| **Redelivery** (optional) | A worker abandons a task after its tool call commits. The task is redelivered, and the effect is still recorded only once. | [03](03-messaging-and-redelivery.md) |
+Demo them in this order: each one builds on what the audience saw in the previous one. The console's presenter
+checklist follows the same order, and the [demo runbook](../demo-runbook.md#3-script-800) has the timed script
+(about 8 minutes).
+
+| # | Scenario | What you see | Tutorial |
+| --- | --- | --- | --- |
+| 1 | **Successful run** | Triage, evidence and recommendation agents complete a durable run, and one trace connects every hop. | [01](01-run-it-locally.md), [02](02-durable-workflow.md), [05](05-observability.md) |
+| 2 | **Policy denial** | The recommendation agent tries a simulated rollback without approval. The tool service verifies its identity, and policy denies the call before anything executes. | [04](04-identity-and-policy.md) |
+| 3 | **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence agents out and back in (verified on Red Hat OpenShift: 1 → 6 replicas). | [06](06-scaling-with-keda.md) |
+| 4 | **Redelivery** (optional) | An evidence agent abandons a task after its tool call commits. The task is redelivered, and the effect is still recorded only once. | [03](03-messaging-and-redelivery.md) |
 
 Tool data is synthetic and remediation is simulated: no code path can change a real cluster.
 
