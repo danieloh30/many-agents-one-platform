@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Local full stack for development and end-to-end checks without a cluster.
-# Infrastructure runs in containers (podman or docker); the five Java services run as local JVMs.
+# Infrastructure (PostgreSQL, NATS, OPA, Jaeger, Prometheus, Grafana) runs in containers (podman or docker);
+# the five Java services run as local JVMs.
 #
 #   scripts/local/stack.sh up      # build is not done here: run ./mvnw -B package -DskipTests first
 #   scripts/local/stack.sh e2e     # run the scenario checks against the local console API
@@ -24,6 +25,8 @@ PG_IMAGE="docker.io/library/postgres:18.1"
 NATS_IMAGE="docker.io/library/nats:2.15.3-alpine"
 OPA_IMAGE="docker.io/openpolicyagent/opa:1.22.4-static"
 JAEGER_IMAGE="docker.io/jaegertracing/jaeger:2.23.0"
+PROMETHEUS_IMAGE="docker.io/prom/prometheus:v3.16.0"
+GRAFANA_IMAGE="docker.io/grafana/grafana:13.3.1"
 TOKEN_FILE="$STATE/presenter-token"
 CONSOLE="http://localhost:8080"
 
@@ -59,6 +62,20 @@ infra_up() {
   run maop-opa -p 8181:8181 -v "$ROOT/policy/maop:/policy/maop:ro,Z" "$OPA_IMAGE" run --server --addr=0.0.0.0:8181 \
     --set=decision_logs.console=true --ignore='*_test.rego' /policy
   run maop-jaeger -p 16686:16686 -p 4317:4317 -p 4318:4318 "$JAEGER_IMAGE"
+  # Prometheus and Grafana with the same images, datasources and dashboards as the cluster deployment.
+  local host_alias; host_alias="$([ "$(basename "$ENGINE")" = podman ] && echo host.containers.internal || echo host.docker.internal)"
+  mkdir -p "$STATE/observability"
+  sed "s/HOST_ALIAS/$host_alias/g" "$ROOT/scripts/local/observability/prometheus.yml.tmpl" > "$STATE/observability/prometheus.yml"
+  run maop-prometheus -p 9090:9090 \
+    -v "$STATE/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z" "$PROMETHEUS_IMAGE" \
+    --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.retention.time=6h --web.enable-lifecycle
+  run maop-grafana -p 3000:3000 \
+    -e GF_AUTH_ANONYMOUS_ENABLED=true -e GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer -e GF_USERS_ALLOW_SIGN_UP=false \
+    -e GF_ANALYTICS_REPORTING_ENABLED=false -e GF_ANALYTICS_CHECK_FOR_UPDATES=false -e GF_PLUGINS_PREINSTALL_DISABLED=true \
+    -e GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana-dashboards/maop-overview.json \
+    -v "$ROOT/scripts/local/observability/datasources.yaml:/etc/grafana/provisioning/datasources/maop.yaml:ro,Z" \
+    -v "$ROOT/scripts/local/observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/maop.yaml:ro,Z" \
+    -v "$ROOT/deploy/base/observability/grafana/dashboards:/var/lib/grafana-dashboards:ro,Z" "$GRAFANA_IMAGE"
   log "waiting for PostgreSQL"
   for _ in $(seq 1 60); do "$ENGINE" exec maop-postgres pg_isready -U maop >/dev/null 2>&1 && break; sleep 1; done
 }
@@ -87,12 +104,13 @@ up() {
   svc recommendation-agent recommendation-agent QUARKUS_HTTP_PORT=8083 QUARKUS_MANAGEMENT_PORT=9004 HOSTNAME=recommendation-agent-local-1
   svc ops-console ops-console QUARKUS_HTTP_PORT=8080 QUARKUS_MANAGEMENT_PORT=9005 MAOP_TRIAGE_URL=http://localhost:8081 \
     MAOP_PRESENTER_TOKEN="$(cat "$TOKEN_FILE")" MAOP_IDENTITY_MODE=DEV_STATIC MAOP_JAEGER_URL=http://localhost:16686 \
-    MAOP_JAEGER_INTERNAL_URL=http://localhost:16686 MAOP_PROMETHEUS_URL= MAOP_GRAFANA_INTERNAL_URL=
+    MAOP_JAEGER_INTERNAL_URL=http://localhost:16686 MAOP_PROMETHEUS_URL=http://localhost:9090 \
+    MAOP_GRAFANA_URL=http://localhost:3000 MAOP_GRAFANA_INTERNAL_URL=http://localhost:3000
   for p in 9001 9002 9003 9004 9005; do
     for _ in $(seq 1 90); do curl -fsS "http://localhost:$p/q/health/ready" >/dev/null 2>&1 && break; sleep 1; done
     curl -fsS "http://localhost:$p/q/health/ready" >/dev/null || die "service on management port $p not ready (see $LOGS)"
   done
-  log "stack ready: console $CONSOLE  jaeger http://localhost:16686"
+  log "stack ready: console $CONSOLE  jaeger http://localhost:16686  grafana http://localhost:3000  prometheus http://localhost:9090"
   log "presenter token is in $TOKEN_FILE (not printed)"
 }
 
@@ -100,7 +118,7 @@ down() {
   for f in "$STATE"/*.pid; do
     if [ -f "$f" ]; then kill "$(cat "$f")" 2>/dev/null || true; rm -f "$f"; fi
   done
-  for c in maop-postgres maop-nats maop-opa maop-jaeger; do "$ENGINE" rm -f "$c" >/dev/null 2>&1 || true; done
+  for c in maop-postgres maop-nats maop-opa maop-jaeger maop-prometheus maop-grafana; do "$ENGINE" rm -f "$c" >/dev/null 2>&1 || true; done
   log "stopped"
 }
 
