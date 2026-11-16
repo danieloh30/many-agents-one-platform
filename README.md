@@ -1,5 +1,7 @@
 # Many Agents, One Platform
 
+[![Deploy docs to GitHub Pages](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/pages.yml/badge.svg)](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/pages.yml)
+
 A reference demonstration of **operationally maintainable Java multi-agent services** on
 Kubernetes and OpenShift, built from CNCF building blocks. An incident assistant investigates
 increased checkout errors after a release — and the interesting part is everything around the
@@ -24,19 +26,49 @@ Model calls are real by default; a deterministic substitute exists for tests and
 ## Architecture at a glance
 
 ```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+  flowchart:
+    curve: basis
+---
 flowchart LR
-  user([Operator]) --> console["ops-console<br/>Agent Operations Console"]
-  console --> triage["triage-agent"]
-  triage <--> nats[("NATS JetStream<br/>CloudEvents")]
-  nats --> evidence["evidence-worker ×N"]
-  nats --> reco["recommendation-agent"]
-  evidence & reco --> nats
-  evidence & reco ==>|"mTLS (SPIFFE)"| tools["tool-service + OPA"]
-  triage --> pg[("PostgreSQL")]
+  user(["👤 Operator"]) --> console["🖥️ ops-console<br/><i>Agent Operations Console</i>"]
+
+  subgraph agents["🤖 Agent services (independently deployable)"]
+    triage["🧭 triage-agent<br/><i>owns the durable run</i>"]
+    evidence["🔎 evidence-worker ×N"]
+    reco["💡 recommendation-agent"]
+  end
+
+  subgraph boundary["🔐 Protected tool boundary"]
+    tools["🛠️ tool-service"]
+    opa{{"⚖️ OPA<br/><i>decides</i>"}}
+  end
+
+  console --> triage
+  triage <-->|"CloudEvents"| nats[("📨 NATS JetStream")]
+  nats --> evidence
+  nats --> reco
+  evidence & reco -->|results| nats
+  evidence & reco ==>|"mTLS · SPIFFE ID"| tools
+  tools -->|"allow / deny"| opa
+  triage --> pg[("🗄️ PostgreSQL")]
   tools --> pg
-  keda["KEDA"] -.->|scales on lag| evidence
-  triage & evidence & reco & tools -->|OpenTelemetry| obs["Collector → Jaeger · Prometheus · Grafana"]
+  keda(["📈 KEDA"]) -.->|"scales on lag"| evidence
+  agents & boundary -.->|"OpenTelemetry"| obs["🔭 Collector → Jaeger · Prometheus · Grafana"]
+
+  classDef svc fill:#E8F0FF,stroke:#1F5EFF,color:#0A1838
+  classDef infra fill:#E6FAFD,stroke:#007C99,color:#0A1838
+  classDef sec fill:#F1ECFF,stroke:#6B3FD4,color:#0A1838
+  class console,triage,evidence,reco svc
+  class nats,pg,keda,obs infra
+  class tools,opa sec
 ```
+
+The diagram uses Mermaid's hand-drawn look. Renderers that don't support it, including older
+Mermaid versions, show the same diagram in the classic style.
 
 | Building block | Role |
 | --- | --- |

@@ -1,0 +1,52 @@
+{
+  "_note": "SYNTHETIC demonstration data. Times are minute offsets relative to the request time so the scenario always looks current. No real system is queried.",
+  "services": {
+    "checkout": {
+      "owner": "team-checkout-web", "tier": 1, "runtime": "Quarkus / Java 25",
+      "upstream": ["web-frontend", "mobile-bff"],
+      "downstream": ["payment-gateway", "cart", "inventory", "pricing"],
+      "featureFlags": {"new-checkout-flow": true}
+    },
+    "payment-gateway": {
+      "owner": "team-payments", "tier": 1, "runtime": "Go", "upstream": ["checkout"],
+      "downstream": ["card-processor-sandbox"], "featureFlags": {}
+    },
+    "cart": {"owner": "team-checkout-web", "tier": 2, "runtime": "Quarkus / Java 25", "upstream": ["checkout"], "downstream": ["pricing"], "featureFlags": {}},
+    "inventory": {"owner": "team-fulfilment", "tier": 2, "runtime": "Node.js", "upstream": ["checkout"], "downstream": [], "featureFlags": {}},
+    "pricing": {"owner": "team-pricing", "tier": 2, "runtime": "Quarkus / Java 25", "upstream": ["checkout", "cart"], "downstream": [], "featureFlags": {}}
+  },
+  "deployments": {
+    "checkout": [
+      {"version": "2.14.0", "minutesAgo": 9, "by": "release-pipeline", "change": "Payment client timeout 2000 ms -> 300 ms; client retries 2 -> 0; enable new-checkout-flow"},
+      {"version": "2.13.2", "minutesAgo": 1560, "by": "release-pipeline", "change": "Dependency patch updates"},
+      {"version": "2.12.4", "minutesAgo": 4320, "by": "release-pipeline", "change": "Address validation fix"}
+    ],
+    "payment-gateway": [
+      {"version": "5.3.1", "minutesAgo": 7200, "by": "release-pipeline", "change": "Logging improvements"}
+    ],
+    "cart": [{"version": "1.9.0", "minutesAgo": 2880, "by": "release-pipeline", "change": "Cart merge optimisation"}],
+    "inventory": [{"version": "3.2.7", "minutesAgo": 10080, "by": "release-pipeline", "change": "Stock cache TTL tuning"}],
+    "pricing": [{"version": "4.0.3", "minutesAgo": 5760, "by": "release-pipeline", "change": "Currency rounding fix"}]
+  },
+  "diffs": {
+    "checkout:2.13.2:2.14.0": {
+      "image": {"from": "checkout:2.13.2", "to": "checkout:2.14.0"},
+      "config": [
+        {"key": "payment.client.timeout", "from": "2000ms", "to": "300ms"},
+        {"key": "payment.client.retries", "from": "2", "to": "0"},
+        {"key": "feature.new-checkout-flow", "from": "false", "to": "true"}
+      ]
+    }
+  },
+  "errors": {
+    "checkout": {
+      "onsetMinutesAgo": 8,
+      "endpoints": [
+        {"endpoint": "POST /checkout", "errorRatePct": 7.1, "baselinePct": 0.2,
+         "topErrors": [{"type": "PaymentClientTimeoutException", "sharePct": 68}, {"type": "UpstreamResetException", "sharePct": 21}]},
+        {"endpoint": "GET /cart", "errorRatePct": 0.1, "baselinePct": 0.1, "topErrors": []}
+      ]
+    },
+    "payment-gateway": {"onsetMinutesAgo": null, "endpoints": [{"endpoint": "POST /authorize", "errorRatePct": 0.3, "baselinePct": 0.3, "topErrors": []}]}
+  }
+}

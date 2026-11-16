@@ -17,3 +17,4 @@ dist/
 
 # Local assistant state (project settings are tracked)
 .claude/settings.local.json
+target/

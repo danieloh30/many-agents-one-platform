@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.github.danieloh30.maop</groupId>
+    <artifactId>maop-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>tool-service</artifactId>
+  <name>tool-service</name>
+  <description>Protected tool boundary: SPIFFE mTLS identity, OPA authorization, idempotent simulated execution, audit.</description>
+
+  <dependencies>
+    <dependency><groupId>io.github.danieloh30.maop</groupId><artifactId>maop-common</artifactId></dependency>
+    <dependency><groupId>io.github.danieloh30.maop</groupId><artifactId>maop-outbox</artifactId></dependency>
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest-jackson</artifactId></dependency>
+
+    <dependency><groupId>io.github.danieloh30.maop</groupId><artifactId>maop-common</artifactId><type>test-jar</type><scope>test</scope></dependency>
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit5</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.testcontainers</groupId><artifactId>testcontainers</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-lts8on</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.awaitility</groupId><artifactId>awaitility</artifactId><scope>test</scope></dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <maop.policy.dir>${project.basedir}/../policy/maop</maop.policy.dir>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

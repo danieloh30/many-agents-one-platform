@@ -1,0 +1,24 @@
+{
+  "policy_revision": "2026-11-15.1",
+  "trust_domain": "",
+  "callers": {
+    "evidence-worker": [
+      "tool.read",
+      "tools.list"
+    ],
+    "recommendation-agent": [
+      "tool.read",
+      "tool.remediate",
+      "tools.list"
+    ],
+    "triage-agent": [
+      "approval.register",
+      "tools.list"
+    ],
+    "ops-console": [
+      "audit.read",
+      "admin.reset",
+      "tools.list"
+    ]
+  }
+}
