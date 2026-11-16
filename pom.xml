@@ -34,7 +34,7 @@
     <!-- Independently versioned libraries (each owns its property; never reuse the platform property). -->
     <jnats.version>2.26.4</jnats.version>
     <!-- BouncyCastle LTS line: bcprov-lts8on comes with jnats; bcpkix-lts8on is the test PKI helper. -->
-    <bouncycastle-lts.version>2.73.12</bouncycastle-lts.version>
+    <bouncycastle-lts.version>2.73.13</bouncycastle-lts.version>
 
     <!-- Plugins -->
     <compiler-plugin.version>3.16.0</compiler-plugin.version>
