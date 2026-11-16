@@ -244,7 +244,7 @@ sequenceDiagram
     E->>N: publish task.evidence.completed (deterministic id), then ack
   end
   N->>T: deliver results
-  T->>DB: tx per result: inbox + task update; last one → RECOMMENDING + outbox(recommendation.requested)
+  T->>DB: tx per result: inbox + task update, last one → RECOMMENDING + outbox(recommendation.requested)
   N->>R: deliver task.recommendation.requested
   R->>M: recommend → Recommendation (citations validated)
   R->>N: publish task.recommendation.completed, then ack
@@ -351,7 +351,7 @@ sequenceDiagram
   end
   K->>D: scale 1 → up to 6 (lag / lagThreshold)
   D->>N: new pods pull work
-  Note over N,D: Queue drains; after cooldown KEDA returns to minReplicaCount
+  Note over N,D: Queue drains, after cooldown KEDA returns to minReplicaCount
 ```
 
 Burst runs skip the triage model call (their plan is a visible preset, `planSource: PRESET`) so

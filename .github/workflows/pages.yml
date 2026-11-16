@@ -1,5 +1,7 @@
-# Publishes README.md + docs/**/*.md as a static site. The README shows this workflow's badge, so
-# keep the name unchanged. Requires Settings > Pages > Source: "GitHub Actions".
+# Publishes the tutorial site: docs/tutorials/index.md is the landing page, docs/tutorials/NN-*.md
+# the numbered tutorials, README.md + the rest of docs/**/*.md the reference pages
+# (.github/pages/build_site.py). The README shows this workflow's badge, so keep the name
+# unchanged. Requires Settings > Pages > Source: "GitHub Actions".
 name: Deploy docs to GitHub Pages
 
 on:

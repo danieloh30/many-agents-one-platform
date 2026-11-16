@@ -35,7 +35,7 @@ Timings below are design targets. They become facts only after rehearsal on the 
    `LIVE <model>`; stream status `Live`.
 5. Enter the presenter token. Print it with `./demo.sh token` (it is never shown in the UI).
 6. Check projector legibility in both themes; pick one and stay with it.
-7. Terminal ready (large font) with: `oc get pods -n maop -l app=evidence-worker -w` — optional
+7. Terminal ready (large font) with: `oc get pods -n maop -l app.kubernetes.io/name=evidence-worker -w` — optional
    corroboration for scenario 3.
 
 ### Go / no-go
@@ -163,9 +163,9 @@ platform component is down at go/no-go, play the recording and say that it is a 
 
 | Measure | Design target | Measured (date, cluster) |
 | --- | --- | --- |
-| Scenario 1 time to `AWAITING_APPROVAL` | 20–40 s | |
+| Scenario 1 time to `AWAITING_APPROVAL` | 20–40 s | 35 s (OpenShift 4.22 sandbox, live gpt-4o-mini, `./demo.sh verify`) |
 | Scenario 2 time to denial | 20–40 s | |
-| Scenario 3 time from burst to first extra pod `Ready` | ≤ 45 s | |
+| Scenario 3 time from burst to first extra pod `Ready` | ≤ 45 s | desired 1 → 5 after ~18 s, 6 after ~29 s; ready replicas lag pod start (same run) |
 | Scenario 3 time to drain | ≤ 120 s | |
 | Scenario 3 time back to 1 replica | ≤ 180 s after drain | |
 | Scenario 4 redelivery delay | ≈ 20 s | |

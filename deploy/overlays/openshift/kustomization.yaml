@@ -19,3 +19,6 @@ labels:
       app.kubernetes.io/managed-by: many-agents-one-platform
     includeSelectors: false
     includeTemplates: false
+
+patches:
+  - path: topology.yaml

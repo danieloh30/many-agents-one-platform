@@ -8,9 +8,9 @@ increased checkout errors after a release — and the interesting part is everyt
 model calls: durable workflow state, asynchronous work with bounded retries, verified workload
 identity, runtime policy enforcement, connected telemetry, and demand-driven scaling.
 
-> **Status:** implemented and verified end to end on a local stack, with both the deterministic and a live model.
-> Cluster deployment (`./demo.sh up`) is automated but has not yet been run against a live cluster. See
-> [Verification status](#verification-status). This is a demonstration, not a production system.
+> **Status:** implemented and verified end to end on OpenShift 4.22 and on a local stack, with a live model.
+> See [Verification status](#verification-status) and the [tutorials](https://danieloh30.github.io/many-agents-one-platform/).
+> This is a demonstration, not a production system.
 
 ## What it demonstrates
 
@@ -210,8 +210,9 @@ Live-model tests are separate: `./mvnw -B verify -Plive-model` or the `live-mode
 | SPA typecheck, lint, tests, build | Pass locally |
 | OPA policy tests | Pass locally, 100 % coverage |
 | Local end-to-end (5 services, real NATS/PostgreSQL/OPA/Jaeger, mTLS) | Pass with the deterministic model and with live `gpt-4o-mini` |
-| KEDA scale-out, SPIRE-issued SVIDs, OpenShift Routes/builds/SCCs | **Unverified**: requires running `./demo.sh up` on a cluster |
-| GitHub Actions workflows | Checked with actionlint locally; first GitHub run reported in the commit history |
+| OpenShift 4.22 (`./demo.sh up` + `./demo.sh verify`) | All six checks pass: success run, one trace across six services, policy denial, SPIRE identity enforcement, KEDA scale-out 1 → 6, redelivery without a duplicate effect |
+| Other Kubernetes (`--platform kubernetes`) | Automated; a kind run is in progress and not yet verified |
+| GitHub Actions | `compat-gate` green; Dependabot, auto-merge classification and GitHub Pages deploy run on GitHub |
 
 ## Safety notes
 
