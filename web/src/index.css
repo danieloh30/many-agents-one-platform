@@ -1,0 +1,192 @@
+@import 'tailwindcss';
+@import '@xyflow/react/dist/base.css';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Colour tokens — docs/ui-design.md §4.1. Values are mirrored in src/design/tokens.ts and checked
+ * by src/design/contrast.test.ts (which also asserts this file and tokens.ts agree).
+ * --on-primary is an addition: text colour on filled primary buttons.
+ */
+:root {
+  --bg: #f5f8fc;
+  --surface: #ffffff;
+  --surface-raised: #edf2fa;
+  --border: #c9d5e8;
+  --text: #0a1838;
+  --text-muted: #44557a;
+  --primary: #1f5eff;
+  --accent: #007c99;
+  --teal: #0b7a6b;
+  --purple: #6b3fd4;
+  --warn: #9a5b00;
+  --danger: #b3261e;
+  --on-primary: #ffffff;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #07122b;
+  --surface: #0d1d40;
+  --surface-raised: #14295a;
+  --border: #274079;
+  --text: #eaf1ff;
+  --text-muted: #a9bbde;
+  --primary: #5c8dff;
+  --accent: #22d3ee;
+  --teal: #2dd4bf;
+  --purple: #a78bfa;
+  --warn: #fbbf24;
+  --danger: #ff7a70;
+  --on-primary: #07122b;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-teal: var(--teal);
+  --color-purple: var(--purple);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-on-primary: var(--on-primary);
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Type scale §4.2: 0.875 / 1 / 1.125 / 1.375 / 1.75 / 2.25 rem */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+}
+
+html {
+  font-size: 100%;
+}
+
+/* Presenter mode multiplies the root size by 1.25 (§4.2). */
+html[data-presenter='true'] {
+  font-size: 125%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-feature-settings: 'cv11';
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible 2 px cyan focus ring everywhere (§5). */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@utility tint-teal {
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface));
+}
+@utility tint-danger {
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
+@utility tint-warn {
+  background: color-mix(in srgb, var(--warn) 8%, var(--surface));
+}
+@utility tint-purple {
+  background: color-mix(in srgb, var(--purple) 8%, var(--surface));
+}
+@utility tint-primary {
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+@utility tint-accent {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+/* Motion §4.3: one pulse per real event, never looping. */
+@keyframes maop-edge-pulse {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+    stroke-width: 6;
+  }
+  100% {
+    stroke-dashoffset: -80;
+    opacity: 0;
+    stroke-width: 2;
+  }
+}
+@keyframes maop-highlight-fade {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.edge-pulse {
+  animation: maop-edge-pulse 600ms ease-out 1 forwards;
+}
+.node-pulse {
+  animation: maop-highlight-fade 600ms ease-out 1 forwards;
+}
+.ui-transition {
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease,
+    opacity 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge-pulse {
+    animation: maop-highlight-fade 1200ms linear 1 forwards;
+    stroke-width: 5;
+  }
+  .node-pulse {
+    animation: maop-highlight-fade 1200ms linear 1 forwards;
+  }
+  .ui-transition {
+    transition: none;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* React Flow surfaces follow the tokens. */
+.react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: var(--border);
+  --xy-node-border-radius: 10px;
+}
+.react-flow__node:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+.react-flow__attribution {
+  background: transparent;
+  color: var(--text-muted);
+}
+.react-flow__controls-button {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+.react-flow__controls-button svg {
+  fill: currentColor;
+}
