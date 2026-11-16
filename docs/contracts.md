@@ -386,3 +386,61 @@ user-facing text. Reasoning traces are never requested, stored, or displayed.
 2. Every event type in §3.4 has a schema and a producer serialization test plus a consumer
    deserialization test that read the same golden sample file.
 3. The SPA's TypeScript types are generated from the OpenAPI documents, not hand-written.
+
+## 5. Implementation-level details (normative for code and SPA)
+
+Added at the start of implementation; these fill gaps in §2–§3 and take precedence where more specific.
+
+### 5.1 Additional console endpoints
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/session` | Bearer | `204` if the presenter token is valid, `401` otherwise. Lets the UI validate a token. |
+| `GET` | `/api/v1/bursts/current` | open | `{active, burstId, runs, completed, startedAt}`; `active=false` and nulls when none. |
+| `POST` | `/api/v1/bursts/stop` | Bearer | Cancels non-terminal runs of the active burst and purges queued evidence work. Idempotent. |
+| `POST` | `/api/v1/admin/reset` | Bearer | Deletes demonstration state only (runs, audit, simulated actions, queued messages). Never touches platform components. `409 RESET_REFUSED` while a burst is active. |
+
+`POST /api/v1/runs` request = triage `CreateRunRequest` (§2.2). The console derives it from a preset
+or the editable form.
+
+### 5.2 Response shapes used by the SPA
+
+- `GET /api/v1/config` →
+  ```json
+  { "product": "Agent Operations Console", "version": "0.1.0", "profile": "summit",
+    "model": { "mode": "LIVE", "name": "gpt-4o-mini" },
+    "identity": { "mode": "SPIFFE", "trustDomain": "maop.example" },
+    "links": { "jaeger": "https://…", "grafana": "https://…", "grafanaDashboard": "https://…/d/maop-overview" },
+    "limits": { "burstMaxRuns": 12, "maxEvidenceTasks": 4 },
+    "features": { "faultInjection": true } }
+  ```
+  Any `links.*` value is `null` when that UI is not reachable/exposed. `identity.mode` is
+  `SPIFFE` or `DEV_STATIC`.
+- `GET /api/v1/runs` → `{ "items": [RunSummary], "nextCursor": null }` where
+  `RunSummary = {runId, state, outcome, scenario, title, service, planSource, burstId, createdAt, updatedAt, traceId}`.
+- `GET /api/v1/runs/{runId}/timeline` → `{ "items": [ {seq, at, kind, from, to, taskId, message, data} ] }`;
+  `kind ∈ STATE_CHANGED | TASK_DISPATCHED | TASK_STARTED | TASK_COMPLETED | TASK_FAILED | TASK_DEAD_LETTERED | POLICY_DENIAL | APPROVAL | IGNORED_LATE | BUDGET | NOTE`.
+- `GET /api/v1/audit/invocations?runId=` → `{ "items": [ToolInvocation] }` with
+  ```json
+  { "invocationId": "…", "runId": "…", "taskId": "…", "toolName": "…", "toolClass": "READ",
+    "status": "EXECUTED", "requests": 2, "executions": 1, "idempotencyKey": "…",
+    "simulated": true, "dataOrigin": "SYNTHETIC",
+    "caller": { "spiffeId": "spiffe://…", "serial": "…", "notAfter": "…" },
+    "decision": { "allow": true, "decisionId": "…", "policyRevision": "…", "reasons": [] },
+    "arguments": {…}, "result": {…}, "sideEffect": null,
+    "createdAt": "…", "lastRequestedAt": "…" }
+  ```
+  `sideEffect` (remediation only, when executed) = `{actionId, actionType, target, parameters, simulated: true}`.
+- `GET /api/v1/runs/{runId}` → `Run` as in §2.2, plus `burstId`, `updatedAt`, `evidenceCompleteness`,
+  `executionAttempt` (from the recommendation result) and `approval = {approvalId, decision, actionDigest, approver, decidedAt, expiresAt}`.
+
+### 5.3 Additional observation events
+
+| Type suffix | Producer | `data` |
+| --- | --- | --- |
+| `task.dispatched.v1` | triage-agent (outbox) | `{taskId, kind, topic}` — command handed to the work queue |
+| `burst.changed.v1` | triage-agent (outbox) | `{burstId, active, runs, completed}` |
+| `demo.reset.v1` | triage-agent | `{}` — clients drop cached state and refetch |
+
+`model.call.completed.v1` and `task.started.v1` data also carry `service` (the emitting service
+name). `tool.invocation.completed.v1` data also carries `runId`, `taskId`, `reasons`.
