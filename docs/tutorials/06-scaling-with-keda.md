@@ -6,7 +6,7 @@ Understand how evidence workers are meant to scale on real backlog. A KEDA `Scal
 lag of the JetStream consumer `evidence-workers`, and a bounded burst fills that queue. Model rate
 limits and per-pod permits put a deliberate ceiling on the scale-out.
 
-> Verified on OpenShift 4.22 with upstream KEDA 2.21.0 and the live model: during `./demo.sh verify` the
+> Verified on Kubernetes (Red Hat OpenShift) with upstream KEDA 2.21.0 and the live model: during `./demo.sh verify` the
 > burst took the evidence-worker Deployment from 1 to 5 desired replicas about 18 s after the burst
 > started, and to the ceiling of 6 within about 29 s (ready replicas follow as pods start). Your timings
 > depend on the cluster and image pulls. The local stack proves only the queue part: the burst raises
@@ -141,7 +141,7 @@ On the local stack (verified):
   drain. The *Queue and scaling* dashboard shows the same curve from Prometheus.
 - All 12 burst runs complete with `EVIDENCE_ONLY`.
 
-On a cluster (observed on OpenShift 4.22):
+On a cluster (observed on Red Hat OpenShift):
 
 - The desired replicas step up from 1 toward 6, and new pod pills appear in the topology's evidence
   node as `Pending`, `Running`, then `Ready`.

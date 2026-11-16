@@ -163,7 +163,7 @@ platform component is down at go/no-go, play the recording and say that it is a 
 
 | Measure | Design target | Measured (date, cluster) |
 | --- | --- | --- |
-| Scenario 1 time to `AWAITING_APPROVAL` | 20–40 s | 35 s (OpenShift 4.22 sandbox, live gpt-4o-mini, `./demo.sh verify`) |
+| Scenario 1 time to `AWAITING_APPROVAL` | 20–40 s | 35 s (Red Hat OpenShift sandbox, live gpt-4o-mini, `./demo.sh verify`) |
 | Scenario 2 time to denial | 20–40 s | |
 | Scenario 3 time from burst to first extra pod `Ready` | ≤ 45 s | desired 1 → 5 after ~18 s, 6 after ~29 s; ready replicas lag pod start (same run) |
 | Scenario 3 time to drain | ≤ 120 s | |

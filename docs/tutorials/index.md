@@ -10,7 +10,7 @@ and scaling driven by demand.
 [![ci](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/ci.yml) [![Deploy docs to GitHub Pages](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/pages.yml/badge.svg)](https://github.com/danieloh30/many-agents-one-platform/actions/workflows/pages.yml)
 
 > **Where it has been tested.** The badges above show the current build. Beyond CI, the project has been
-> run end to end on a local stack (`scripts/local/stack.sh e2e`), on OpenShift 4.22 and on a local kind
+> run end to end on a local stack (`scripts/local/stack.sh e2e`), on Kubernetes (Red Hat OpenShift) and on a local kind
 > cluster (`./demo.sh verify`, six checks). The cluster results, and what has not been exercised yet, are
 > recorded in [deployment.md §8](../deployment.md#8-items-that-require-cluster-verification-summary). Run
 > `./demo.sh verify` to check your own cluster. This is a demonstration, not a production system.
@@ -36,7 +36,7 @@ interface that returns a typed result (`IncidentTriageAgent`, `EvidenceAnalystAg
 | --- | --- | --- |
 | **Successful run** | Triage, evidence and recommendation agents complete a durable run, and one trace connects every hop. | [01](01-run-it-locally.md), [02](02-durable-workflow.md), [05](05-observability.md) |
 | **Policy denial** | The recommendation agent tries a simulated rollback without approval. The tool service verifies its identity, and policy denies the call before anything executes. | [04](04-identity-and-policy.md) |
-| **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence workers out and back in (verified on OpenShift 4.22: 1 → 6 replicas). | [06](06-scaling-with-keda.md) |
+| **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence workers out and back in (verified on Red Hat OpenShift: 1 → 6 replicas). | [06](06-scaling-with-keda.md) |
 | **Redelivery** (optional) | A worker abandons a task after its tool call commits. The task is redelivered, and the effect is still recorded only once. | [03](03-messaging-and-redelivery.md) |
 
 Tool data is synthetic and remediation is simulated: no code path can change a real cluster.

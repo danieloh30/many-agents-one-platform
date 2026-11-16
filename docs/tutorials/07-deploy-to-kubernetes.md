@@ -6,7 +6,7 @@ Deploy the whole platform to OpenShift (the recommended path) or to any other Ku
 one CLI, `demo.sh`. You will learn what `doctor`, `up`, `verify`, `open`, `reset` and `down` do, how
 existing KEDA and SPIRE installations are reused, and what evidence `verify` collects.
 
-> Verified end to end on OpenShift 4.22 (as cluster admin, with `--install-platform-components`):
+> Verified end to end on Kubernetes (Red Hat OpenShift) (as cluster admin, with `--install-platform-components`):
 > in-cluster binary builds, Routes, `restricted-v2` pods with the SPIFFE CSI volume, SPIRE-issued SVIDs,
 > upstream KEDA scale-out, and all six `./demo.sh verify` checks. On kind, `scripts/local/kind.sh up` and
 > `verify` pass all six checks with NetworkPolicies switched off (`MAOP_NETWORK_POLICIES=false`, see the README). Treat `./demo.sh verify` as the acceptance

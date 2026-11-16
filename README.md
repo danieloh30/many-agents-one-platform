@@ -9,7 +9,7 @@ increased checkout errors after a release — and the interesting part is everyt
 model calls: durable workflow state, asynchronous work with bounded retries, verified workload
 identity, runtime policy enforcement, connected telemetry, and demand-driven scaling.
 
-> Tested end to end on a local stack, on OpenShift 4.22 and on kind, with a live model. See
+> Tested end to end on a local stack, on Kubernetes (Red Hat OpenShift) and on kind, with a live model. See
 > [Where it has been verified](#where-it-has-been-verified) and the [tutorials](https://danieloh30.github.io/many-agents-one-platform/).
 > This is a demonstration, not a production system.
 
@@ -236,7 +236,7 @@ and are not re-run automatically:
 | Environment | Result |
 | --- | --- |
 | Local stack (`scripts/local/stack.sh e2e`) | All 9 checks pass with the deterministic model and with live `gpt-4o-mini` |
-| OpenShift 4.22 (`./demo.sh up` + `./demo.sh verify`) | All six checks pass: success run, one trace across six services, policy denial, SPIRE identity enforcement, KEDA scale-out 1 → 6, redelivery without a duplicate effect |
+| Kubernetes (Red Hat OpenShift), `./demo.sh up` + `./demo.sh verify` | All six checks pass: success run, one trace across six services, policy denial, SPIRE identity enforcement, KEDA scale-out 1 → 6, redelivery without a duplicate effect |
 | kind (`scripts/local/kind.sh`) | All six checks pass, with NetworkPolicies off |
 
 Details and the items not yet exercised: [deployment.md §8](docs/deployment.md#8-items-that-require-cluster-verification-summary).
