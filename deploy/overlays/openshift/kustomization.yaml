@@ -14,12 +14,71 @@ resources:
   - network-router.yaml
   - network-builds.yaml
 
+# part-of=maop comes from the base (resources and pod templates). It is not re-applied here so that
+# topology.yaml can set per-group part-of values on the workloads for the Topology view.
 labels:
   - pairs:
-      app.kubernetes.io/part-of: maop
       app.kubernetes.io/managed-by: many-agents-one-platform
     includeSelectors: false
     includeTemplates: false
 
 patches:
   - path: topology.yaml
+  # Topology application groups: workload-level app.kubernetes.io/part-of only. Pod templates keep
+  # part-of=maop (NetworkPolicies select on it). JSON 'replace' patches are used because a strategic-merge
+  # patch also changed the pod-template label (the base label transformer shares the value node).
+  - target: {kind: Deployment, name: triage-agent}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: agent-services
+  - target: {kind: Deployment, name: evidence-worker}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: agent-services
+  - target: {kind: Deployment, name: recommendation-agent}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: agent-services
+  - target: {kind: Deployment, name: tool-service}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: tool-boundary
+  - target: {kind: Deployment, name: ops-console}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: operations-console
+  - target: {kind: StatefulSet, name: nats}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: messaging-and-state
+  - target: {kind: StatefulSet, name: postgres}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: messaging-and-state
+  - target: {kind: Deployment, name: otel-collector}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: observability
+  - target: {kind: Deployment, name: jaeger}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: observability
+  - target: {kind: Deployment, name: prometheus}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: observability
+  - target: {kind: Deployment, name: grafana}
+    patch: |-
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: observability

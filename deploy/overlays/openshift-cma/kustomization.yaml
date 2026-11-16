@@ -32,3 +32,9 @@ patches:
               query: sum(maop_queue_pending{consumer="evidence-workers"}) + sum(maop_queue_ack_pending{consumer="evidence-workers"})
               threshold: "4"
               activationThreshold: "0"
+
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: many-agents-one-platform
+    includeSelectors: false
+    includeTemplates: false

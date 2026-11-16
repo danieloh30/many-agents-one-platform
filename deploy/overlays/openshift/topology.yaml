@@ -1,4 +1,5 @@
 # OpenShift topology view: runtime icons (app.openshift.io/runtime) and connectors (app.openshift.io/connects-to).
+# Application groups are set in kustomization.yaml (JSON patches on the workloads' part-of label only).
 # Only built-in console icons exist; Jaeger, Prometheus, Grafana, NATS and the OTel Collector have no dedicated
 # icon, so they use 'golang' (the language they are written in). Workload metadata only: no pod restarts.
 ---

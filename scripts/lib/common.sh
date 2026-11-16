@@ -23,6 +23,9 @@ MAOP_STATE_DIR="${REPO_ROOT}/.maop"          # git-ignored: rendered manifests, 
 MAOP_SERVICES="triage-agent evidence-worker recommendation-agent tool-service ops-console"
 MAOP_MANAGED_BY="many-agents-one-platform"
 MAOP_PART_OF="maop"
+# Everything this project deploys carries managed-by; workloads may use a per-group part-of on OpenShift
+# (Topology view). The install record ConfigMap is excluded so `down` keeps it.
+MAOP_OWNED_SELECTOR="app.kubernetes.io/managed-by=many-agents-one-platform,app.kubernetes.io/name!=maop-installed-components"
 MAOP_IDENTITY_PROBE_IMAGE="docker.io/curlimages/curl:8.23.0"
 
 # Loads .env.local (KEY=value lines) without executing it as shell code and without overriding

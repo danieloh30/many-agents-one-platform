@@ -214,6 +214,17 @@ to the internal registry. **Verify on cluster**: Docker Hub pull limits; pre-pul
 - **Verify on cluster**: NATS, Prometheus, and the spiffe-helper image start cleanly under
   `restricted-v2` with a random UID and a read-only root filesystem.
 
+### 5.4.1 Topology view
+
+The `openshift` overlay groups the workloads into Topology applications through the workload-level
+`app.kubernetes.io/part-of` label: `operations-console` (ops-console), `agent-services` (triage-agent,
+evidence-worker, recommendation-agent), `tool-boundary` (tool-service with its OPA sidecar),
+`messaging-and-state` (NATS, PostgreSQL) and `observability` (OTel Collector, Jaeger, Prometheus, Grafana).
+Pod templates keep `part-of: maop`, which the NetworkPolicies select on, and `demo.sh status/down` find workloads
+by `app.kubernetes.io/managed-by`. `app.openshift.io/runtime` sets the icons (`quarkus`, `postgresql`, and `golang`
+for the Go-based components, which have no dedicated console icon) and `app.openshift.io/connects-to` draws the
+arrows.
+
 ### 5.5 Prerequisites checked by `./demo.sh doctor`
 
 | Check | Failure message points to |

@@ -5,7 +5,7 @@
 cmd_status() {
   require_owned_namespace
   log "workloads in namespace $MAOP_NAMESPACE ($(kube_server_url))"
-  kn get deploy,statefulset -l "app.kubernetes.io/part-of=${MAOP_PART_OF}" -o wide || true
+  kn get deploy,statefulset -l "${MAOP_OWNED_SELECTOR}" -o wide || true
   printf '\n'
   kn get pods -l "app.kubernetes.io/part-of=${MAOP_PART_OF}" -o wide || true
   printf '\n'
@@ -103,7 +103,7 @@ cmd_down() {
     foreign) die "namespace '$MAOP_NAMESPACE' is not managed by this project; refusing to touch it";;
     unreachable) die "cannot reach the cluster ($(kube_server_url))";;
   esac
-  local what="delete app resources (label app.kubernetes.io/part-of=${MAOP_PART_OF}); keep PVCs and Secrets"
+  local what="delete app resources (label ${MAOP_OWNED_SELECTOR}); keep PVCs and Secrets"
   [[ "$OPT_DELETE_DATA" == "true" ]] && what="delete app resources AND PVCs + Secrets (data loss)"
   [[ "$OPT_DELETE_NAMESPACE" == "true" ]] && what="$what; DELETE NAMESPACE"
   [[ "$OPT_UNINSTALL_PLATFORM" == "true" ]] && what="$what; uninstall platform components recorded in maop-installed-components"
@@ -111,7 +111,7 @@ cmd_down() {
 
   local kind sel="app.kubernetes.io/part-of=${MAOP_PART_OF}"
   for kind in $(_owned_kinds); do
-    "$KC" delete "$kind" -n "$MAOP_NAMESPACE" -l "$sel" --ignore-not-found --wait=true 2>&1 \
+    "$KC" delete "$kind" -n "$MAOP_NAMESPACE" -l "$MAOP_OWNED_SELECTOR" --ignore-not-found --wait=true 2>&1 \
       | grep -v -E "doesn't have a resource type|the server could not find the requested resource" >&2 || true
   done
   "$KC" delete clusterspiffeid "maop-${MAOP_NAMESPACE}" --ignore-not-found 2>/dev/null || true
