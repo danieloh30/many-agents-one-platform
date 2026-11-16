@@ -13,14 +13,14 @@ import { GatedButton } from '../../design/ui';
 export function ResetControl() {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const { token, reason } = useCanMutate();
+  const { canMutate, token, reason } = useCanMutate();
   const toast = useNotify((s) => s.toast);
   const announce = useNotify((s) => s.announce);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const reset = async () => {
-    if (!token) return;
+    if (!canMutate) return;
     setBusy(true);
     try {
       await api.reset(token);

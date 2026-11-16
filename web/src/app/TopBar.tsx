@@ -19,7 +19,7 @@ import { useLiveStore } from '../api/liveStore';
 import { useConfig } from '../api/queries';
 import type { StreamStatus } from '../api/streamClient';
 import { Button, Pill, Tip } from '../design/ui';
-import { useSession } from './session';
+import { usePresenterTokenRequired, useSession } from './session';
 import { useEffectiveTheme } from './theme';
 import { useUi } from './uiStore';
 
@@ -89,6 +89,7 @@ export function TopBar() {
   const setHelpOpen = useUi((s) => s.setHelpOpen);
   const setTokenDialogOpen = useUi((s) => s.setTokenDialogOpen);
   const session = useSession((s) => s.state);
+  const tokenRequired = usePresenterTokenRequired();
   const [fs, toggleFs] = useFullscreen();
 
   return (
@@ -100,14 +101,16 @@ export function TopBar() {
       </Pill>
       <StreamStatusPill />
       <div className="ml-auto flex items-center gap-1">
-        <Button
-          size="sm"
-          variant={session === 'valid' ? 'secondary' : 'ghost'}
-          icon={KeyRound}
-          onClick={() => setTokenDialogOpen(true)}
-        >
-          {session === 'valid' ? 'Presenter token active' : 'Presenter sign-in'}
-        </Button>
+        {tokenRequired ? (
+          <Button
+            size="sm"
+            variant={session === 'valid' ? 'secondary' : 'ghost'}
+            icon={KeyRound}
+            onClick={() => setTokenDialogOpen(true)}
+          >
+            {session === 'valid' ? 'Presenter token active' : 'Presenter sign-in'}
+          </Button>
+        ) : null}
         <div
           role="group"
           aria-label="Color theme"

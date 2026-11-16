@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api, ApiError } from '../api/client';
 import { readStorage, writeStorage } from './storage';
+import { useConfig } from '../api/queries';
 
 const TOKEN_KEY = 'maop.presenterToken';
 
@@ -68,6 +69,8 @@ export const useSession = create<Session>((set, get) => ({
 export function useCanMutate(): { canMutate: boolean; token: string | null; reason: string | null } {
   const token = useSession((s) => s.token);
   const state = useSession((s) => s.state);
+  const required = usePresenterTokenRequired();
+  if (!required) return { canMutate: true, token: null, reason: null };
   if (token && state === 'valid') return { canMutate: true, token, reason: null };
   if (token && state === 'checking') return { canMutate: false, token: null, reason: 'Checking presenter token…' };
   if (token && state === 'unverified')
@@ -77,4 +80,10 @@ export function useCanMutate(): { canMutate: boolean; token: string | null; reas
     token: null,
     reason: 'Read-only: enter the presenter token to run scenarios and approve actions.',
   };
+}
+
+/** False only when the backend says mutations are open (MAOP_PRESENTER_AUTH=false). Unknown means required. */
+export function usePresenterTokenRequired(): boolean {
+  const config = useConfig();
+  return config.data?.auth?.presenterTokenRequired !== false;
 }

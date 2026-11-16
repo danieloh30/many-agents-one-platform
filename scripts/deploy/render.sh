@@ -137,6 +137,7 @@ render_manifests() {
     _literal MAOP_TRUST_DOMAIN "$td"
     _literal MAOP_TOOL_SERVICE_SPIFFE_ID "spiffe://${td}/ns/${MAOP_NAMESPACE}/sa/tool-service"
     _literal MAOP_PROFILE "$profile"
+    _literal MAOP_PRESENTER_AUTH "${MAOP_PRESENTER_AUTH:-false}"
     _literal MAOP_EVIDENCE_MIN_REPLICAS "$profile_min"
     _literal MAOP_EVIDENCE_MAX_REPLICAS "$MAOP_EVIDENCE_MAX_REPLICAS"
     printf '  - name: model-config\n    behavior: merge\n    literals:\n'

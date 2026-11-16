@@ -9,20 +9,24 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 /**
- * Every mutating console endpoint (and the session check) requires {@code Authorization: Bearer <presenter token>}.
- * Read endpoints stay open so an audience can browse. The token is never returned by any API.
+ * When enabled, every mutating console endpoint (and the session check) requires
+ * {@code Authorization: Bearer <presenter token>}; read endpoints stay open. When disabled
+ * ({@code MAOP_PRESENTER_AUTH=false}), anyone who can reach the console can run scenarios and reset the
+ * demonstration; triage admission limits still bound the load. The token is never returned by any API.
  */
 public class PresenterAuth {
 
     @ConfigProperty(name = "maop.presenter-token")
     Optional<String> token;
+    @ConfigProperty(name = "maop.presenter-auth.enabled", defaultValue = "true")
+    boolean enabled;
 
     @ServerRequestFilter
     public Optional<Response> check(ContainerRequestContext ctx) {
         String path = ctx.getUriInfo().getPath();
         boolean mutation = !"GET".equals(ctx.getMethod()) && !"HEAD".equals(ctx.getMethod()) && !"OPTIONS".equals(ctx.getMethod());
-        if (!path.startsWith("/api/") || !(mutation || path.equals("/api/v1/session"))) {
-            return Optional.empty();
+        if (!enabled || !path.startsWith("/api/") || !(mutation || path.equals("/api/v1/session"))) {
+            return Optional.empty(); // open mode (maop.presenter-auth.enabled=false): admission limits still apply
         }
         String expected = token.map(String::strip).orElse("");
         if (expected.isEmpty()) {

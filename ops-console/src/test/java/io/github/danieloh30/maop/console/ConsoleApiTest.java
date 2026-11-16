@@ -21,7 +21,8 @@ class ConsoleApiTest {
     public static class Profile implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
-            return Map.of("maop.presenter-token", "test-token-for-console-api", "maop.triage.url", "http://127.0.0.1:1",
+            return Map.of("maop.presenter-token", "test-token-for-console-api", "maop.presenter-auth.enabled", "true",
+                    "maop.triage.url", "http://127.0.0.1:1",
                     "maop.spiffe.dir", "target/no-svid", "maop.tool-service.spiffe-id", "spiffe://maop.test/ns/maop/sa/tool-service",
                     "maop.prometheus.url", "", "maop.jaeger.internal-url", "", "maop.grafana.internal-url", "");
         }

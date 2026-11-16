@@ -40,13 +40,13 @@ export function RunHeader({ run }: { run: Run }) {
 
 function CancelButton({ run }: { run: Run }) {
   const qc = useQueryClient();
-  const { token, reason } = useCanMutate();
+  const { canMutate, token, reason } = useCanMutate();
   const toast = useNotify((s) => s.toast);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   if (isTerminal(run.state)) return null;
   const cancel = async () => {
-    if (!token) return;
+    if (!canMutate) return;
     setBusy(true);
     try {
       await api.cancel(run.runId, token);

@@ -45,6 +45,8 @@ export interface ConsoleConfig {
   links: { jaeger: string | null; grafana: string | null; grafanaDashboard: string | null };
   limits: { burstMaxRuns: number | null; maxEvidenceTasks: number | null };
   features: { faultInjection: boolean };
+  /** Absent on older backends: treat as required. */
+  auth?: { presenterTokenRequired: boolean };
 }
 
 // ---- §2.2 CreateRunRequest / §2.4 scenarios ------------------------------------------------

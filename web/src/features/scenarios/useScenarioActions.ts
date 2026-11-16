@@ -52,7 +52,7 @@ export function useScenarioActions() {
 
   /** Submits a run. The caller owns the Idempotency-Key (one per form instance or preset click). */
   async function submitRun(guardId: string, request: CreateRunRequest, idempotencyKey: string): Promise<Run | null> {
-    if (!token) return null;
+    if (!canMutate) return null;
     return guarded(guardId, async () => {
       try {
         const run = await api.createRun(request, token, idempotencyKey);
@@ -70,7 +70,7 @@ export function useScenarioActions() {
   }
 
   async function startBurst(request: BurstRequest) {
-    if (!token) return null;
+    if (!canMutate) return null;
     return guarded('BURST', async () => {
       try {
         const status = await api.startBurst(request, token);
@@ -93,7 +93,7 @@ export function useScenarioActions() {
   }
 
   async function stopBurst() {
-    if (!token) return null;
+    if (!canMutate) return null;
     return guarded('BURST_STOP', async () => {
       try {
         await api.stopBurst(token);

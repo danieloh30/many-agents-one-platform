@@ -71,6 +71,24 @@ describe('scenario submission', () => {
     expect(keys[0]).toBe(keys[1]);
   });
 
+  it('enables controls without a token when the backend reports open mode, and sends no Authorization header', async () => {
+    resetStores();
+    const api = baseRoutes({
+      'GET /api/v1/config': () => ({ ...config(), auth: { presenterTokenRequired: false } }),
+      'POST /api/v1/runs': () => reply(202, run({ state: 'SUBMITTED' })),
+    });
+    const user = userEvent.setup();
+    renderApp('/');
+    const button = await screen.findByRole('button', { name: 'Run scenario: Evidence-backed proposal' });
+    await waitFor(() => expect(button).toBeEnabled());
+    expect(screen.queryByRole('button', { name: /Presenter sign-in/ })).not.toBeInTheDocument();
+    await user.click(button);
+    await waitFor(() => expect(api.count('POST', '/api/v1/runs')).toBe(1));
+    const post = api.calls.find((c) => c.method === 'POST')!;
+    expect(post.headers.authorization).toBeUndefined();
+    expect(post.headers['idempotency-key']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
   it('keeps mutation controls visible but disabled with an explanation when no token is present', async () => {
     resetStores();
     const api = baseRoutes();

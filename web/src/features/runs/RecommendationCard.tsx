@@ -117,7 +117,7 @@ export function RecommendationCard({ run }: { run: Run }) {
 
 function ApprovalSection({ run }: { run: Run }) {
   const qc = useQueryClient();
-  const { token, reason } = useCanMutate();
+  const { canMutate, token, reason } = useCanMutate();
   const toast = useNotify((s) => s.toast);
   const announce = useNotify((s) => s.announce);
   const [confirm, setConfirm] = useState<'APPROVE' | 'REJECT' | null>(null);
@@ -141,7 +141,7 @@ function ApprovalSection({ run }: { run: Run }) {
   if (run.state !== 'AWAITING_APPROVAL' || !rec) return null;
 
   const submit = async (decision: 'APPROVE' | 'REJECT') => {
-    if (!token || busy) return;
+    if (!canMutate || busy) return;
     setBusy(true);
     try {
       const updated = await api.approve(run.runId, { decision, actionDigest: rec.proposedAction.actionDigest }, token);

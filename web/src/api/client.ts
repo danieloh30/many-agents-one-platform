@@ -142,18 +142,18 @@ export const api = {
   session: (token: string) => request<void>('/session', { token }),
 
   // ---- mutations (Bearer presenter token) ----
-  createRun: (body: CreateRunRequest, token: string, idempotencyKey: string) =>
+  createRun: (body: CreateRunRequest, token: string | null, idempotencyKey: string) =>
     withNetworkRetry(() =>
       request<Run>('/runs', { method: 'POST', body, token, headers: { 'Idempotency-Key': idempotencyKey } }),
     ),
-  approve: (runId: string, body: ApprovalRequest, token: string) =>
+  approve: (runId: string, body: ApprovalRequest, token: string | null) =>
     request<Run>(`/runs/${encodeURIComponent(runId)}/approval`, { method: 'POST', body, token }),
-  cancel: (runId: string, token: string) =>
+  cancel: (runId: string, token: string | null) =>
     request<Run>(`/runs/${encodeURIComponent(runId)}/cancel`, { method: 'POST', token }),
-  startBurst: (body: BurstRequest, token: string) =>
+  startBurst: (body: BurstRequest, token: string | null) =>
     request<BurstStatus>('/bursts', { method: 'POST', body, token }),
-  stopBurst: (token: string) => request<BurstStatus | undefined>('/bursts/stop', { method: 'POST', token }),
-  reset: (token: string) => request<void>('/admin/reset', { method: 'POST', token }),
+  stopBurst: (token: string | null) => request<BurstStatus | undefined>('/bursts/stop', { method: 'POST', token }),
+  reset: (token: string | null) => request<void>('/admin/reset', { method: 'POST', token }),
 };
 
 export const queryKeys = {

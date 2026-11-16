@@ -50,6 +50,8 @@ public class ConsoleResource {
     String trustDomain;
     @ConfigProperty(name = "maop.identity.mode", defaultValue = "SPIFFE")
     String identityMode;
+    @ConfigProperty(name = "maop.presenter-auth.enabled", defaultValue = "true")
+    boolean presenterAuth;
     @ConfigProperty(name = "maop.links.jaeger")
     Optional<String> jaeger;
     @ConfigProperty(name = "maop.links.grafana")
@@ -88,6 +90,7 @@ public class ConsoleResource {
         n.putObject("limits").put("burstMaxRuns", info == null ? 12 : info.at("/limits/burstMaxRuns").asInt(12))
                 .put("maxEvidenceTasks", 4);
         n.putObject("features").put("faultInjection", info != null && info.at("/features/faultInjection").asBoolean(false));
+        n.putObject("auth").put("presenterTokenRequired", presenterAuth);
         return n;
     }
 

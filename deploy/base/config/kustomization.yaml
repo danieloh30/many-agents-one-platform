@@ -20,6 +20,7 @@ configMapGenerator:
       - MAOP_TRUST_DOMAIN=maop.example
       - MAOP_TOOL_SERVICE_SPIFFE_ID=spiffe://maop.example/ns/maop/sa/tool-service
       - MAOP_PROFILE=summit
+      - MAOP_PRESENTER_AUTH=false
       - MAOP_EVIDENCE_MIN_REPLICAS=1
       - MAOP_EVIDENCE_MAX_REPLICAS=6
   - name: model-config

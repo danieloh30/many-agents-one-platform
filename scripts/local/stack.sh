@@ -103,7 +103,7 @@ up() {
   svc evidence-worker evidence-worker QUARKUS_HTTP_PORT=8082 QUARKUS_MANAGEMENT_PORT=9003 HOSTNAME=evidence-worker-local-1
   svc recommendation-agent recommendation-agent QUARKUS_HTTP_PORT=8083 QUARKUS_MANAGEMENT_PORT=9004 HOSTNAME=recommendation-agent-local-1
   svc ops-console ops-console QUARKUS_HTTP_PORT=8080 QUARKUS_MANAGEMENT_PORT=9005 MAOP_TRIAGE_URL=http://localhost:8081 \
-    MAOP_PRESENTER_TOKEN="$(cat "$TOKEN_FILE")" MAOP_IDENTITY_MODE=DEV_STATIC MAOP_JAEGER_URL=http://localhost:16686 \
+    MAOP_PRESENTER_TOKEN="$(cat "$TOKEN_FILE")" MAOP_PRESENTER_AUTH="${MAOP_PRESENTER_AUTH:-false}" MAOP_IDENTITY_MODE=DEV_STATIC MAOP_JAEGER_URL=http://localhost:16686 \
     MAOP_JAEGER_INTERNAL_URL=http://localhost:16686 MAOP_PROMETHEUS_URL=http://localhost:9090 \
     MAOP_GRAFANA_URL=http://localhost:3000 MAOP_GRAFANA_INTERNAL_URL=http://localhost:3000
   for p in 9001 9002 9003 9004 9005; do
