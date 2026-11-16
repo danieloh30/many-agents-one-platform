@@ -1,0 +1,15 @@
+# OpenShift binary builds (BuildConfigs) run as pods in this namespace and need egress to pull base images
+# (registry.access.redhat.com), push to the internal registry, and report status to the API server.
+# Selects only build pods (they carry the openshift.io/build.name label).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-openshift-build-egress
+spec:
+  podSelector:
+    matchExpressions:
+      - key: openshift.io/build.name
+        operator: Exists
+  policyTypes: ["Egress"]
+  egress:
+    - {}

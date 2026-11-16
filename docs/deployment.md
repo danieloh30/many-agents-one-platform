@@ -282,7 +282,7 @@ and SPIRE uses a local Kubernetes cluster (for example kind) with `./demo.sh up 
 2.21.0 installed and scaled evidence-worker 1 → 6), C3 and C4 (SPIRE 0.30.4 with the chart's SCCs; restricted
 pods mount `csi.spiffe.io`, after the CSIDriver-ordering retry in `platform.sh`), C5 (all images run with
 OpenShift-assigned UIDs), C7 (scale-out within the runbook target), C8 (live model reachable from the agents),
-C9 (OVN-Kubernetes enforced the NetworkPolicies without blocking any edge), C10 (public images pulled). C2 is
+C9 (OVN-Kubernetes enforced the NetworkPolicies; OpenShift build pods needed their own egress policy, `deploy/overlays/openshift/network-builds.yaml`, found on the second deployment), C10 (public images pulled). C2 is
 not exercised (CMA path) and C6 (SSE through the router for 30 min) was not measured.
 
 On kind (`scripts/local/kind.sh`), all six verify checks also pass, with `MAOP_NETWORK_POLICIES=false`: with

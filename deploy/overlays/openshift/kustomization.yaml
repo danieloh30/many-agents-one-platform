@@ -12,6 +12,7 @@ resources:
   - ../../base
   - routes.yaml
   - network-router.yaml
+  - network-builds.yaml
 
 labels:
   - pairs:
