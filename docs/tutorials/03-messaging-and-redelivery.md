@@ -90,7 +90,7 @@ is the pull loop that every consumer shares:
 
 **Advisory backstop.** If a worker crashes on every delivery, no handler ever reaches
 `onFinalFailure`. The message would then stay in the work-queue stream. To handle that,
-[`AdvisoryListener.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/AdvisoryListener.java)
+[`AdvisoryListener.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/service/AdvisoryListener.java)
 subscribes to JetStream's `MAX_DELIVERIES` advisories for `MAOP_WORK`. It copies the message to the
 DLQ, removes it from the work stream, and folds a `task.dead_lettered` fact into the run, which then
 moves to `NEEDS_REVIEW` with the reason. After that, nothing is retried automatically.
@@ -118,7 +118,7 @@ curl -s "http://localhost:8080/api/v1/audit/invocations?runId=$RUN" | jq '.items
 
 ### 4. Follow the idempotency chain
 
-On delivery 1, [`EvidenceHandler.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/evidence-worker/src/main/java/io/github/danieloh30/maop/evidence/EvidenceHandler.java)
+On delivery 1, [`EvidenceHandler.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/evidence-worker/src/main/java/io/github/danieloh30/maop/evidence/service/EvidenceHandler.java)
 makes its baseline tool calls, then deliberately abandons the message: no acknowledgement and no
 result. After `AckWait`, JetStream redelivers it, and the second delivery repeats the same tool calls.
 Three layers stop a duplicate effect:
@@ -126,7 +126,7 @@ Three layers stop a duplicate effect:
 | Layer | Key | Where |
 | --- | --- | --- |
 | JetStream duplicate window (best effort, 2 min) | `Nats-Msg-Id` = event ID | broker |
-| Tool idempotency (durable) | `<taskId>:<toolName>:<sha256(canonical args)[0..16]>`, plus `:<approvalId>` for an approved action | `tool_invocation ... on conflict (idempotency_key) do nothing` in [`InvocationStore.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/InvocationStore.java) |
+| Tool idempotency (durable) | `<taskId>:<toolName>:<sha256(canonical args)[0..16]>`, plus `:<approvalId>` for an approved action | `tool_invocation ... on conflict (idempotency_key) do nothing` in [`InvocationStore.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/service/InvocationStore.java) |
 | Result deduplication (durable) | `(consumer, event id)`, where a terminal result's ID is UUIDv5 of the task ID and event type | `inbox_event` in triage-agent |
 
 When the key already exists with the same argument digest, tool-service returns the stored response

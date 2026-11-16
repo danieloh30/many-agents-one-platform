@@ -1,14 +1,17 @@
 package io.github.danieloh30.maop.recommendation;
 
+import io.github.danieloh30.maop.recommendation.agentic.RecommendationAgent;
+import io.github.danieloh30.maop.recommendation.service.RecommendationHandler;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.danieloh30.maop.common.Ids;
-import io.github.danieloh30.maop.common.contract.ActionDigests;
-import io.github.danieloh30.maop.common.contract.ActionType;
-import io.github.danieloh30.maop.common.contract.Recommendation;
-import io.github.danieloh30.maop.common.contract.RecommendationCommand;
+import io.github.danieloh30.maop.common.model.ActionDigests;
+import io.github.danieloh30.maop.common.model.ActionType;
+import io.github.danieloh30.maop.common.model.Recommendation;
+import io.github.danieloh30.maop.common.model.RecommendationCommand;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;

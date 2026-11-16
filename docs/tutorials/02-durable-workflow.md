@@ -69,9 +69,9 @@ curl -s "http://localhost:8080/api/v1/runs/$RUN/timeline" | jq -r '.items[] | "\
 
 ### 2. See that state changes and messages commit together
 
-Open [`Workflow.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/Workflow.java).
+Open [`Workflow.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/service/Workflow.java).
 Every method runs with `@Transactional(MANDATORY)`, inside the caller's transaction. `transition(...)`
-checks the move against [`Transitions.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/Transitions.java),
+checks the move against [`Transitions.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/model/Transitions.java),
 updates the run, writes a timeline entry, and inserts a `run.state_changed` event into the
 **outbox**, all in the same transaction. Nothing is published to NATS inside a request or message
 handler transaction.
@@ -92,7 +92,7 @@ replicas safe.
 
 ### 3. See how duplicate results are absorbed
 
-Results are folded by [`ResultFolder.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/ResultFolder.java).
+Results are folded by [`ResultFolder.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/service/ResultFolder.java).
 It handles one event per transaction:
 
 1. `inbox.firstDelivery(consumer, eventId)` inserts into `inbox_event ... on conflict do nothing`. If
@@ -116,7 +116,7 @@ service, each hop derives its timeout as `min(configured, remaining − 2 s)` an
 with less than 3 s left
 ([`Deadlines.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-common/src/main/java/io/github/danieloh30/maop/common/Deadlines.java)).
 
-[`Sweeper.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/Sweeper.java)
+[`Sweeper.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/service/Sweeper.java)
 runs every 5 s. It selects overdue runs with `for update skip locked` and moves them to `TIMED_OUT`,
 or to `COMPLETED (APPROVAL_EXPIRED)` when no approval decision arrived within the 10-minute approval
 window. It is the backstop for every case where a message was lost.
@@ -167,4 +167,4 @@ transactionally. If a run exceeds its token budget, it moves to `NEEDS_REVIEW (B
 - [Architecture §4: Durable run state machine](../architecture.md#4-durable-run-state-machine)
 - [Architecture §6: Messaging reliability](../architecture.md#6-messaging-reliability)
 - [ADR-0003: Explicit durable orchestration](../decisions/0003-explicit-durable-orchestration.md) · [ADR-0004: Outbox/inbox](../decisions/0004-outbox-inbox.md)
-- Source: [`RunStore.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/RunStore.java), [`Outbox.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-outbox/src/main/java/io/github/danieloh30/maop/outbox/Outbox.java), [`Inbox.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-outbox/src/main/java/io/github/danieloh30/maop/outbox/Inbox.java)
+- Source: [`RunStore.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/service/RunStore.java), [`Outbox.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-outbox/src/main/java/io/github/danieloh30/maop/outbox/Outbox.java), [`Inbox.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-outbox/src/main/java/io/github/danieloh30/maop/outbox/Inbox.java)

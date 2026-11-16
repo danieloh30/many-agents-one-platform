@@ -1,26 +1,30 @@
 package io.github.danieloh30.maop.triage;
 
+import io.github.danieloh30.maop.triage.model.Run;
+import io.github.danieloh30.maop.triage.service.ResultFolder;
+import io.github.danieloh30.maop.triage.service.RunStore;
+
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.danieloh30.maop.common.Ids;
-import io.github.danieloh30.maop.common.contract.ActionCompleted;
-import io.github.danieloh30.maop.common.contract.ActionDigests;
-import io.github.danieloh30.maop.common.contract.ActionType;
-import io.github.danieloh30.maop.common.contract.ActionCommand;
-import io.github.danieloh30.maop.common.contract.EvidenceCompleted;
-import io.github.danieloh30.maop.common.contract.EvidenceItem;
-import io.github.danieloh30.maop.common.contract.EvidenceTaskCommand;
-import io.github.danieloh30.maop.common.contract.FailureReason;
-import io.github.danieloh30.maop.common.contract.Fact;
-import io.github.danieloh30.maop.common.contract.ProposedAction;
-import io.github.danieloh30.maop.common.contract.Recommendation;
-import io.github.danieloh30.maop.common.contract.RecommendationCommand;
-import io.github.danieloh30.maop.common.contract.RecommendationCompleted;
-import io.github.danieloh30.maop.common.contract.TaskFailed;
-import io.github.danieloh30.maop.common.contract.TaskKind;
-import io.github.danieloh30.maop.common.contract.Usage;
+import io.github.danieloh30.maop.common.model.ActionCompleted;
+import io.github.danieloh30.maop.common.model.ActionDigests;
+import io.github.danieloh30.maop.common.model.ActionType;
+import io.github.danieloh30.maop.common.model.ActionCommand;
+import io.github.danieloh30.maop.common.model.EvidenceCompleted;
+import io.github.danieloh30.maop.common.model.EvidenceItem;
+import io.github.danieloh30.maop.common.model.EvidenceTaskCommand;
+import io.github.danieloh30.maop.common.model.FailureReason;
+import io.github.danieloh30.maop.common.model.Fact;
+import io.github.danieloh30.maop.common.model.ProposedAction;
+import io.github.danieloh30.maop.common.model.Recommendation;
+import io.github.danieloh30.maop.common.model.RecommendationCommand;
+import io.github.danieloh30.maop.common.model.RecommendationCompleted;
+import io.github.danieloh30.maop.common.model.TaskFailed;
+import io.github.danieloh30.maop.common.model.TaskKind;
+import io.github.danieloh30.maop.common.model.Usage;
 import io.github.danieloh30.maop.common.events.CloudEvent;
 import io.github.danieloh30.maop.common.events.EventTypes;
 import io.github.danieloh30.maop.common.events.Subjects;

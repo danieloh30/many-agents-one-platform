@@ -1,0 +1,43 @@
+package io.github.danieloh30.maop.recommendation.agentic;
+
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import io.github.danieloh30.maop.common.agentic.DeterministicScript;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/** Explicit test substitute: proposes the rollback the synthetic scenario implies, citing the real evidence ids. */
+@ApplicationScoped
+public class DeterministicRecommendationScript implements DeterministicScript {
+
+    private static final Pattern EVIDENCE_ID = Pattern.compile("\"evidenceId\":\"([^\"]+)\"");
+
+    @Override
+    public ChatResponse respond(String purpose, ChatRequest request) {
+        String user = "";
+        for (ChatMessage m : request.messages()) {
+            if (m instanceof UserMessage u) {
+                user = u.singleText();
+                break;
+            }
+        }
+        List<String> ids = new ArrayList<>();
+        Matcher mt = EVIDENCE_ID.matcher(user);
+        while (mt.find()) {
+            ids.add("\"" + mt.group(1) + "\"");
+        }
+        String text = """
+                {"summary":"[deterministic] Roll back checkout to 2.13.2",
+                 "explanation":"[deterministic] Errors began right after checkout 2.14.0, which lowered the payment client timeout and disabled retries; the dominant error is a payment client timeout.",
+                 "proposedAction":{"actionType":"ROLLBACK_DEPLOYMENT","target":"checkout","parameters":{"toVersion":"2.13.2"}},
+                 "citations":[%s],"confidence":0.8,"risks":["Rollback also disables the new checkout flow"]}"""
+                .formatted(String.join(",", ids));
+        return ChatResponse.builder().aiMessage(AiMessage.from(text)).build();
+    }
+}

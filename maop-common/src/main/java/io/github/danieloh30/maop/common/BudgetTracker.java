@@ -1,7 +1,7 @@
 package io.github.danieloh30.maop.common;
 
-import io.github.danieloh30.maop.common.contract.TaskBudget;
-import io.github.danieloh30.maop.common.contract.Usage;
+import io.github.danieloh30.maop.common.model.TaskBudget;
+import io.github.danieloh30.maop.common.model.Usage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 

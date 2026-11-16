@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.danieloh30.maop.common.Ids;
 import io.github.danieloh30.maop.common.TaskFailure;
-import io.github.danieloh30.maop.common.contract.FailureReason;
+import io.github.danieloh30.maop.common.model.FailureReason;
 import io.github.danieloh30.maop.testing.FakeMtlsServer;
 import io.github.danieloh30.maop.testing.TestPki;
 import java.nio.file.Files;

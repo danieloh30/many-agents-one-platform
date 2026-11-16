@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.common.tools;
 
-import io.github.danieloh30.maop.common.contract.ActionType;
+import io.github.danieloh30.maop.common.model.ActionType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

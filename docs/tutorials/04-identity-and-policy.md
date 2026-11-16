@@ -51,7 +51,7 @@ flowchart LR
   PEMs and reloads them every 30 s (`quarkus.tls.spiffe.reload-period=30S`). It also sets
   `quarkus.http.ssl.client-auth=required` and `quarkus.http.insecure-requests=disabled`, so the tool
   API has no plaintext port.
-  [`CallerFilter.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/CallerFilter.java)
+  [`CallerFilter.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/resource/CallerFilter.java)
   takes the single URI SAN from the verified peer certificate and rejects any other trust domain.
   Headers and request bodies are never a source of identity.
 - **Client side** (agents),
@@ -63,7 +63,7 @@ flowchart LR
 ## How policy works
 
 tool-service is the **policy enforcement point**. For every invocation
-([`ToolInvocationService.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/ToolInvocationService.java)),
+([`ToolInvocationService.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/service/ToolInvocationService.java)),
 it runs these steps in one transaction:
 
 1. **Claim** the idempotency key. A committed result or denial is returned as-is.
@@ -200,4 +200,4 @@ podman run --rm -v "$PWD/policy":/policy:Z docker.io/openpolicyagent/opa:1.22.4-
 
 - [Security](../security.md): identities, enforcement flow, policy rules, residual risks
 - [ADR-0007: OPA PEP at the tool service](../decisions/0007-opa-pep-at-tool-service.md) · [ADR-0008: spiffe-helper and the TLS registry](../decisions/0008-spiffe-helper-tls-registry.md)
-- Source: [`tools_test.rego`](https://github.com/danieloh30/many-agents-one-platform/blob/main/policy/maop/tools_test.rego), [`data.json`](https://github.com/danieloh30/many-agents-one-platform/blob/main/policy/maop/data.json), [`OpaClient.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/OpaClient.java), [`helper.conf`](https://github.com/danieloh30/many-agents-one-platform/blob/main/deploy/components/spiffe/helper.conf)
+- Source: [`tools_test.rego`](https://github.com/danieloh30/many-agents-one-platform/blob/main/policy/maop/tools_test.rego), [`data.json`](https://github.com/danieloh30/many-agents-one-platform/blob/main/policy/maop/data.json), [`OpaClient.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/service/OpaClient.java), [`helper.conf`](https://github.com/danieloh30/many-agents-one-platform/blob/main/deploy/components/spiffe/helper.conf)

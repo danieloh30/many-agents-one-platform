@@ -61,7 +61,7 @@ curl -s "http://localhost:16686/api/traces/$TRACE" | jq -r '[.data[0].processes[
 In Jaeger, open the tool-service spans. Requests carry `maop.tool.name` and the verified caller's
 `maop.caller.spiffe_id`. The OPA query span records `maop.policy.decision` (`allow` or `deny`),
 `maop.policy.decision_id` and `maop.policy.reasons`
-([`OpaClient.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/OpaClient.java)).
+([`OpaClient.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/service/OpaClient.java)).
 An allowed call runs its simulated effect in a child span named `tool.execute <tool>`. Search by tag to find every span of one run:
 
 ```text
@@ -138,4 +138,4 @@ curl -s http://localhost:8080/api/v1/ops/snapshot | jq '{queues, workloads: [.wo
 - [Architecture §8: Observability](../architecture.md#8-observability)
 - [Contracts §2.5: Ops snapshot](../contracts.md#25-ops-snapshot-runtime-not-business-state)
 - [ADR-0010: Observability pipeline](../decisions/0010-observability-pipeline.md)
-- Source: [`Tracing.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-common/src/main/java/io/github/danieloh30/maop/common/tracing/Tracing.java), [`SnapshotService.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/ops-console/src/main/java/io/github/danieloh30/maop/console/SnapshotService.java), [dashboards](https://github.com/danieloh30/many-agents-one-platform/tree/main/deploy/base/observability/grafana/dashboards)
+- Source: [`Tracing.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-common/src/main/java/io/github/danieloh30/maop/common/tracing/Tracing.java), [`SnapshotService.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/ops-console/src/main/java/io/github/danieloh30/maop/console/service/SnapshotService.java), [dashboards](https://github.com/danieloh30/many-agents-one-platform/tree/main/deploy/base/observability/grafana/dashboards)

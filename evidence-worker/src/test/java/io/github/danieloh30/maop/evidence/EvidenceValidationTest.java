@@ -1,17 +1,19 @@
 package io.github.danieloh30.maop.evidence;
 
+import io.github.danieloh30.maop.evidence.agentic.EvidenceAgent;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.danieloh30.maop.common.Ids;
 import io.github.danieloh30.maop.common.TaskFailure;
-import io.github.danieloh30.maop.common.contract.EvidenceItem;
-import io.github.danieloh30.maop.common.contract.EvidenceTaskCommand;
-import io.github.danieloh30.maop.common.contract.FailureReason;
-import io.github.danieloh30.maop.common.contract.FaultInjection;
-import io.github.danieloh30.maop.common.contract.Incident;
-import io.github.danieloh30.maop.common.contract.TaskBudget;
-import io.github.danieloh30.maop.common.contract.Topic;
+import io.github.danieloh30.maop.common.model.EvidenceItem;
+import io.github.danieloh30.maop.common.model.EvidenceTaskCommand;
+import io.github.danieloh30.maop.common.model.FailureReason;
+import io.github.danieloh30.maop.common.model.FaultInjection;
+import io.github.danieloh30.maop.common.model.Incident;
+import io.github.danieloh30.maop.common.model.TaskBudget;
+import io.github.danieloh30.maop.common.model.Topic;
 import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

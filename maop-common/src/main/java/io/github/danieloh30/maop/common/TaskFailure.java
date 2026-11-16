@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.common;
 
-import io.github.danieloh30.maop.common.contract.FailureReason;
+import io.github.danieloh30.maop.common.model.FailureReason;
 
 /** A classified task failure. Retryable failures are negatively acknowledged; others end the task. */
 public class TaskFailure extends RuntimeException {

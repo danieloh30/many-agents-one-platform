@@ -1,12 +1,15 @@
 package io.github.danieloh30.maop.triage;
 
+import io.github.danieloh30.maop.triage.agentic.TriagePlanner;
+import io.github.danieloh30.maop.triage.model.Transitions;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.danieloh30.maop.common.contract.RunState;
-import io.github.danieloh30.maop.common.contract.TriagePlan;
+import io.github.danieloh30.maop.common.model.RunState;
+import io.github.danieloh30.maop.common.model.TriagePlan;
 import org.junit.jupiter.api.Test;
 
 class TransitionsAndPlannerTest {

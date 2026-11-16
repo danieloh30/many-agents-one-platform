@@ -49,6 +49,11 @@ writing code.
 ## Conventions
 
 - **Layout:** see `IMPLEMENTATION_HANDOFF.md` §3. Java package root `io.github.danieloh30.maop`.
+- **Packages per service module** (`io.github.danieloh30.maop.<service>.*`): `agentic` (model-facing agents,
+  deterministic scripts), `model` (domain types and rules), `resource` (REST resources, filters, problem
+  responses), `service` (workflow, messaging handlers, persistence, lifecycle). Omit a package a service does not
+  need. In `maop-common`, `agentic` holds the model gateway and tool loop and `model` holds the shared contract
+  records.
 - **Java style:** records for contract and value types; sealed interfaces for closed sets; no
   Lombok; constructor injection; blocking code on virtual threads rather than reactive chains
   unless an API requires otherwise; `java.time` only; UUIDv7 for new identifiers.
