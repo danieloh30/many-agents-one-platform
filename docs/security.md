@@ -212,16 +212,18 @@ one action cannot authorize another.
 ## 6. Console access
 
 - The console is a demo operator surface without user login (assumption A2).
-- **Presenter token**: a random 256-bit value generated at deploy time into the Secret
-  `ops-console-presenter`; required as a bearer token on all mutating console endpoints; compared
-  in constant time; never returned by any API; entered once in the UI and kept in `sessionStorage`.
-  Without it the console is read-only, so an audience can open the URL safely.
-- Mutations are additionally rate-limited and bounded by triage admission control.
-- Security headers from ops-console: strict `Content-Security-Policy` (self only; no inline
-  script; `connect-src 'self'`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
+- **Presenter token (optional, off by default):** with `MAOP_PRESENTER_AUTH=true`, every mutating console
+  endpoint (run, approval, cancel, burst start/stop, reset) requires `Authorization: Bearer <token>`. The token is
+  a random 256-bit value generated at deploy time into the Secret `ops-console-presenter`, compared in constant
+  time, never returned by any API, entered once in the UI and kept in `sessionStorage`; without it the console
+  is read-only. With the default `false`, anyone who can reach the console can drive the demonstration:
+  `/api/v1/config` reports `auth.presenterTokenRequired: false` and the UI enables its controls. Turn the token on
+  for shared or internet-reachable clusters.
+- Mutations are bounded either way by triage admission control (active runs, runs per hour, one burst with a cap).
+- Security headers from ops-console: strict `Content-Security-Policy` (self only; no inline script;
+  `connect-src 'self'`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
   `frame-ancestors 'none'`. Jaeger and Grafana are opened as links in a new tab, not embedded.
-- Grafana runs with anonymous **Viewer** access and a random admin password; Jaeger is read-only
-  by nature. Both are exposed through their own Routes/Ingresses only when `EXPOSE_OBSERVABILITY=true`.
+- Grafana runs with anonymous **Viewer** access and a random admin password; Jaeger is read-only by nature.
 
 ## 7. Secrets and configuration
 

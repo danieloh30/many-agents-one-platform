@@ -33,7 +33,7 @@ Timings below are design targets. They become facts only after rehearsal on the 
    "Queue and scaling"** (auto-refresh 5 s, last 15 min).
 4. In the console, open the presenter preflight panel: every component `OK`; model badge shows
    `LIVE <model>`; stream status `Live`.
-5. Enter the presenter token. Print it with `./demo.sh token` (it is never shown in the UI).
+5. If `MAOP_PRESENTER_AUTH=true`, enter the presenter token (print it with `./demo.sh token`; it is never shown in the UI). With the default `false` the controls are already enabled.
 6. Check projector legibility in both themes; pick one and stay with it.
 7. Terminal ready (large font) with: `oc get pods -n maop -l app.kubernetes.io/name=evidence-worker -w` — optional
    corroboration for scenario 3.

@@ -115,6 +115,7 @@ Copy `.env.example` to the git-ignored `.env.local`. Variables already in the en
 | `MAOP_MODEL_API_KEY` | value of `OPENAI_API_KEY` | Secret; stored only in the `model-credentials` Secret |
 | `MAOP_NAMESPACE` | `maop` | Dedicated namespace |
 | `MAOP_EVIDENCE_MAX_REPLICAS` | `6` | KEDA ceiling for evidence workers (respect model rate limits) |
+| `MAOP_PRESENTER_AUTH` | `false` | `true` requires the presenter token (`./demo.sh token`) for runs, approvals, bursts and reset. Turn on for shared or public clusters |
 | `MAOP_SPIRE_TRUST_DOMAIN` | detected / cluster apps domain | Needed with an existing SPIRE whose trust domain cannot be detected |
 | `MAOP_EXPOSE_OBSERVABILITY` | `true` | Routes/Ingresses for Jaeger and Grafana |
 | `MAOP_REGISTRY` | — | `--platform kubernetes` only |
@@ -199,7 +200,7 @@ scripts/local/stack.sh e2e
 | Grafana (project dashboards, anonymous viewer) | http://localhost:3000 |
 | Prometheus | http://localhost:9090 |
 
-The presenter token is written to `.maop/local/presenter-token`. The model is deterministic by default here; run
+Console controls work without a token by default (`MAOP_PRESENTER_AUTH=false`); with `true`, the token is in `.maop/local/presenter-token`. The model is deterministic by default here; run
 `MAOP_MODEL_MODE=live scripts/local/stack.sh up` to use the configured live model.
 
 The local stack runs the runbook's successful run, policy denial, queue burst (depth, age and drain) and
