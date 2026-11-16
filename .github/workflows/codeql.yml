@@ -20,6 +20,9 @@ concurrency:
 
 jobs:
   analyze:
+    # Uploading results needs GitHub Code Security on private repositories. Runs on public repositories, or
+    # when the repository variable MAOP_CODE_SCANNING=true is set after enabling code scanning.
+    if: ${{ !github.event.repository.private || vars.MAOP_CODE_SCANNING == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:

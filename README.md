@@ -27,49 +27,46 @@ Model calls are real by default; a deterministic substitute exists for tests and
 ## Architecture at a glance
 
 ```mermaid
----
-config:
-  look: handDrawn
-  theme: neutral
-  flowchart:
-    curve: basis
----
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18,"curve":"basis"}}}%%
 flowchart LR
-  user(["👤 Operator"]) --> console["🖥️ ops-console<br/><i>Agent Operations Console</i>"]
+    USER([Operator browser]) --> CONSOLE([ops-console<br/>Agent Operations Console])
+    CONSOLE -->|REST| TRIAGE
 
-  subgraph agents["🤖 Agent services (independently deployable)"]
-    triage["🧭 triage-agent<br/><i>owns the durable run</i>"]
-    evidence["🔎 evidence-worker ×N"]
-    reco["💡 recommendation-agent"]
-  end
+    subgraph AGENTS[Agent services]
+        TRIAGE[triage-agent<br/>owns the durable run]
+        EVIDENCE[evidence-worker x N]
+        RECO[recommendation-agent]
+    end
 
-  subgraph boundary["🔐 Protected tool boundary"]
-    tools["🛠️ tool-service"]
-    opa{{"⚖️ OPA<br/><i>decides</i>"}}
-  end
+    AGENTS <-->|CloudEvents| NATS[(NATS JetStream<br/>work · events · DLQ)]
+    EVIDENCE -->|mTLS · SPIFFE ID| TOOLS
+    RECO -->|mTLS · SPIFFE ID| TOOLS
 
-  console --> triage
-  triage <-->|"CloudEvents"| nats[("📨 NATS JetStream")]
-  nats --> evidence
-  nats --> reco
-  evidence & reco -->|results| nats
-  evidence & reco ==>|"mTLS · SPIFFE ID"| tools
-  tools -->|"allow / deny"| opa
-  triage --> pg[("🗄️ PostgreSQL")]
-  tools --> pg
-  keda(["📈 KEDA"]) -.->|"scales on lag"| evidence
-  agents & boundary -.->|"OpenTelemetry"| obs["🔭 Collector → Jaeger · Prometheus · Grafana"]
+    subgraph BOUNDARY[Protected tool boundary]
+        TOOLS[tool-service<br/>enforces] -->|allow / deny| OPA[OPA<br/>decides]
+    end
 
-  classDef svc fill:#E8F0FF,stroke:#1F5EFF,color:#0A1838
-  classDef infra fill:#E6FAFD,stroke:#007C99,color:#0A1838
-  classDef sec fill:#F1ECFF,stroke:#6B3FD4,color:#0A1838
-  class console,triage,evidence,reco svc
-  class nats,pg,keda,obs infra
-  class tools,opa sec
+    TRIAGE --> PG[(PostgreSQL<br/>runs · audit · outbox)]
+    TOOLS --> PG
+    KEDA([KEDA]) -.->|scales on queue lag| EVIDENCE
+    AGENTS -.->|OpenTelemetry| OBS([Collector → Jaeger<br/>Prometheus · Grafana])
+
+    style USER fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style CONSOLE fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style AGENTS fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
+    style TRIAGE fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style EVIDENCE fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style RECO fill:#D4E6F1,stroke:#2E6B8A,color:#1F1F1F,stroke-width:2px
+    style NATS fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style PG fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
+    style BOUNDARY fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
+    style TOOLS fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
+    style OPA fill:#F8D7D0,stroke:#A34736,color:#1F1F1F,stroke-width:2px
+    style KEDA fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
+    style OBS fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
 ```
 
-The diagram uses Mermaid's hand-drawn look. Renderers that don't support it, including older
-Mermaid versions, show the same diagram in the classic style.
+
 
 | Building block | Role |
 | --- | --- |

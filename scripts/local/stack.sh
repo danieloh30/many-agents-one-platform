@@ -97,7 +97,9 @@ up() {
 }
 
 down() {
-  for f in "$STATE"/*.pid; do [ -f "$f" ] && kill "$(cat "$f")" 2>/dev/null || true; rm -f "$f"; done
+  for f in "$STATE"/*.pid; do
+    if [ -f "$f" ]; then kill "$(cat "$f")" 2>/dev/null || true; rm -f "$f"; fi
+  done
   for c in maop-postgres maop-nats maop-opa maop-jaeger; do "$ENGINE" rm -f "$c" >/dev/null 2>&1 || true; done
   log "stopped"
 }
@@ -125,33 +127,34 @@ await_state() { # runId state... -> prints final state
 scenario_request() { api GET /api/v1/scenarios | jq -c --arg id "$1" '.items[] | select(.id == $id) | .request'; }
 
 e2e() {
-  local out="$STATE/e2e-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$out"; local fail=0
+  local out fail=0
+  out="$STATE/e2e-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$out"
   check() { if [ "$2" = "PASS" ]; then printf '  \033[32mPASS\033[0m %s\n' "$1"; else printf '  \033[31mFAIL\033[0m %s (%s)\n' "$1" "${3:-}"; fail=1; fi; echo "$2 $1 ${3:-}" >> "$out/summary.txt"; }
 
   log "1. successful run"
   local id; id="$(api POST /api/v1/runs "$(scenario_request SUCCESS)" | jq -r .runId)"
   local st; st="$(await_state "$id" AWAITING_APPROVAL || true)"
   api GET "/api/v1/runs/$id" > "$out/success-run.json"
-  [ "$st" = "AWAITING_APPROVAL" ] && check "success run reaches AWAITING_APPROVAL" PASS || check "success run reaches AWAITING_APPROVAL" FAIL "$st"
+  if [ "$st" = "AWAITING_APPROVAL" ]; then check "success run reaches AWAITING_APPROVAL" PASS; else check "success run reaches AWAITING_APPROVAL" FAIL "$st"; fi
   local digest; digest="$(jq -r .recommendation.proposedAction.actionDigest "$out/success-run.json")"
   api POST "/api/v1/runs/$id/approval" "{\"decision\":\"APPROVE\",\"actionDigest\":\"$digest\"}" > /dev/null
   st="$(await_state "$id" COMPLETED || true)"
-  [ "$(api GET "/api/v1/runs/$id" | jq -r .outcome)" = "REMEDIATION_SIMULATED" ] && check "approved simulated action completes" PASS || check "approved simulated action completes" FAIL "$st"
+  if [ "$(api GET "/api/v1/runs/$id" | jq -r .outcome)" = "REMEDIATION_SIMULATED" ]; then check "approved simulated action completes" PASS; else check "approved simulated action completes" FAIL "$st"; fi
   local trace; trace="$(jq -r .traceId "$out/success-run.json")"
   sleep 5
   curl -sS "http://localhost:16686/api/traces/$trace" > "$out/trace.json" || true
   local services; services="$(jq -r '[.data[0].processes[].serviceName] | unique | join(",")' "$out/trace.json" 2>/dev/null || echo "")"
   local n; n="$(jq -r '[.data[0].processes[].serviceName] | unique | length' "$out/trace.json" 2>/dev/null || echo 0)"
-  [ "${n:-0}" -ge 5 ] && check "one trace spans all five services ($services)" PASS || check "connected trace" FAIL "services=$services"
+  if [ "${n:-0}" -ge 5 ]; then check "one trace spans all five services ($services)" PASS; else check "connected trace" FAIL "services=$services"; fi
 
   log "2. unapproved remediation"
   id="$(api POST /api/v1/runs "$(scenario_request POLICY_DENIAL)" | jq -r .runId)"
   st="$(await_state "$id" AWAITING_APPROVAL || true)"
   api GET "/api/v1/audit/invocations?runId=$id" > "$out/denial-audit.json"
   local denied; denied="$(jq '[.items[] | select(.toolClass=="REMEDIATION" and .status=="DENIED" and (.decision.reasons | index("approval_required")) and .sideEffect==null)] | length' "$out/denial-audit.json")"
-  [ "$denied" -ge 1 ] && check "remediation denied by policy before execution" PASS || check "policy denial" FAIL "denied=$denied state=$st"
+  if [ "$denied" -ge 1 ]; then check "remediation denied by policy before execution" PASS; else check "policy denial" FAIL "denied=$denied state=$st"; fi
   local ids; ids="$(jq -r '[.items[].caller.spiffeId] | unique | join(",")' "$out/denial-audit.json")"
-  [[ "$ids" == spiffe://$TD/ns/maop/sa/* ]] && check "audit callers are verified SPIFFE IDs ($ids)" PASS || check "verified identity" FAIL "$ids"
+  if [[ "$ids" == spiffe://$TD/ns/maop/sa/* ]]; then check "audit callers are verified SPIFFE IDs ($ids)" PASS; else check "verified identity" FAIL "$ids"; fi
 
   log "3. identity enforcement"
   if curl -sS -k --max-time 5 -H "X-Spiffe-Id: spiffe://$TD/ns/maop/sa/ops-console" https://localhost:8443/v1/tools >/dev/null 2>&1; then
@@ -167,7 +170,7 @@ e2e() {
   api GET "/api/v1/runs/$id" > "$out/redelivery-run.json"
   local dedup; dedup="$(jq '[.items[] | select(.requests >= 2 and .executions == 1)] | length' "$out/redelivery-audit.json")"
   local deliv; deliv="$(jq '[.tasks[] | select(.deliveries >= 2)] | length' "$out/redelivery-run.json")"
-  [ "$dedup" -ge 1 ] && [ "$deliv" -ge 1 ] && check "redelivered task replayed its tool call (requests>=2, executions=1)" PASS || check "redelivery dedup" FAIL "dedup=$dedup deliveries=$deliv state=$st"
+  if [ "$dedup" -ge 1 ] && [ "$deliv" -ge 1 ]; then check "redelivered task replayed its tool call (requests>=2, executions=1)" PASS; else check "redelivery dedup" FAIL "dedup=$dedup deliveries=$deliv state=$st"; fi
 
   log "5. bounded burst (queue depth only; no autoscaler locally)"
   api POST /api/v1/bursts '{"runs":12}' > "$out/burst.json"
@@ -175,7 +178,7 @@ e2e() {
   local maxdepth=0 d
   for _ in $(seq 1 50); do
     d="$(api GET /api/v1/ops/snapshot | jq '.queues[] | select(.consumer=="evidence-workers") | ((.pending // 0) + (.inFlight // 0))')"
-    [ "${d:-0}" -gt "$maxdepth" ] && maxdepth="$d"
+    if [ "${d:-0}" -gt "$maxdepth" ]; then maxdepth="$d"; fi
     sleep 0.05
   done
   for _ in $(seq 1 240); do
@@ -183,8 +186,8 @@ e2e() {
     sleep 1
   done
   local done_runs; done_runs="$(api GET '/api/v1/runs?limit=50' | jq --arg b "$burst" '[.items[] | select(.burstId==$b and .outcome=="EVIDENCE_ONLY")] | length')"
-  [ "$maxdepth" -gt 0 ] && check "burst raised evidence queue depth (max observed pending+inFlight=$maxdepth)" PASS || check "burst queue depth" FAIL "max=$maxdepth"
-  [ "$done_runs" -eq 12 ] && check "all 12 load runs drained to EVIDENCE_ONLY" PASS || check "burst drained" FAIL "completed=$done_runs"
+  if [ "$maxdepth" -gt 0 ]; then check "burst raised evidence queue depth (max observed pending+inFlight=$maxdepth)" PASS; else check "burst queue depth" FAIL "max=$maxdepth"; fi
+  if [ "$done_runs" -eq 12 ]; then check "all 12 load runs drained to EVIDENCE_ONLY" PASS; else check "burst drained" FAIL "completed=$done_runs"; fi
   api POST /api/v1/bursts/stop > /dev/null
   log "evidence written to $out"
   return $fail
