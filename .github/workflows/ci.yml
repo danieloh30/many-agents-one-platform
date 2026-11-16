@@ -77,6 +77,18 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: maven
+      # Testcontainers gives up on an image pull after 2 minutes; Docker Hub throttling on shared runners
+      # occasionally exceeds that (seen on f77ad6b). Pre-pull the test images with retries and backoff.
+      - name: Pre-pull test container images
+        run: |
+          for image in docker.io/library/nats:2.15.3-alpine docker.io/library/postgres:18.1 \
+                       docker.io/openpolicyagent/opa:1.22.4-static; do
+            for attempt in 1 2 3 4; do
+              if docker pull --quiet "$image"; then break; fi
+              if [ "$attempt" = 4 ]; then echo "::error::could not pull $image"; exit 1; fi
+              sleep $((attempt * 20))
+            done
+          done
       - name: Build and test (unit + integration with Testcontainers)
         run: ./mvnw -B -ntp verify
       - name: Upload test reports
