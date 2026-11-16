@@ -1,89 +1,85 @@
 package io.github.danieloh30.maop.triage.agentic;
 
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.request.ChatRequest;
 import io.github.danieloh30.maop.common.BudgetTracker;
 import io.github.danieloh30.maop.common.TaskFailure;
+import io.github.danieloh30.maop.common.agentic.AgentErrors;
+import io.github.danieloh30.maop.common.agentic.AgentInvocation;
+import io.github.danieloh30.maop.common.json.Json;
 import io.github.danieloh30.maop.common.model.FailureReason;
 import io.github.danieloh30.maop.common.model.Incident;
 import io.github.danieloh30.maop.common.model.TaskBudget;
 import io.github.danieloh30.maop.common.model.Topic;
 import io.github.danieloh30.maop.common.model.TriagePlan;
-import io.github.danieloh30.maop.common.json.Json;
-import io.github.danieloh30.maop.common.agentic.ModelCall;
-import io.github.danieloh30.maop.common.agentic.ModelGateway;
-import io.github.danieloh30.maop.common.agentic.Purposes;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 
-/** Classifies the incident and plans evidence tasks with one bounded model call (plus at most one repair). */
+/**
+ * Runs the {@link IncidentTriageAgent} under the run's deadline and a two-call budget (one call plus at most one
+ * repair), then applies the domain rules the plan must satisfy.
+ */
 @ApplicationScoped
 public class TriagePlanner {
 
     public static final String PURPOSE = "triage.classify";
 
-    static final String SYSTEM = Purposes.marker(PURPOSE) + """
-
-            You are the triage agent of an incident-response platform. Classify the incident and plan the evidence
-            to collect. Respond with ONLY a JSON object, no prose, matching:
-            {"category": one of RELEASE_REGRESSION|DEPENDENCY_FAILURE|CAPACITY|CONFIGURATION|UNKNOWN,
-             "severity": one of SEV1|SEV2|SEV3|SEV4,
-             "confidence": number 0..1,
-             "rationale": "one or two sentences for an operator (max 300 chars)",
-             "tasks": [{"topic": one of SERVICE_CATALOG|DEPLOYMENT_HISTORY|CONFIG_DIFF|ERROR_SUMMARY,
-                        "question": "what the evidence worker should find out (max 200 chars)"}]}
-            Plan between 1 and %d tasks with distinct topics. Do not include reasoning steps.""";
-
     @Inject
-    ModelGateway model;
+    IncidentTriageAgent agent;
 
     public record Result(TriagePlan plan, BudgetTracker budget, String truncation) {
     }
 
     public Result plan(Incident incident, int maxTasks, Instant deadline) {
         BudgetTracker budget = new BudgetTracker(new TaskBudget(2, 0, 800));
-        List<ChatMessage> messages = new ArrayList<>();
-        messages.add(SystemMessage.from(SYSTEM.formatted(maxTasks)));
-        messages.add(UserMessage.from("Incident title: " + incident.title() + "\nAffected service: " + incident.service()
-                + "\nDescription: " + incident.description()));
+        String feedback = "";
         String lastError = null;
         for (int attempt = 0; attempt < 2; attempt++) {
-            ModelCall call = model.call(PURPOSE, ChatRequest.builder().messages(messages).maxOutputTokens(800).build(),
-                    deadline, budget);
-            AiMessage ai = call.response().aiMessage();
+            String fb = feedback;
+            TriagePlan p;
             try {
-                TriagePlan p = parse(ai.text());
-                String truncation = null;
-                if (p.tasks().size() > maxTasks) {
-                    truncation = "plan truncated from " + p.tasks().size() + " to " + maxTasks + " tasks (budget)";
-                    p = new TriagePlan(p.category(), p.severity(), p.confidence(), p.rationale(), p.tasks().subList(0, maxTasks));
+                p = AgentInvocation.call(deadline, budget,
+                        () -> agent.classify(incident.title(), incident.service(), incident.description(), maxTasks, fb));
+            } catch (RuntimeException e) {
+                TaskFailure tf = AgentErrors.taskFailure(e);
+                if (tf != null) {
+                    throw tf;
                 }
-                return new Result(p, budget, truncation);
+                lastError = "output was not a valid triage plan (" + e.getClass().getSimpleName() + ")";
+                feedback = AgentErrors.repairFeedback(lastError);
+                continue;
+            }
+            try {
+                validate(p);
             } catch (IllegalArgumentException e) {
                 lastError = e.getMessage();
-                messages.add(ai);
-                messages.add(UserMessage.from("Your previous answer was invalid: " + lastError
-                        + ". Reply again with ONLY the corrected JSON object."));
+                feedback = AgentErrors.repairFeedback(lastError);
+                continue;
             }
+            String truncation = null;
+            if (p.tasks().size() > maxTasks) {
+                truncation = "plan truncated from " + p.tasks().size() + " to " + maxTasks + " tasks (budget)";
+                p = new TriagePlan(p.category(), p.severity(), p.confidence(), p.rationale(), p.tasks().subList(0, maxTasks));
+            }
+            return new Result(p, budget, truncation);
         }
         throw new TaskFailure(FailureReason.MODEL_OUTPUT_INVALID, false, "Triage output invalid after repair: " + lastError);
     }
 
+    /** Parse model text into a plan and validate it (used for raw text, e.g. in tests). */
     public static TriagePlan parse(String text) {
         String json = Json.extractObject(text);
         if (json == null) {
             throw new IllegalArgumentException("no JSON object found");
         }
         TriagePlan p = Json.read(json, TriagePlan.class);
-        if (p.category() == null || p.severity() == null) {
+        validate(p);
+        return p;
+    }
+
+    public static void validate(TriagePlan p) {
+        if (p == null || p.category() == null || p.severity() == null) {
             throw new IllegalArgumentException("category and severity are required");
         }
         if (p.confidence() < 0 || p.confidence() > 1) {
@@ -104,6 +100,5 @@ public class TriagePlanner {
                 throw new IllegalArgumentException("each task needs a question (max 300 chars)");
             }
         }
-        return p;
     }
 }

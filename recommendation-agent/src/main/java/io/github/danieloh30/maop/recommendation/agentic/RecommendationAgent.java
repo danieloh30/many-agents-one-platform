@@ -1,11 +1,6 @@
 package io.github.danieloh30.maop.recommendation.agentic;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.request.ChatRequest;
 import io.github.danieloh30.maop.common.BudgetTracker;
 import io.github.danieloh30.maop.common.TaskFailure;
 import io.github.danieloh30.maop.common.model.ActionDigests;
@@ -15,9 +10,9 @@ import io.github.danieloh30.maop.common.model.FailureReason;
 import io.github.danieloh30.maop.common.model.ProposedAction;
 import io.github.danieloh30.maop.common.model.Recommendation;
 import io.github.danieloh30.maop.common.model.RecommendationCommand;
+import io.github.danieloh30.maop.common.agentic.AgentErrors;
+import io.github.danieloh30.maop.common.agentic.AgentInvocation;
 import io.github.danieloh30.maop.common.json.Json;
-import io.github.danieloh30.maop.common.agentic.ModelGateway;
-import io.github.danieloh30.maop.common.agentic.Purposes;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -27,53 +22,49 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Turns collected evidence into one structured, evidence-backed proposed action (with at most one repair). */
+/**
+ * Runs the declarative {@link RemediationAdvisorAgent} and validates its typed draft: known action type, required
+ * parameters, citations that reference collected evidence; the action digest binds any later approval.
+ */
 @ApplicationScoped
 public class RecommendationAgent {
 
     public static final String PURPOSE = "recommendation.propose";
 
-    static final String SYSTEM = Purposes.marker(PURPOSE) + """
-
-            You are the recommendation agent of an incident-response platform. Propose ONE next action supported by
-            the evidence. Any remediation is only a proposal: a human must approve it and execution is simulated.
-            Respond with ONLY a JSON object:
-            {"summary": "short imperative sentence (max 160 chars)",
-             "explanation": "concise justification for an operator, citing the evidence (max 500 chars)",
-             "proposedAction": {"actionType": one of ROLLBACK_DEPLOYMENT|SET_FEATURE_FLAG|ESCALATE_TO_HUMAN|OBSERVE,
-                                "target": "service name",
-                                "parameters": {} // ROLLBACK_DEPLOYMENT: {"toVersion": "x.y.z"}; SET_FEATURE_FLAG: {"flag": "name", "enabled": false}; otherwise {}
-                               },
-             "citations": ["evidenceId", ...],   // ids from the evidence list, at least one
-             "confidence": number 0..1,
-             "risks": ["short risk", ...]}       // up to 3
-            Copy service names and version numbers exactly as they appear in the evidence facts; never invent a version.
-            Do not include reasoning steps.""";
 
     @Inject
-    ModelGateway model;
+    RemediationAdvisorAgent advisor;
 
     public Recommendation propose(RecommendationCommand cmd, BudgetTracker budget) {
-        List<ChatMessage> messages = new ArrayList<>();
-        messages.add(SystemMessage.from(SYSTEM));
         Map<String, Object> ctx = new LinkedHashMap<>();
         ctx.put("incident", cmd.incident());
         ctx.put("classification", cmd.classification());
         ctx.put("evidenceCompleteness", cmd.evidenceCompleteness());
         ctx.put("evidence", cmd.evidence().stream().map(e -> Map.of("evidenceId", e.evidenceId(), "topic", e.topic(),
                 "finding", e.finding(), "facts", e.facts())).toList());
-        messages.add(UserMessage.from(Json.write(ctx)));
+        String context = Json.write(ctx);
         Set<String> evidenceIds = cmd.evidence().stream().map(EvidenceItem::evidenceId).collect(Collectors.toSet());
+        String feedback = "";
         String error = null;
         for (int attempt = 0; attempt < 2 && budget.usage().modelCalls() < cmd.budget().maxModelCalls(); attempt++) {
-            AiMessage ai = model.call(PURPOSE, ChatRequest.builder().messages(messages)
-                    .maxOutputTokens(cmd.budget().maxOutputTokens()).build(), cmd.deadline(), budget).response().aiMessage();
+            String fb = feedback;
+            RecommendationDraft draft;
             try {
-                return validate(cmd, ai.text(), evidenceIds);
+                draft = AgentInvocation.call(cmd.deadline(), budget, () -> advisor.propose(context, fb));
+            } catch (RuntimeException e) {
+                TaskFailure tf = AgentErrors.taskFailure(e);
+                if (tf != null) {
+                    throw tf;
+                }
+                error = "output could not be parsed (" + e.getClass().getSimpleName() + ")";
+                feedback = AgentErrors.repairFeedback(error);
+                continue;
+            }
+            try {
+                return validate(cmd, Json.write(draft), evidenceIds);
             } catch (IllegalArgumentException e) {
                 error = e.getMessage();
-                messages.add(ai);
-                messages.add(UserMessage.from("Your answer was invalid: " + error + ". Reply with ONLY the corrected JSON object."));
+                feedback = AgentErrors.repairFeedback(error);
             }
         }
         throw new TaskFailure(FailureReason.MODEL_OUTPUT_INVALID, false, "Recommendation invalid: " + error);

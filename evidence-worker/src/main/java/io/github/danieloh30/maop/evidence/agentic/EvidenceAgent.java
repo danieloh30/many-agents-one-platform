@@ -2,10 +2,6 @@ package io.github.danieloh30.maop.evidence.agentic;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dev.langchain4j.agent.tool.ToolExecutionRequest;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
 import io.github.danieloh30.maop.common.BudgetTracker;
 import io.github.danieloh30.maop.common.TaskFailure;
 import io.github.danieloh30.maop.common.model.EvidenceItem;
@@ -13,45 +9,35 @@ import io.github.danieloh30.maop.common.model.EvidenceTaskCommand;
 import io.github.danieloh30.maop.common.model.Fact;
 import io.github.danieloh30.maop.common.model.FailureReason;
 import io.github.danieloh30.maop.common.model.Topic;
+import io.github.danieloh30.maop.common.agentic.AgentErrors;
+import io.github.danieloh30.maop.common.agentic.AgentInvocation;
 import io.github.danieloh30.maop.common.json.Json;
-import io.github.danieloh30.maop.common.agentic.ModelGateway;
-import io.github.danieloh30.maop.common.agentic.Purposes;
-import io.github.danieloh30.maop.common.agentic.ToolLoop;
 import io.github.danieloh30.maop.common.tools.ToolCatalog;
 import io.github.danieloh30.maop.common.tools.ToolClient;
 import io.github.danieloh30.maop.common.tools.ToolResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Gathers evidence for one task: deterministic baseline tool calls for the topic (so evidence never depends on the
- * model choosing to call a tool), an optional bounded follow-up the model may request, and a structured finding
- * whose facts must cite invocations actually returned to this task.
+ * Gathers evidence for one task: deterministic, policy-checked tool calls for the topic, then the declarative
+ * {@link EvidenceAnalystAgent} turns the results into a finding whose facts must cite invocations actually returned
+ * to this task (one bounded repair attempt).
  */
 @ApplicationScoped
 public class EvidenceAgent {
 
     public static final String PURPOSE = "evidence.summarize";
 
-    static final String SYSTEM = Purposes.marker(PURPOSE) + " [topic:%s]" + """
 
-            You are an evidence worker in an incident-response platform. Use ONLY the tool results provided (and any
-            additional read tool you call) to answer the question. All data is synthetic demonstration data.
-            Respond with ONLY a JSON object:
-            {"finding": "one or two factual sentences (max 300 chars)",
-             "confidence": number 0..1,
-             "facts": [{"statement": "a specific fact (max 200 chars)", "invocationId": "<id of the tool invocation it came from>",
-                        "toolName": "<tool name>"}]}
-            Include 1 to 5 facts. Every invocationId MUST be one listed in the tool results. Do not include reasoning steps.""";
 
     @Inject
-    ModelGateway model;
+    EvidenceAnalystAgent analyst;
     @Inject
     ToolClient tools;
 
@@ -100,59 +86,36 @@ public class EvidenceAgent {
     public Gathered gather(EvidenceTaskCommand cmd, Map<String, ObjectNode> baseline, BudgetTracker budget) {
         Map<String, String> invocations = new ConcurrentHashMap<>();
         baseline.values().forEach(n -> invocations.put(n.get("invocationId").asText(), n.get("toolName").asText()));
-        List<ChatMessage> messages = new ArrayList<>();
-        messages.add(SystemMessage.from(SYSTEM.formatted(cmd.topic().name())));
-        messages.add(UserMessage.from("Incident: " + cmd.incident().title() + " (service " + cmd.incident().service() + ")\n"
-                + "Question: " + cmd.question() + "\nTool results:\n" + Json.write(baseline.values())));
-        String text = ToolLoop.run(model, PURPOSE, messages, ToolLoop.specifications(ToolCatalog.readTools()),
-                req -> followUp(cmd, budget, req, invocations), budget, cmd.deadline(), cmd.budget().maxOutputTokens());
-        EvidenceItem item;
-        try {
-            item = parse(cmd, text, invocations);
-        } catch (TaskFailure invalid) {
-            if (invalid.reason() != FailureReason.MODEL_OUTPUT_INVALID
-                    || budget.usage().modelCalls() >= cmd.budget().maxModelCalls()) {
-                throw invalid;
+        String toolResults = Json.write(baseline.values());
+        String feedback = "";
+        TaskFailure last = new TaskFailure(FailureReason.MODEL_OUTPUT_INVALID, false, "Evidence output invalid");
+        for (int attempt = 0; attempt < 2 && budget.usage().modelCalls() < cmd.budget().maxModelCalls(); attempt++) {
+            String fb = feedback;
+            EvidenceFinding finding;
+            try {
+                finding = AgentInvocation.call(cmd.deadline(), budget, () -> analyst.analyse(cmd.topic().name(),
+                        cmd.incident().title(), cmd.incident().service(), cmd.question(), toolResults, fb));
+            } catch (RuntimeException e) {
+                TaskFailure tf = AgentErrors.taskFailure(e);
+                if (tf != null) {
+                    throw tf;
+                }
+                last = new TaskFailure(FailureReason.MODEL_OUTPUT_INVALID, false,
+                        "Evidence output could not be parsed (" + e.getClass().getSimpleName() + ")");
+                feedback = AgentErrors.repairFeedback(last.getMessage());
+                continue;
             }
-            // One repair attempt within the task's model-call budget.
-            messages.add(dev.langchain4j.data.message.AiMessage.from(text == null ? "" : text));
-            messages.add(UserMessage.from("Your answer was invalid: " + invalid.getMessage()
-                    + ". Reply with ONLY the corrected JSON object."));
-            String repaired = model.call(PURPOSE, dev.langchain4j.model.chat.request.ChatRequest.builder().messages(messages)
-                    .maxOutputTokens(cmd.budget().maxOutputTokens()).build(), cmd.deadline(), budget).response().aiMessage().text();
-            item = parse(cmd, repaired, invocations);
-        }
-        return new Gathered(item, budget);
-    }
-
-    private String followUp(EvidenceTaskCommand cmd, BudgetTracker budget, ToolExecutionRequest req,
-            Map<String, String> invocations) {
-        String tool = ToolLoop.toolName(req.name());
-        if (ToolCatalog.find(tool).filter(t -> t.toolClass() == ToolCatalog.ToolClass.READ).isEmpty()) {
-            return "{\"error\":\"unknown or non-read tool\"}";
-        }
-        Map<String, Object> args;
-        try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> a = Json.read(req.arguments() == null || req.arguments().isBlank() ? "{}" : req.arguments(), Map.class);
-            args = a;
-        } catch (IllegalArgumentException e) {
-            return "{\"error\":\"arguments must be a JSON object\"}";
-        }
-        try {
-            ToolResult r = tools.invoke(cmd.runId(), cmd.taskId(), tool, args, null, cmd.deadline(), budget);
-            invocations.put(r.invocationId(), tool);
-            ObjectNode n = Json.MAPPER.createObjectNode();
-            n.put("invocationId", r.invocationId());
-            n.put("status", r.status());
-            n.set("result", r.result());
-            return Json.write(n);
-        } catch (TaskFailure f) {
-            if (f.reason() == FailureReason.INVALID_COMMAND) {
-                return "{\"error\":" + Json.write(f.getMessage()) + "}";
+            try {
+                return new Gathered(parse(cmd, Json.write(finding), invocations), budget);
+            } catch (TaskFailure invalid) {
+                if (invalid.reason() != FailureReason.MODEL_OUTPUT_INVALID) {
+                    throw invalid;
+                }
+                last = invalid;
+                feedback = AgentErrors.repairFeedback(invalid.getMessage());
             }
-            throw f;
         }
+        throw last;
     }
 
     public static EvidenceItem parse(EvidenceTaskCommand cmd, String text, Map<String, String> invocations) {
