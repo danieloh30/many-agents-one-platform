@@ -71,7 +71,9 @@ writing code.
   `docs/ui-design.md`; no runtime CDN assets; every status has text + icon, not colour alone.
 - **Manifests:** plain `image:` fields with tag and digest; restricted pod security; no `runAsUser`
   in the OpenShift overlay.
-- **Docs:** update the relevant doc in the same commit as a behaviour change. Mermaid for diagrams.
+- **Docs:** update the relevant doc in the same commit as a behaviour change. Mermaid for diagrams, each
+  starting with the hand-drawn `%%{init: {"look":"handDrawn", …}}%%` line used across `docs/` (copy it from an
+  existing diagram) so GitHub and the Pages site render the same style.
 - **Commits:** imperative subject ≤ 72 characters, body explains why; one backlog item per commit
   or small series; reference the backlog ID (for example `B-14`).
 

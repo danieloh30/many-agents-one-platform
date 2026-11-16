@@ -131,6 +131,13 @@
     .dd-body.fit { display: flex; align-items: center; justify-content: center; }
     .dd-body svg { display: block; margin: 0 auto; max-width: none !important; flex: 0 0 auto; }
     .diagram pre.mermaid { margin: 0; background: none; border: 0; padding: 0; color: #1F1F1F; }
+    /* main's overflow-wrap: anywhere would leak into Mermaid's label measurement and squeeze long
+       identifiers such as GATHERING_EVIDENCE into 120px boxes. */
+    .diagram, .dd-body { overflow-wrap: normal; }
+    /* Mermaid's handDrawn look covers flowcharts and state diagrams but not sequence diagrams. Give their
+       boxes and lines the same sketched feel with the #maop-sketch filter (text stays crisp). */
+    svg[aria-roledescription="sequence"] :is(rect, path, polygon) { filter: url(#maop-sketch); }
+    svg[aria-roledescription="sequence"] line { filter: url(#maop-sketch-line); }
     .diagram svg { max-width: 100%; height: auto; }
     table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; margin: 16px 0; font-size: 0.93rem; }
     th, td { border: 1px solid var(--border); padding: 7px 12px; text-align: left; vertical-align: top;
@@ -178,6 +185,18 @@
   </style>
 </head>
 <body>
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+    <!-- userSpaceOnUse with a large region: horizontal lines have a zero-height bounding box. -->
+    <filter id="maop-sketch" filterUnits="userSpaceOnUse" x="-5000" y="-5000" width="20000" height="20000">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- Thin message lines break apart under the full displacement, so they get a gentler one. -->
+    <filter id="maop-sketch-line" filterUnits="userSpaceOnUse" x="-5000" y="-5000" width="20000" height="20000">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="1" seed="11" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
   <a class="skip" href="#content">Skip to content</a>
   <header class="site-header">
     <div class="header-inner">
@@ -472,8 +491,9 @@
       }
 
       if (window.mermaid && main.querySelector("pre.mermaid")) {
-        // Diagrams sit on a light "paper" card in both themes; hand-drawn diagrams carry their own init.
-        window.mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "default" });
+        // Diagrams sit on a light "paper" card in both themes. Every diagram in the docs carries the hand-drawn
+        // init (so GitHub renders it the same way); this default gives the same look to any block without one.
+        window.mermaid.initialize(Object.assign({ startOnLoad: false, securityLevel: "strict" }, {"look": "handDrawn", "theme": "base", "themeVariables": {"darkMode": false, "background": "#FFFCF5", "primaryColor": "#D4E6F1", "primaryBorderColor": "#2E6B8A", "primaryTextColor": "#1F1F1F", "secondaryColor": "#D8F0D8", "secondaryTextColor": "#1F1F1F", "tertiaryColor": "#E8DCC4", "tertiaryTextColor": "#1F1F1F", "textColor": "#1F1F1F", "lineColor": "#4A4035", "edgeLabelBackground": "#FFFCF5", "clusterBkg": "#F5F5F0", "clusterBorder": "#6B5B45", "fontSize": "16px"}, "flowchart": {"nodeSpacing": 35, "rankSpacing": 55, "padding": 18, "curve": "basis"}}));
         // Wide diagrams are not shrunk below 70 % of their natural width: they scroll inside their card
         // instead, so labels stay legible and the page itself never scrolls horizontally.
         var sizeDiagrams = function () {

@@ -21,6 +21,7 @@ LangChain4j version always comes from the platform member BOM of the same platfo
 Every version in the repository has exactly one owner. That is what prevents duplicate pull requests.
 
 ```mermaid
+%%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18,"curve":"basis"}}}%%
 flowchart LR
   subgraph discover["Daily discovery"]
     dep["Dependabot<br/>(maven, npm, github-actions, docker, docker-compose)"]
