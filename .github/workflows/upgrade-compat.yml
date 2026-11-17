@@ -86,7 +86,10 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: maintenance-check
-          path: ${{ runner.temp }}/maintenance/*.md
+          # The JSON results decide whether the report issue stays open (report-issue.sh).
+          path: |
+            ${{ runner.temp }}/maintenance/*.md
+            ${{ runner.temp }}/maintenance/*.json
           retention-days: 14
 
   stream-upgrade-pr:
