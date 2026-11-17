@@ -134,7 +134,24 @@ curl -s "http://localhost:8080/api/v1/audit/invocations?runId=$RUN" \
   | jq '.items[] | select(.toolClass=="REMEDIATION") | {toolName, status, caller: .caller.spiffeId, reasons: .decision.reasons, decisionId: .decision.decisionId, sideEffect}'
 ```
 
-### 3. Ask OPA directly
+### 3. End the run: reject the proposal
+
+The run now waits in `AWAITING_APPROVAL` with one policy denial. On its **Timeline** tab, in the recommendation
+card, click **Reject** and confirm. Or use the API, which takes the proposal's digest so a decision always refers
+to the exact action shown:
+
+```bash
+DIGEST="$(curl -s "http://localhost:8080/api/v1/runs/$RUN" | jq -r .recommendation.proposedAction.actionDigest)"
+curl -s -X POST "http://localhost:8080/api/v1/runs/$RUN/approval" -H 'Content-Type: application/json' \
+  -d "{\"decision\":\"REJECT\",\"actionDigest\":\"$DIGEST\"}" | jq '{state, outcome}'
+```
+
+Why reject rather than approve: approving is valid here, and OPA would then allow the same rollback because a
+matching approval exists. That is the point of the policy: it denied acting *without approval*, not the action
+itself. In a demo, though, approving right after the denial reads as "the denial did not matter", and
+[tutorial 01](01-run-it-locally.md) already shows the approval path.
+
+### 4. Ask OPA directly
 
 The local OPA container serves the same policy on port 8181. Send the input that tool-service would
 build for an unapproved rollback:
@@ -155,14 +172,14 @@ curl -s http://localhost:8181/v1/data/maop/tools/decision -H 'Content-Type: appl
 Change the caller to `.../sa/evidence-agent` and send it again: the reason becomes
 `caller_not_permitted`, because evidence agents hold no remediation permission at all.
 
-### 4. Try to call the tool API without an SVID
+### 5. Try to call the tool API without an SVID
 
 ```bash
 curl -sk --max-time 5 -H "X-Spiffe-Id: spiffe://maop.local/ns/maop/sa/ops-console" https://localhost:8443/v1/tools \
   && echo "UNEXPECTED: request succeeded" || echo "refused: no client certificate"
 ```
 
-### 5. Run the policy tests
+### 6. Run the policy tests
 
 ```bash
 podman run --rm -v "$PWD/policy":/policy:Z docker.io/openpolicyagent/opa:1.22.4-static test /policy --coverage
@@ -176,6 +193,8 @@ podman run --rm -v "$PWD/policy":/policy:Z docker.io/openpolicyagent/opa:1.22.4-
   Under *Tool audit*, it shows "No side effect — denied before execution".
 - The run lands in `AWAITING_APPROVAL` with `policyDenials: 1`, which is the safe path. This is
   end-to-end check 4.
+- After **Reject**, the run is `COMPLETED` with outcome `ACTION_REJECTED`. The denied invocation stays in the
+  audit, still with no side effect, and no approval grant is registered.
 - The audit query prints `status: "DENIED"`, `reasons: ["approval_required"]` and `sideEffect: null`.
   Every caller is a `spiffe://maop.local/ns/maop/sa/...` ID (check 5).
 - OPA returns `"allow": false` with `"reasons": ["approval_required"]` and the policy `revision`.

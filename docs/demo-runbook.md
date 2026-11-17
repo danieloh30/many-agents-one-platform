@@ -56,6 +56,16 @@ Timings below are design targets. They become facts only after rehearsal on the 
 | 4:45–7:30 | **3 · Queue burst** | Press **Run** on step 3. | See §3.3. |
 | 7:30–8:00 | Wrap | Return to topology. | Replicas returning to 1; three runs in history, all durable. |
 
+**How each scenario ends.** Every run that proposes an action stops in `AWAITING_APPROVAL` until a person decides.
+Decide on stage, on the run's **Timeline** tab (the recommendation card), so no run is left waiting:
+
+| Scenario | Decision | Final state | Why |
+| --- | --- | --- | --- |
+| 1 · Success | **Approve (simulate)** | `COMPLETED (REMEDIATION_SIMULATED)` | Shows the full path: a human approval lets policy allow the action, recorded as simulated. |
+| 2 · Policy denial | **Reject** | `COMPLETED (ACTION_REJECTED)` | The human confirms the agent should not act; nothing executes. |
+| 3 · Queue burst | none | `COMPLETED (EVIDENCE_ONLY)` | Burst runs gather evidence and stop; there is nothing to approve. |
+| 4 · Redelivery | **Reject** (or leave it) | `COMPLETED (ACTION_REJECTED)`, or `APPROVAL_EXPIRED` after 10 min | The approval is not part of this story; rejecting keeps the audit to the redelivered tool call. |
+
 ### 3.1 Scenario 1 — successful run with connected traces (2:30)
 
 1. Run the **Success** preset. The run appears as `SUBMITTED` → `TRIAGING`.
@@ -69,10 +79,12 @@ Timings below are design targets. They become facts only after rehearsal on the 
 7. Click **Open trace in Jaeger**: one trace, spans from console, triage, NATS publish/process,
    evidence agents, tool service (with policy decision attributes), recommendation agent.
 
-Say: the run state lives in PostgreSQL, not in any agent's memory; a restart of any service would not lose it.
+8. On the **Timeline** tab, in the recommendation card, click **Approve (simulate)** and confirm. The run moves
+   `EXECUTING_ACTION` → `COMPLETED (REMEDIATION_SIMULATED)`; **Tool audit** shows the simulated action with its
+   `SIMULATED` badge. Nothing changes on any cluster.
 
-Optional (only if ahead of time): **Approve (simulate)** → `EXECUTING_ACTION` → `COMPLETED`; the audit
-tab shows the simulated action with `SIMULATED` badge.
+Say: the run state lives in PostgreSQL, not in any agent's memory; a restart of any service would not lose it.
+The approval is bound to the exact proposed action (its digest), so it cannot be reused for a different one.
 
 ### 3.2 Scenario 2 — unapproved remediation denied (1:45)
 
@@ -83,9 +95,15 @@ tab shows the simulated action with `SIMULATED` badge.
    `…/sa/recommendation-agent`, reason `approval_required`, OPA decision ID, policy revision.
 4. Inspector → **Tool audit**: "No side effect — denied before execution".
 5. Run state: `AWAITING_APPROVAL` with `policyDenials: 1` — the workflow fell back to the safe path.
+6. On the **Timeline** tab, click **Reject** and confirm. The run ends `COMPLETED (ACTION_REJECTED)`; the denied
+   invocation stays in the audit with no side effect.
 
 Say: identity came from the TLS connection, the decision from OPA, and the agent could not have
-supplied either.
+supplied either. A person still makes the final call.
+
+Why not approve here: it is valid (OPA would now allow the same rollback, because a matching approval exists),
+but right after a denial it reads as "the denial did not matter". Scenario 1 already showed approval. Approve
+only if you have time to explain that policy denied acting *without approval*, not the action itself.
 
 If the model proposes a no-side-effect action (`ESCALATE_TO_HUMAN`/`OBSERVE`), no remediation is
 attempted and nothing is denied. Say so, and rerun once; if it repeats, continue to scenario 3
@@ -108,15 +126,22 @@ attempted and nothing is denied. Say so, and rerun once; if it repeats, continue
 Say: KEDA scales the worker Deployment on consumer lag; the upper bound is deliberate because every
 replica can call the model.
 
+There is nothing to approve: burst runs stop after evidence, as `COMPLETED (EVIDENCE_ONLY)`. While the burst is
+active, **Start burst** is disabled and **Reset** is refused. On the local stack (no Kubernetes or KEDA) the replica
+tiles show Unavailable; show the queue instead: one worker with two model calls in flight drains the backlog
+slowly, which is the problem scale-out solves.
+
 ### 3.4 Scenario 4 — redelivery without a duplicate effect (optional, 1:30)
 
-Only when the slot allows it (for example a longer session) or instead of the approval step.
+Only when the slot allows it (for example a longer session).
 
 1. Run the **Redelivery** preset. The run header shows the amber tag `Fault injected: DROP_ACK_ONCE`.
 2. In the task lanes, one evidence task shows `delivery 1` ending without a result, then
    `delivery 2` after the acknowledgement timeout (about 20 s).
 3. Inspector → **Tool audit** for that task: `requests: 2`, `executions: 1`, second response `REPLAYED`.
-4. The run completes normally.
+4. The run itself carries on and reaches `AWAITING_APPROVAL`. On the **Timeline** tab, click **Reject** (or leave
+   it: it ends `APPROVAL_EXPIRED` after 10 minutes). Approving would add a simulated action that distracts from
+   the one tool call that was requested twice and executed once.
 
 ## 4. Presenter controls
 

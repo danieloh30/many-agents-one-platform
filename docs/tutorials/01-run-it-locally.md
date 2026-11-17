@@ -88,6 +88,10 @@ Open <http://localhost:8080>. You can run scenarios, approve actions and reset s
 needs no presenter token. (To require one, for example on a shared screen, start the stack with
 `MAOP_PRESENTER_AUTH=true scripts/local/stack.sh up`; the token is then in `.maop/local/presenter-token`.)
 
+To walk through the demo yourself, run the four scenario cards in order and end each one as listed in
+[the four scenarios](index.md#the-four-scenarios): approve the first, reject the second and fourth, and let the
+burst finish. Approve and Reject are on the run's **Timeline** tab; **Reset** in the top bar starts over.
+
 ### 5. Stop the stack
 
 ```bash
