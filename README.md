@@ -180,6 +180,10 @@ NetworkPolicies are rendered off (`MAOP_NETWORK_POLICIES=false`): with kindnet's
 application pods could not resolve DNS in testing, and the root cause was not identified. OpenShift enforces the
 same policies without issues.
 
+Right after a rollout on kind (podman), the agents' first model calls can be refused for a minute or two even
+though the pods reach the endpoint with `curl`; the cause lies in the local container network and was not
+identified. `./demo.sh up` therefore retries its smoke test once on a kind context, after 60 seconds, and says so.
+
 ## Local stack (no cluster)
 
 ```bash

@@ -189,6 +189,14 @@ cmd_up() {
   log "smoke test (verify --quick)"
   OPT_QUICK=true
   if ! cmd_verify; then
+    # On kind (podman) the agents' first model calls after a rollout can be refused for a minute or two, although
+    # the same pods reach the endpoint with curl; the cause is in the local container network, not the app. Retry
+    # once there, after a pause, and say so. Every other platform fails at once.
+    if [[ "$("$KC" config current-context 2>/dev/null)" == kind-* ]]; then
+      warn "smoke test failed on kind; local model egress can be refused right after a rollout. Retrying once in 60 s"
+      sleep 60
+      if cmd_verify; then print_access; return 0; fi
+    fi
     print_access
     die "smoke test failed; evidence is in the artifacts directory printed above"
   fi

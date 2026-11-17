@@ -11,6 +11,8 @@
 # changed. NetworkPolicies are rendered off on kind (MAOP_NETWORK_POLICIES=false): with kindnet's policy
 # enforcement the application pods could not resolve DNS in testing; the root cause was not identified.
 # OpenShift (OVN-Kubernetes) enforces the same policies without issues.
+# Right after a rollout, the agents' first model calls can be refused for a minute or two (podman's container
+# network); ./demo.sh up retries its smoke test once on a kind context for that reason.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
