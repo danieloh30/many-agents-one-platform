@@ -206,7 +206,8 @@ scripts/local/stack.sh e2e
 | Prometheus | http://localhost:9090 |
 
 Console controls work without a token by default (`MAOP_PRESENTER_AUTH=false`); with `true`, the token is in `.maop/local/presenter-token`. The model is deterministic by default here; run
-`MAOP_MODEL_MODE=live scripts/local/stack.sh up` to use the configured live model.
+`MAOP_MODEL_MODE=live scripts/local/stack.sh up` (on one line, with `OPENAI_API_KEY` exported) to use the configured
+live model; `up` restarts a stack that is already running.
 
 The local stack runs the runbook's successful run, policy denial, queue burst (depth, age and drain) and
 redelivery scenarios, with traces in Jaeger and metrics in Grafana. Not available without a cluster: KEDA

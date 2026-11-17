@@ -146,14 +146,16 @@ shows `DEV_STATIC`.
 | `MAOP_MODEL_API_KEY` | If unset, the services use an exported `OPENAI_API_KEY` |
 
 To run the local stack against a live model, export the key in your shell. `stack.sh` passes your
-environment to the services:
+environment to the services, and `up` stops a stack that is already running first:
 
 ```bash
-scripts/local/stack.sh down
 export OPENAI_API_KEY=...   # your key; it is never written to the repository
 MAOP_MODEL_MODE=live scripts/local/stack.sh up
-scripts/local/stack.sh e2e
 ```
+
+Put `MAOP_MODEL_MODE=live` on the same line as the command (or `export` it): on a line of its own it is not passed
+to `stack.sh`, and the stack starts deterministic. The console's model badge shows which mode is running. A full
+`stack.sh e2e` in live mode makes many real model calls (the burst alone runs 12 incidents).
 
 There is **no automatic fallback** from live to deterministic. A failing model produces a failed run
 or one that needs review, with the reason visible.

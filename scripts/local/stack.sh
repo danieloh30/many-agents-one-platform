@@ -95,6 +95,9 @@ svc() { # name jar-dir env...
 
 up() {
   mkdir -p "$STATE" "$LOGS"
+  # A stack that is still running would keep its ports: the new JVMs would fail to start while the old ones
+  # answer the readiness checks (for example still deterministic after `MAOP_MODEL_MODE=live ... up`). Stop it.
+  if ls "$STATE"/*.pid >/dev/null 2>&1; then log "stopping the running stack first"; down; fi
   certs
   [ -s "$TOKEN_FILE" ] || (umask 077; openssl rand -hex 24 > "$TOKEN_FILE")
   infra_up
@@ -118,8 +121,13 @@ up() {
 }
 
 down() {
+  local f pid
   for f in "$STATE"/*.pid; do
-    if [ -f "$f" ]; then kill "$(cat "$f")" 2>/dev/null || true; rm -f "$f"; fi
+    if [ -f "$f" ]; then
+      pid="$(cat "$f")"; kill "$pid" 2>/dev/null || true
+      for _ in $(seq 1 30); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done
+      rm -f "$f"
+    fi
   done
   for c in maop-postgres maop-nats maop-opa maop-jaeger maop-prometheus maop-grafana; do "$ENGINE" rm -f "$c" >/dev/null 2>&1 || true; done
   log "stopped"
