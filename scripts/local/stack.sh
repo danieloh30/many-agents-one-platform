@@ -45,7 +45,10 @@ issue() { # workload
   rm -f "$dir/req.csr" "$dir/ext.cnf"
 }
 
+# A fresh CA and SVIDs on every `up`: they are valid for two days only, and a renamed workload (evidence-worker ->
+# evidence-agent) would otherwise keep running without an SVID of its own. Services restart on `up` anyway.
 certs() {
+  rm -rf "$PKI"
   mkdir -p "$PKI"
   openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out "$PKI/ca_key.pem" 2>/dev/null
   openssl req -x509 -new -key "$PKI/ca_key.pem" -subj "/CN=maop local trust domain CA" -days 2 -sha256 \
@@ -92,7 +95,7 @@ svc() { # name jar-dir env...
 
 up() {
   mkdir -p "$STATE" "$LOGS"
-  [ -f "$PKI/ca.pem" ] || certs
+  certs
   [ -s "$TOKEN_FILE" ] || (umask 077; openssl rand -hex 24 > "$TOKEN_FILE")
   infra_up
   local db="QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://localhost:5432/maop QUARKUS_DATASOURCE_USERNAME=maop QUARKUS_DATASOURCE_PASSWORD=maop"
