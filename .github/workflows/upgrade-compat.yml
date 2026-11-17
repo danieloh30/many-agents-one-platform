@@ -366,7 +366,7 @@ jobs:
             echo
           } >"$MAINT_OUT_DIR/actions.md"
           cat "$MAINT_OUT_DIR"/*.md >>"$GITHUB_STEP_SUMMARY"
-      - name: Create or update the standing issue
+      - name: Update the standing issue (closed when all clear, reopened when something needs action)
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/maintenance/report-issue.sh

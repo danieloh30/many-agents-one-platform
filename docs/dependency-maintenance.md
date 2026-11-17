@@ -211,6 +211,11 @@ One issue titled "Dependency compatibility report", found by label and edited in
 what is pending, what was auto-merged, what needs a human, nightly live-model result, and anything
 that needs cluster verification after an upgrade (for example a KEDA chart bump before the next demo).
 
+The issue opens and closes itself (`scripts/maintenance/report-issue.sh`, tested by `test-report-issue.sh`). When every
+check reports up to date it is closed as "all clear"; when something needs action again, the latest closed report is
+reopened (a new one is created only if none exists). A check that produced no result counts as needing action, so a
+failing check never closes the report. A closed report therefore means nothing is pending.
+
 ## 6. Merge and attribution rules for automation
 
 - Squash merge, linear history.

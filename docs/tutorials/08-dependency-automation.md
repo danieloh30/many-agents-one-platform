@@ -124,7 +124,8 @@ Every day at 05:30 UTC, and on demand, it:
   the Node.js version itself; the workflow compares `web/.nvmrc` with the newest Node.js LTS and proposes a
   new major on `upgrade/toolchain` for review (patch releases arrive on their own, since `.nvmrc` pins only
   the major);
-- writes a standing "Dependency compatibility report" issue, updated in place.
+- writes a standing "Dependency compatibility report" issue, updated in place. It closes itself when every check
+  is up to date and reopens when something needs action, so a closed report means nothing is pending.
 
 PRs from this workflow need a dedicated token (`UPGRADE_BOT_TOKEN`), because PRs created with the
 default `GITHUB_TOKEN` do not trigger CI. Without it, the workflow runs in report-only mode.

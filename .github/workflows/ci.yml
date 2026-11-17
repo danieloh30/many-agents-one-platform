@@ -270,6 +270,8 @@ jobs:
         run: scripts/maintenance/test-classify-update.sh
       - name: Node.js toolchain check tests
         run: scripts/maintenance/test-node-toolchain-check.sh
+      - name: Report issue open/close tests
+        run: scripts/maintenance/test-report-issue.sh
 
   images:
     needs: changes
