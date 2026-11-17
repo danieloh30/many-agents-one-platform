@@ -114,7 +114,7 @@ up() {
     curl -fsS "http://localhost:$p/q/health/ready" >/dev/null || die "service on management port $p not ready (see $LOGS)"
   done
   log "stack ready: console $CONSOLE  jaeger http://localhost:16686  grafana http://localhost:3000  prometheus http://localhost:9090"
-  log "presenter token is in $TOKEN_FILE (not printed)"
+  if [ "${MAOP_PRESENTER_AUTH:-false}" = "true" ]; then log "presenter token required; it is in $TOKEN_FILE (not printed)"; fi
 }
 
 down() {

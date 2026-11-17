@@ -102,10 +102,9 @@ In the console, run the **Redelivery** preset (`Shift+4` in presenter mode). It 
 (the default) and is always shown on the run. Or use the API:
 
 ```bash
-TOKEN="$(cat .maop/local/presenter-token)"
 REQ="$(curl -s http://localhost:8080/api/v1/scenarios | jq -c '.items[] | select(.id=="REDELIVERY") | .request')"
 RUN="$(curl -s -X POST http://localhost:8080/api/v1/runs \
-  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -H 'Content-Type: application/json' \
   -H "Idempotency-Key: tutorial-$(date +%s)" -d "$REQ" | jq -r .runId)"
 ```
 

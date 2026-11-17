@@ -119,10 +119,10 @@ and the `planSource: PRESET` tag. Or call the API:
 
 ```bash
 CONSOLE_URL=https://<your-console-host>
-TOKEN="$(./demo.sh token)"
-curl -s -X POST "$CONSOLE_URL/api/v1/bursts" -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' -d '{"runs":12}'
+curl -s -X POST "$CONSOLE_URL/api/v1/bursts" -H 'Content-Type: application/json' -d '{"runs":12}'
 ```
+
+With `MAOP_PRESENTER_AUTH=true`, add `-H "Authorization: Bearer $(./demo.sh token)"`.
 
 ### 4. Collect evidence
 

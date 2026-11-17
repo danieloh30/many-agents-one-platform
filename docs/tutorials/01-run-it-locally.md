@@ -69,7 +69,7 @@ The SPA bundle is built first and then packaged into `ops-console`, which serves
 scripts/local/stack.sh up
 ```
 
-The script issues the local certificates on first run, generates a presenter token, starts
+The script issues fresh local certificates (SVIDs), starts
 PostgreSQL, NATS, OPA, Jaeger, Prometheus and Grafana, launches the five JVMs, and waits until every
 service reports ready on its management port. Logs go to `.maop/local/logs/`.
 
@@ -84,12 +84,9 @@ The checks drive the console API exactly as the UI does and save their evidence 
 
 ### 4. Open the console
 
-Open <http://localhost:8080>. The console can be read without a token. To run scenarios, enter the
-presenter token, which is stored in a file and never printed:
-
-```bash
-cat .maop/local/presenter-token
-```
+Open <http://localhost:8080>. You can run scenarios, approve actions and reset straight away: the local stack
+needs no presenter token. (To require one, for example on a shared screen, start the stack with
+`MAOP_PRESENTER_AUTH=true scripts/local/stack.sh up`; the token is then in `.maop/local/presenter-token`.)
 
 ### 5. Stop the stack
 
@@ -130,7 +127,7 @@ with live `gpt-4o-mini`:
 
 | UI | URL | Notes |
 | --- | --- | --- |
-| Agent Operations Console | <http://localhost:8080> | Read-only until you enter the presenter token |
+| Agent Operations Console | <http://localhost:8080> | Run scenarios, approve and reset; no token needed |
 | Jaeger | <http://localhost:16686> | One trace per run |
 | Grafana | <http://localhost:3000> | Project dashboards, anonymous viewer |
 | Prometheus | <http://localhost:9090> | Scrapes the services' metrics |

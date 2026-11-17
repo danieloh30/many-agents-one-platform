@@ -118,7 +118,7 @@ on observed data:
 
 ```bash
 ./demo.sh open      # prints (and on macOS opens) the console, Jaeger and Grafana URLs
-./demo.sh token     # prints the presenter token (the only command that does)
+./demo.sh token     # prints the presenter token, needed only with MAOP_PRESENTER_AUTH=true
 ./demo.sh status    # workloads, replicas, ScaledObject/HPA, routes, platform state, last runs
 ./demo.sh logs evidence-agent
 ./demo.sh reset     # clears demonstration state only: runs, audit, simulated actions, queued messages

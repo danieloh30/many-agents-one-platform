@@ -51,14 +51,12 @@ is in [architecture §4.1](../architecture.md#41-permitted-transitions).
 ### 1. Watch a run move through its states
 
 With the local stack running ([tutorial 01](01-run-it-locally.md)), start a successful run from the
-console (preset **Success**) and switch to the timeline with `T`. To follow it from the API instead,
-use the presenter token:
+console (preset **Success**) and switch to the timeline with `T`. To follow it from the API instead:
 
 ```bash
-TOKEN="$(cat .maop/local/presenter-token)"
 REQ="$(curl -s http://localhost:8080/api/v1/scenarios | jq -c '.items[] | select(.id=="SUCCESS") | .request')"
 RUN="$(curl -s -X POST http://localhost:8080/api/v1/runs \
-  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -H 'Content-Type: application/json' \
   -H "Idempotency-Key: tutorial-$(date +%s)" -d "$REQ" | jq -r .runId)"
 echo "$RUN"
 ```
