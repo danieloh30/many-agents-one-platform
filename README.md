@@ -98,7 +98,7 @@ flowchart LR
 
 ## Requirements
 
-- JDK 25 or newer (Maven Wrapper included), Node.js 24 LTS or newer
+- JDK 25 or newer (Maven Wrapper included), Node.js 26 LTS or newer
 - For OpenShift: `oc` logged in as a cluster administrator, `helm`; images are built in-cluster (no Docker Desktop)
 - For other Kubernetes clusters: `kubectl`, `helm`, podman or docker, and a registry the cluster can pull from
 - For the local stack: podman or docker, `openssl`, `jq`, `curl`

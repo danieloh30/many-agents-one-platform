@@ -33,8 +33,8 @@ compatible.
 
 | Package | Version | Notes |
 | --- | --- | --- |
-| Node.js | 24 LTS (≥ 24.15; 24.22.3 at check time) | `.nvmrc` + `engines`. Satisfies every tool below. |
-| npm | Bundled with Node 24 | `package-lock.json` committed; `npm ci` only. |
+| Node.js | 26 LTS "Lithium" (≥ 26.13, the first 26 LTS release; 26.13.1 at check time) | `.nvmrc` (major only) + `engines`; kept current by `upgrade-compat` (`node-toolchain-check.sh`). Every tool below builds and tests on it. Previous: 24 LTS. |
+| npm | Bundled with Node 26 (11.20 at check time) | `package-lock.json` committed; `npm ci` only. |
 | react / react-dom | 19.3.1 | |
 | typescript | **~6.0.3** | Not 7.x: `typescript-eslint` 8.72 requires `<6.1.0`. |
 | vite / @vitejs/plugin-react | 8.3.8 / 6.3.0 | |

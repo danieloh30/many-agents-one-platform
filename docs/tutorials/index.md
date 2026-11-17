@@ -126,7 +126,7 @@ Tutorial 08 covers how the project stays current without manual upgrades.
 
 ## Prerequisites
 
-- JDK 25 or newer (the Maven Wrapper is included) and Node.js 24 LTS or newer.
+- JDK 25 or newer (the Maven Wrapper is included) and Node.js 26 LTS or newer.
 - For the local stack: podman or docker, `openssl`, `jq` and `curl`.
 - Optional, for a live model: an OpenAI-compatible endpoint and key. Without one, the local stack
   uses the deterministic model, which is labelled everywhere it appears.
