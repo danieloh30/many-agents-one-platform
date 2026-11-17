@@ -16,7 +16,7 @@ body="$MAINT_OUT_DIR/report-body.md"
   echo "<!-- maintained by .github/workflows/upgrade-compat.yml; edited in place, do not close -->"
   echo "_Updated: $(date -u '+%Y-%m-%d %H:%M UTC')${GITHUB_RUN_ID:+ — [workflow run](${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID})}_"
   echo
-  for f in quarkus-platform extension-compat charts maven-wrapper actions; do
+  for f in quarkus-platform extension-compat charts maven-wrapper node-toolchain actions; do
     if [[ -f "$MAINT_OUT_DIR/$f.md" ]]; then
       cat "$MAINT_OUT_DIR/$f.md"
     fi

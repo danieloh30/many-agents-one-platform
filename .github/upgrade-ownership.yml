@@ -40,7 +40,7 @@ branches:
   quarkus-stream: upgrade/quarkus-stream
   platform-charts: upgrade/platform-charts
   maven-wrapper: upgrade/maven-wrapper
-  toolchain: upgrade/toolchain   # reserved: toolchain drift is report-only today
+  toolchain: upgrade/toolchain   # Node.js (node-toolchain-check.sh); the JDK floor is guarded, not upgraded
 
 # Files under deploy/ with image references that Dependabot's docker ecosystem cannot parse
 # (Kustomize patches embed manifests as strings; Helm values use repository/tag maps).

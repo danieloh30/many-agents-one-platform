@@ -119,8 +119,11 @@ Every day at 05:30 UTC, and on demand, it:
 - reads the Quarkus registry. If a newer **LTS** stream exists, it runs the Quarkus update tooling,
   builds and tests, and opens or updates a PR on the fixed branch `upgrade/quarkus-stream`. A same-major
   change is labelled `automerge:eligible`, and a new major is labelled `needs-review`;
-- checks the KEDA and SPIRE chart pins, the Maven Wrapper, and toolchain consistency, each on its own
-  fixed branch, so a second run updates the same PR instead of opening a new one;
+- checks the KEDA and SPIRE chart pins, the Maven Wrapper, and the Node.js toolchain, each on its own
+  fixed branch, so a second run updates the same PR instead of opening a new one. Dependabot never touches
+  the Node.js version itself; the workflow compares `web/.nvmrc` with the newest Node.js LTS and proposes a
+  new major on `upgrade/toolchain` for review (patch releases arrive on their own, since `.nvmrc` pins only
+  the major);
 - writes a standing "Dependency compatibility report" issue, updated in place.
 
 PRs from this workflow need a dedicated token (`UPGRADE_BOT_TOKEN`), because PRs created with the

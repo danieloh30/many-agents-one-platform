@@ -194,7 +194,8 @@ classifier checks this itself from `previous-version` and `new-version`.
 | Platform member lag | Compare the platform's `quarkus-langchain4j` version with the latest standalone release | Report only (informational; the design intentionally follows the platform). |
 | Helm charts | Chart repository indexes for `keda`, `spire`, `spire-crds` | Update `deploy/platform/versions.env` on `upgrade/platform-charts`; PR level derived from the chart version bump; also checks the chart's supported Kubernetes range against versions.md §5. |
 | Maven Wrapper | Latest Maven 3.9.x | `mvn wrapper:wrapper` on `upgrade/maven-wrapper`. |
-| Toolchain consistency | JDK in `pom.xml`, Dockerfiles, CI, `.sdkmanrc`; Node in `.nvmrc`, `package.json` `engines`, CI | Fix drift on `upgrade/toolchain`. A newer JDK LTS or Node LTS is reported, never applied automatically. |
+| Node.js toolchain (`scripts/maintenance/node-toolchain-check.sh`) | `web/.nvmrc` (major), `engines.node` in `web/package.json` and its lock file, every `setup-node` step reading `web/.nvmrc`; the newest LTS major on nodejs.org | Drift or a newer LTS major opens or updates a PR on `upgrade/toolchain`, labelled `needs-review` (never auto-merged); workflow files are reported, not edited. Patch and minor Node releases need no change: `.nvmrc` pins only the major. `demo.sh doctor` reads its minimum from `engines.node`. |
+| JDK toolchain | JDK floor in `pom.xml`, Dockerfiles, CI, `.sdkmanrc` | Guarded by `java-version-guard.sh` (never below 25); a newer JDK LTS is adopted through an ADR, not automatically. |
 | Cluster compatibility | KEDA's tested Kubernetes range vs the kind node image and target OpenShift version | Report. |
 | Dependabot blind spots | `ownership-check` scan results | Report. |
 | Docs | Regenerate the tables in `docs/versions.md` from the source files | Included in whichever PR changes the versions. |

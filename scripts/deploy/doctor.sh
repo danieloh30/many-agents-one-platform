@@ -30,11 +30,14 @@ doctor_local_tools() {
   else
     d_fail "java >= 25" "java not found on PATH"
   fi
+  # The minimum comes from web/package.json (engines.node), which the upgrade-compat toolchain check keeps current.
+  local node_min
+  node_min="$(jq -r '.engines.node // ">=0"' "${REPO_ROOT}/web/package.json" 2>/dev/null)"; node_min="${node_min#>=}"
   if have node; then
     v="$(node --version 2>/dev/null)"; v="${v#v}"
-    if version_ge "$v" 24.15; then d_pass "node >= 24.15" "node $v"; else d_fail "node >= 24.15" "found node $v (web/.nvmrc)"; fi
+    if version_ge "$v" "$node_min"; then d_pass "node >= $node_min" "node $v"; else d_fail "node >= $node_min" "found node $v (web/.nvmrc, engines.node in web/package.json)"; fi
   else
-    d_fail "node >= 24.15" "node not found on PATH"
+    d_fail "node >= $node_min" "node not found on PATH"
   fi
   if have npm; then d_pass "npm" "npm $(npm --version 2>/dev/null)"; else d_fail "npm" "npm not found"; fi
   if [[ "$MAOP_PLATFORM" == "openshift" ]]; then
