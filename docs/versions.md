@@ -36,12 +36,12 @@ compatible.
 | Node.js | 26 LTS "Lithium" (≥ 26.13, the first 26 LTS release; 26.13.1 at check time) | `.nvmrc` (major only) + `engines`; kept current by `upgrade-compat` (`node-toolchain-check.sh`). Every tool below builds and tests on it. Previous: 24 LTS. |
 | npm | Bundled with Node 26 (11.20 at check time) | `package-lock.json` committed; `npm ci` only. |
 | react / react-dom | 19.3.1 | |
-| typescript | **~6.0.3** | Not 7.x: `typescript-eslint` 8.72 requires `<6.1.0`. |
+| typescript | **~6.0.3** | Not 7.x: `typescript-eslint` 8.73 requires `<6.1.0`. |
 | vite / @vitejs/plugin-react | 8.3.8 / 6.3.0 | |
 | vitest / jsdom | 5.1.0 / 31.0.1 | |
 | @testing-library/react / dom / jest-dom / user-event | 16.3.3 / 10.4.2 / 7.0.1 / 14.6.11 | |
 | @playwright/test / @axe-core/playwright | 1.65.1 / 4.14.0 | |
-| eslint / typescript-eslint / eslint-plugin-react-hooks | 10.15.0 / 8.72.2 / 7.1.1 | |
+| eslint / typescript-eslint / eslint-plugin-react-hooks | 10.15.0 / 8.73.0 / 7.1.1 | 8.73.0 moves `minimatch` to ^11.0.1 (GHSA-g3hv-75wg-m249). |
 | @xyflow/react | 12.12.1 | Topology graph. |
 | @tanstack/react-query | 5.107.1 | |
 | react-router | 8.5.1 | |
