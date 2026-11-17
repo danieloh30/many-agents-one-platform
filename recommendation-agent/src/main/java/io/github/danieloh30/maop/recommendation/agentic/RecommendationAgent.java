@@ -50,7 +50,7 @@ public class RecommendationAgent {
             String fb = feedback;
             RecommendationDraft draft;
             try {
-                draft = AgentInvocation.call(cmd.deadline(), budget, () -> advisor.propose(context, fb));
+                draft = AgentInvocation.call(advisor, cmd.deadline(), budget, id -> advisor.propose(id, context, fb));
             } catch (RuntimeException e) {
                 TaskFailure tf = AgentErrors.taskFailure(e);
                 if (tf != null) {

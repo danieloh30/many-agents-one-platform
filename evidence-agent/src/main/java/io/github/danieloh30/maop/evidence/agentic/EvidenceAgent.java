@@ -93,7 +93,7 @@ public class EvidenceAgent {
             String fb = feedback;
             EvidenceFinding finding;
             try {
-                finding = AgentInvocation.call(cmd.deadline(), budget, () -> analyst.analyse(cmd.topic().name(),
+                finding = AgentInvocation.call(analyst, cmd.deadline(), budget, id -> analyst.analyse(id, cmd.topic().name(),
                         cmd.incident().title(), cmd.incident().service(), cmd.question(), toolResults, fb));
             } catch (RuntimeException e) {
                 TaskFailure tf = AgentErrors.taskFailure(e);

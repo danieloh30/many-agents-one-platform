@@ -3,13 +3,15 @@ package io.github.danieloh30.maop.recommendation.agentic;
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.ChatModelSupplier;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
+import dev.langchain4j.service.memory.ChatMemoryAccess;
 import io.github.danieloh30.maop.common.agentic.GatewayChatModel;
 
 /** Declarative recommendation agent: one evidence-backed proposed next action (a proposal, never an execution). */
-public interface RemediationAdvisorAgent {
+public interface RemediationAdvisorAgent extends ChatMemoryAccess {
 
     @SystemMessage("""
             [purpose:recommendation.propose]
@@ -33,7 +35,7 @@ public interface RemediationAdvisorAgent {
             {{feedback}}""")
     @Agent(name = "remediation-advisor", description = "Proposes one evidence-backed next action for an incident",
             outputKey = "recommendation")
-    RecommendationDraft propose(@V("context") String context, @V("feedback") String feedback);
+    RecommendationDraft propose(@MemoryId Object memoryId, @V("context") String context, @V("feedback") String feedback);
 
     @ChatModelSupplier
     static ChatModel chatModel() {

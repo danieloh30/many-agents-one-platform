@@ -39,8 +39,8 @@ public class TriagePlanner {
             String fb = feedback;
             TriagePlan p;
             try {
-                p = AgentInvocation.call(deadline, budget,
-                        () -> agent.classify(incident.title(), incident.service(), incident.description(), maxTasks, fb));
+                p = AgentInvocation.call(agent, deadline, budget,
+                        id -> agent.classify(id, incident.title(), incident.service(), incident.description(), maxTasks, fb));
             } catch (RuntimeException e) {
                 TaskFailure tf = AgentErrors.taskFailure(e);
                 if (tf != null) {

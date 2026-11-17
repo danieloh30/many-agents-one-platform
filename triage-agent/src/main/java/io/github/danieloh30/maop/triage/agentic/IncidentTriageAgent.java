@@ -3,9 +3,11 @@ package io.github.danieloh30.maop.triage.agentic;
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.ChatModelSupplier;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
+import dev.langchain4j.service.memory.ChatMemoryAccess;
 import io.github.danieloh30.maop.common.agentic.GatewayChatModel;
 import io.github.danieloh30.maop.common.model.TriagePlan;
 
@@ -15,7 +17,7 @@ import io.github.danieloh30.maop.common.model.TriagePlan;
  * and the deterministic test mode apply unchanged. Orchestration across agents stays durable (JetStream +
  * PostgreSQL), not an in-process agent workflow.
  */
-public interface IncidentTriageAgent {
+public interface IncidentTriageAgent extends ChatMemoryAccess {
 
     @SystemMessage("""
             [purpose:triage.classify]
@@ -35,7 +37,7 @@ public interface IncidentTriageAgent {
             {{feedback}}""")
     @Agent(name = "incident-triage", description = "Classifies an incident and plans the evidence to collect",
             outputKey = "triagePlan")
-    TriagePlan classify(@V("title") String title, @V("service") String service, @V("description") String description,
+    TriagePlan classify(@MemoryId Object memoryId, @V("title") String title, @V("service") String service, @V("description") String description,
             @V("maxTasks") int maxTasks, @V("feedback") String feedback);
 
     @ChatModelSupplier

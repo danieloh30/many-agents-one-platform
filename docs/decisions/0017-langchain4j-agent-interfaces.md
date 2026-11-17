@@ -33,3 +33,7 @@ CDI beans with typed outputs. The module is beta upstream, and its workflow anno
   workload, ServiceAccount and SPIFFE ID, OPA data, NATS user and the durable consumer (`evidence-agents`).
   Existing clusters must drop the old `evidence-workers` consumer: the work stream uses WorkQueue retention, which
   allows only one consumer per subject.
+- Every agent call has its own chat memory. Without it, the framework kept one shared memory per agent, so each
+  prompt carried up to five earlier tasks' conversations (other incidents' data and growing token use; in
+  deterministic mode, stale invocation ids failed validation). The agent methods take a `@MemoryId`, the interfaces
+  extend `ChatMemoryAccess`, and `AgentInvocation.call` passes a fresh id and evicts that memory afterwards.
