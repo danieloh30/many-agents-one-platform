@@ -122,6 +122,8 @@ pom_property() {
   value="$(yq -p xml -o y ".project.properties[\"$prop\"] // \"\"" "$POM_FILE" 2>/dev/null || true)"
   if [[ -z "$value" && -x "$REPO_ROOT/mvnw" && "$POM_FILE" == "$REPO_ROOT/pom.xml" ]]; then
     value="$("$REPO_ROOT/mvnw" -B -q -N help:evaluate -DforceStdout -Dexpression="$prop" 2>/dev/null || true)"
+    # help:evaluate prints this message on stdout for an undefined property: it is not a version.
+    [[ "$value" == "null object or invalid expression"* ]] && value=""
   fi
   printf '%s' "$value"
 }

@@ -8,14 +8,14 @@
 # Output: $MAINT_OUT_DIR/extension-compat.json and extension-compat.md
 #
 # INDEPENDENT_LIBS (env) maps POM properties to group:artifact, space separated:
-#   default "jnats.version=io.nats:jnats cloudevents.version=io.cloudevents:cloudevents-core
-#            bouncycastle.version=org.bouncycastle:bcprov-jdk18on"
+#   default "jnats.version=io.nats:jnats bouncycastle-lts.version=org.bouncycastle:bcprov-lts8on"
+#   (CloudEvents has no pin of its own: the project uses an in-repo binary-mode codec, ADR-0016.)
 set -o errexit -o nounset -o pipefail
 # shellcheck source=scripts/maintenance/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 need curl jq yq sort
 
-INDEPENDENT_LIBS="${INDEPENDENT_LIBS:-jnats.version=io.nats:jnats cloudevents.version=io.cloudevents:cloudevents-core bouncycastle.version=org.bouncycastle:bcprov-jdk18on}"
+INDEPENDENT_LIBS="${INDEPENDENT_LIBS:-jnats.version=io.nats:jnats bouncycastle-lts.version=org.bouncycastle:bcprov-lts8on}"
 
 pinned="$(pom_property quarkus.platform.version)"
 declare -a candidates=()
@@ -66,7 +66,7 @@ for entry in $INDEPENDENT_LIBS; do
   cur=""
   [[ -f "$POM_FILE" ]] && cur="$(pom_property "$prop")"
   latest="$(maven_latest "$ga" || true)"
-  status="not in pom.xml"
+  status="UNAVAILABLE: property not found in pom.xml (update INDEPENDENT_LIBS)"
   if [[ -n "$cur" ]]; then
     if [[ -n "$latest" ]] && version_gt "$latest" "$cur"; then
       status="update available ($(bump_level "$cur" "$latest")) — Dependabot will propose it"
