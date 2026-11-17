@@ -63,4 +63,5 @@ run --apply >/dev/null
 check "drift apply: engines back on the .nvmrc major" "$(jq -r .engines.node "$work/repo/web/package.json")" '>=24.0'
 check "drift apply: workflow left for a human" "$(run | jq -r '.drift | length')" 1
 
-(( fails == 0 )) && echo "all node-toolchain tests passed" || { echo "$fails failure(s)"; exit 1; }
+if (( fails > 0 )); then echo "$fails failure(s)"; exit 1; fi
+echo "all node-toolchain tests passed"
