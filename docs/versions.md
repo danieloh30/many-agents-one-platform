@@ -72,8 +72,8 @@ compatible.
 
 | Component | Chart | App version | Notes |
 | --- | --- | --- | --- |
-| KEDA | `keda` **2.21.0** from `https://kedacore.github.io/charts` | 2.21.0 | 2.21.1 was published on the check date with no chart yet; stay on 2.21.0 until a chart exists. Tested with Kubernetes 1.34–1.36. |
-| SPIRE | `spire` **0.30.4** + `spire-crds` **0.6.1** from `https://spiffe.github.io/helm-charts-hardened/` | SPIRE 1.15.5, controller-manager 0.8.0 | SPIRE 1.16.0 exists but is not yet the chart default; keep chart defaults. Pin the SPIFFE CSI driver image tag explicitly (chart default trails the 0.3.0 release). |
+| KEDA | `keda` **2.21.1** from `https://kedacore.github.io/charts` | 2.21.1 | Patch over 2.21.0 (chart values differ only in comments). Tested with Kubernetes 1.34–1.36. |
+| SPIRE | `spire` **0.31.0** + `spire-crds` **0.6.1** from `https://spiffe.github.io/helm-charts-hardened/` | SPIRE 1.16.0 | Chart 0.31.0 makes SPIRE 1.16.0 the default; its values are unchanged from 0.30.4. Pin the SPIFFE CSI driver image tag explicitly (chart default trails the 0.3.0 release). |
 
 ## 5. Clusters
 

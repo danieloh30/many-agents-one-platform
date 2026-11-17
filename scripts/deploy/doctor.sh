@@ -155,6 +155,7 @@ doctor_cluster() {
     reuse-cma) d_pass "KEDA / CMA" "$kd -> openshift-cma overlay (prometheus trigger)";;
     reuse-upstream) d_pass "KEDA / CMA" "$kd -> reuse";;
     install) d_pass "KEDA / CMA" "none -> will install chart keda ${KEDA_CHART_VERSION} into ${KEDA_NAMESPACE}";;
+    upgrade) d_pass "KEDA / CMA" "$kd -> will upgrade chart keda ${PLAN_KEDA_FROM} -> ${KEDA_CHART_VERSION} (installed by this project)";;
     blocked) d_fail "KEDA / CMA" "$kd";;
   esac
   case "$PLAN_SPIRE_ACTION" in
@@ -166,6 +167,7 @@ doctor_cluster() {
       else
         d_pass "SPIRE" "none -> will install ${SPIRE_CRDS_CHART} ${SPIRE_CRDS_CHART_VERSION} + ${SPIRE_CHART} ${SPIRE_CHART_VERSION}; trust domain ${PLAN_TRUST_DOMAIN}"
       fi;;
+    upgrade) d_pass "SPIRE" "existing -> will upgrade ${SPIRE_CHART} ${PLAN_SPIRE_FROM} -> ${SPIRE_CHART_VERSION} (installed by this project); trust domain ${PLAN_TRUST_DOMAIN}";;
     blocked) d_fail "SPIRE" "${SPIRE_DETAIL}";;
   esac
   local line

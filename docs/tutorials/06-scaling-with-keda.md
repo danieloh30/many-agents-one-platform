@@ -6,7 +6,7 @@ Understand how evidence agents are meant to scale on real backlog. A KEDA `Scale
 lag of the JetStream consumer `evidence-agents`, and a bounded burst fills that queue. Model rate
 limits and per-pod permits put a deliberate ceiling on the scale-out.
 
-> Verified on Kubernetes (Red Hat OpenShift) with upstream KEDA 2.21.0 and the live model: during `./demo.sh verify` the
+> Verified on Kubernetes (Red Hat OpenShift) with upstream KEDA 2.21.x and the live model: during `./demo.sh verify` the
 > burst took the evidence-agent Deployment from 1 to 5 desired replicas about 18 s after the burst
 > started, and to the ceiling of 6 within about 29 s (ready replicas follow as pods start). Your timings
 > depend on the cluster and image pulls. The local stack proves only the queue part: the burst raises

@@ -75,6 +75,7 @@ install_spire() {
 ensure_platform() {
   case "$PLAN_KEDA_ACTION" in
     install) install_keda;;
+    upgrade) log "KEDA: upgrading the release this project installed (${PLAN_KEDA_FROM} -> ${KEDA_CHART_VERSION})"; install_keda;;
     reuse-cma) log "KEDA: Custom Metrics Autoscaler present -> openshift-cma overlay (prometheus trigger); upstream KEDA is never installed next to CMA";;
     reuse-upstream) log "KEDA: reusing ${KEDA_DETAIL}";;
     *) die "KEDA not available: ${PLAN_PROBLEMS}";;
@@ -84,6 +85,11 @@ ensure_platform() {
       local cname="${MAOP_SPIRE_CLUSTER_NAME:-}"
       if [[ -z "$cname" && "$MAOP_PLATFORM" == "openshift" ]]; then cname="$(openshift_infra_name)"; fi
       install_spire "$PLAN_TRUST_DOMAIN" "${cname:-maop-cluster}";;
+    upgrade)
+      log "SPIRE: upgrading the releases this project installed (${PLAN_SPIRE_FROM} -> ${SPIRE_CHART_VERSION}); trust domain ${PLAN_TRUST_DOMAIN} kept"
+      local ucname="${MAOP_SPIRE_CLUSTER_NAME:-}"
+      if [[ -z "$ucname" && "$MAOP_PLATFORM" == "openshift" ]]; then ucname="$(openshift_infra_name)"; fi
+      install_spire "$PLAN_TRUST_DOMAIN" "${ucname:-maop-cluster}";;
     reuse) log "SPIRE: reusing existing install (SPIRE_MODE=existing): trust domain ${PLAN_TRUST_DOMAIN}, className '${PLAN_CLASS_NAME:-<none>}'";;
     *) die "SPIRE not available: ${PLAN_PROBLEMS}";;
   esac

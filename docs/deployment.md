@@ -157,6 +157,7 @@ metrics API service). The preflight therefore checks for the CMA operator and ex
 | --- | --- |
 | No KEDA, no CMA | Install upstream KEDA chart (default path). |
 | Upstream KEDA already present at a compatible version | Reuse it; install nothing. |
+| Upstream KEDA installed earlier by this project (recorded in `maop-installed-components`) at another version than the pin | With `--install-platform-components`, upgrade it in place to the pin (`helm upgrade`). The same applies to the SPIRE releases; installs made by anyone else are only reused. |
 | CMA present | Do **not** install upstream KEDA. Deploy the `openshift-cma` overlay, whose `ScaledObject` uses a `prometheus` trigger on `maop_queue_pending` + `maop_queue_ack_pending` for `consumer="evidence-agents"` (exported by ops-console from JetStream consumer info) served by the in-namespace Prometheus. The console shows the scaler kind it actually finds. |
 
 **Verify on cluster**: which state applies; KEDA operator pods run under `restricted-v2`; the
@@ -258,7 +259,8 @@ flowchart TD
 ```
 
 `up` steps: doctor checks → platform plan (reuse compatible KEDA/CMA/SPIRE; install only with
-`--install-platform-components`, recording what it installed in ConfigMap `maop-installed-components`) →
+`--install-platform-components`, recording what it installed in ConfigMap `maop-installed-components`, and upgrade
+those recorded releases when `deploy/platform/versions.env` pins a newer chart) →
 namespace with ownership and pod-security labels → Secrets created only when absent (model credentials refreshed
 from `.env.local` or an exported `OPENAI_API_KEY`) → build (skippable with `--skip-build`) → render and
 `apply --server-side` → wait for `postgres`, `nats`, the `postgres-setup` Job, then Deployments → external
@@ -291,7 +293,8 @@ and SPIRE uses a local Kubernetes cluster (for example kind) with `./demo.sh up 
 
 **Verified on OpenShift 4.22** (cluster admin, `./demo.sh up --platform openshift --profile summit
 --install-platform-components`, then `./demo.sh verify`, all six checks PASS): C1 (no CMA present; upstream KEDA
-2.21.0 installed and scaled evidence-agent 1 → 6), C3 and C4 (SPIRE 0.30.4 with the chart's SCCs; restricted
+2.21.0 installed and scaled evidence-agent 1 → 6; upgraded in place to 2.21.1, 1 → 6 again), C3 and C4 (SPIRE 0.30.4,
+upgraded in place to chart 0.31.0 / SPIRE 1.16.0 with the trust domain kept, with the chart's SCCs; restricted
 pods mount `csi.spiffe.io`, after the CSIDriver-ordering retry in `platform.sh`), C5 (all images run with
 OpenShift-assigned UIDs), C7 (scale-out within the runbook target), C8 (live model reachable from the agents),
 C9 (OVN-Kubernetes enforced the NetworkPolicies; OpenShift build pods needed their own egress policy, `deploy/overlays/openshift/network-builds.yaml`, found on the second deployment), C10 (public images pulled). C2 is

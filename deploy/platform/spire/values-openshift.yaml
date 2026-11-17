@@ -6,7 +6,7 @@
 #   - the CSIDriver label security.openshift.io/csi-ephemeral-volume-profile=restricted, which lets
 #     pods admitted under restricted-v2 / Pod Security "restricted" mount the csi.spiffe.io inline
 #     volume (docs/deployment.md §5.2 item 2).
-# Verified in spire 0.30.4: charts/spiffe-csi-driver/templates/spiffe-csi-driver.yaml.
+# Verified in spire 0.31.0: charts/spiffe-csi-driver/templates/spiffe-csi-driver.yaml.
 
 global:
   openshift: true

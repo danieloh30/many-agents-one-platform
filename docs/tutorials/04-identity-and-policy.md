@@ -34,7 +34,7 @@ flowchart LR
     style DB fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px
 ```
 
-> Verified on Kubernetes (Red Hat OpenShift): SPIRE (chart 0.30.4) issued SVIDs to all five workloads through the SPIFFE
+> Verified on Kubernetes (Red Hat OpenShift): SPIRE (chart 0.31.0, SPIRE 1.16.0) issued SVIDs to all five workloads through the SPIFFE
 > CSI volume under `restricted-v2`; every tool-service audit record carried a
 > `spiffe://<apps domain>/ns/maop/sa/<service>` caller, and a client without a certificate (sending a forged
 > identity header) was refused at the TLS handshake. Locally, a CA writes certificates in the same file

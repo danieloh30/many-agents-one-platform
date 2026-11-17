@@ -1,11 +1,11 @@
-# Upstream KEDA chart 2.21.0 (kedacore/keda) — used only when neither upstream KEDA nor the
+# Upstream KEDA chart 2.21.1 (kedacore/keda) — used only when neither upstream KEDA nor the
 # OpenShift Custom Metrics Autoscaler is present (docs/deployment.md §5.1).
 #
 # Installed with:
-#   helm upgrade --install keda kedacore/keda --version 2.21.0 -n keda --create-namespace \
+#   helm upgrade --install keda kedacore/keda --version 2.21.1 -n keda --create-namespace \
 #     -f deploy/platform/keda/values.yaml
 #
-# Keys verified with `helm show values kedacore/keda --version 2.21.0`. The chart defaults are
+# Keys verified with `helm show values kedacore/keda --version 2.21.1`. The chart defaults are
 # already compatible with OpenShift restricted-v2 and Pod Security "restricted" (no runAsUser,
 # all capabilities dropped, RuntimeDefault seccomp, read-only root filesystem); they are restated
 # here so a reviewer sees the security posture without opening the chart.

@@ -1,14 +1,14 @@
-# Upstream SPIRE hardened charts: spire-crds 0.6.1 + spire 0.30.4
+# Upstream SPIRE hardened charts: spire-crds 0.6.1 + spire 0.31.0
 # (https://spiffe.github.io/helm-charts-hardened/). Used only when no SPIRE / SPIFFE CSI driver /
 # Zero Trust Workload Identity Manager is present (docs/deployment.md §5.2).
 #
 # Installed by demo.sh (scripts/deploy/platform.sh):
 #   helm upgrade --install spire-crds spiffe/spire-crds --version 0.6.1 -n spire-mgmt --create-namespace
-#   helm upgrade --install spire spiffe/spire --version 0.30.4 -n spire-mgmt \
+#   helm upgrade --install spire spiffe/spire --version 0.31.0 -n spire-mgmt \
 #     -f deploy/platform/spire/values.yaml [-f deploy/platform/spire/values-openshift.yaml] \
 #     --set global.spire.trustDomain=<td> --set global.spire.clusterName=<name>
 #
-# Keys verified with `helm show values spiffe/spire --version 0.30.4`.
+# Keys verified with `helm show values spiffe/spire --version 0.31.0`.
 
 global:
   spire:

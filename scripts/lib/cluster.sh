@@ -200,4 +200,21 @@ plan_platform() {
       PLAN_PROBLEMS+="No SPIRE found. Rerun with --install-platform-components to install the SPIRE charts (${SPIRE_CRDS_CHART} ${SPIRE_CRDS_CHART_VERSION} + ${SPIRE_CHART} ${SPIRE_CHART_VERSION}), or install SPIRE / the Zero Trust Workload Identity Manager yourself."$'\n'
     fi
   fi
+  # A release this project installed follows the pin in deploy/platform/versions.env: when the pin moved
+  # (upgrade-compat or a manual bump), --install-platform-components upgrades it in place. Installs made by
+  # anyone else are only ever reused.
+  if [[ "$install" == "true" ]]; then
+    local rec
+    rec="$(installed_components_get keda)"
+    if [[ "$PLAN_KEDA_ACTION" == "reuse-upstream" && -n "$rec" && "${rec##*@}" != "$KEDA_CHART_VERSION" ]]; then
+      PLAN_KEDA_ACTION=upgrade; PLAN_KEDA_FROM="${rec##*@}"
+    fi
+    rec="$(installed_components_get spire)"
+    local crds
+    crds="$(installed_components_get spire-crds)"
+    if [[ "$PLAN_SPIRE_ACTION" == "reuse" && -n "$rec" ]] \
+      && { [[ "${rec##*@}" != "$SPIRE_CHART_VERSION" ]] || [[ -n "$crds" && "${crds##*@}" != "$SPIRE_CRDS_CHART_VERSION" ]]; }; then
+      PLAN_SPIRE_ACTION=upgrade; PLAN_SPIRE_FROM="${rec##*@}"
+    fi
+  fi
 }
