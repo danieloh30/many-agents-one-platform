@@ -20,6 +20,9 @@ CDI beans with typed outputs. The module is beta upstream, and its workflow anno
 - Domain validation stays in the agent classes (`TriagePlanner`, `EvidenceAgent`, `RecommendationAgent`), with one
   bounded repair attempt that feeds the validation error back to the agent.
 - Agentic workflow annotations are not used: cross-pod orchestration stays durable (JetStream + PostgreSQL).
+  A `@SupervisorAgent` could coordinate the agents across pods through A2A (`@A2AServerUrlSupplier`,
+  `langchain4j-agentic-a2a`), but its plan lives in memory, its calls are synchronous (no queue lag for KEDA, no
+  JetStream redelivery) and the model would choose the order. Tutorial 09 compares the two designs.
 - Protected tool calls stay in worker code (deterministic, SPIFFE mTLS, OPA, idempotent); the evidence agent no
   longer requests follow-up tools itself.
 

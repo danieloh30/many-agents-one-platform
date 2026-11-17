@@ -114,7 +114,8 @@ Each tutorial follows the same pattern:
 
 Tutorial 01 starts the local stack, and tutorials 02 to 05 use it. Tutorials 06 and 07 need a
 Kubernetes or OpenShift cluster (a local kind cluster works) and show the results observed on OpenShift.
-Tutorial 08 covers how the project stays current without manual upgrades.
+Tutorial 08 covers how the project stays current without manual upgrades. Tutorial 09 is background reading,
+not a hands-on step: why a durable workflow, not a supervisor agent, orchestrates the three agents.
 
 | # | Tutorial | Needs |
 | --- | --- | --- |
@@ -126,6 +127,7 @@ Tutorial 08 covers how the project stays current without manual upgrades.
 | 06 | [Scaling with KEDA](06-scaling-with-keda.md) | Cluster (OpenShift or kind) |
 | 07 | [Deploy to Kubernetes](07-deploy-to-kubernetes.md) | Cluster (OpenShift or kind) |
 | 08 | [Dependency automation](08-dependency-automation.md) | GitHub repository |
+| 09 | [Orchestration choices: workflow or supervisor agent](09-orchestration-choices.md) | Nothing (background reading) |
 
 ## Prerequisites
 

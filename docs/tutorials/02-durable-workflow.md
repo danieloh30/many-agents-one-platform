@@ -165,4 +165,5 @@ transactionally. If a run exceeds its token budget, it moves to `NEEDS_REVIEW (B
 - [Architecture §4: Durable run state machine](../architecture.md#4-durable-run-state-machine)
 - [Architecture §6: Messaging reliability](../architecture.md#6-messaging-reliability)
 - [ADR-0003: Explicit durable orchestration](../decisions/0003-explicit-durable-orchestration.md) · [ADR-0004: Outbox/inbox](../decisions/0004-outbox-inbox.md)
+- [Tutorial 09: Orchestration choices](09-orchestration-choices.md): why this workflow, rather than a LangChain4j supervisor agent, orders the agents
 - Source: [`RunStore.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/service/RunStore.java), [`Outbox.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-outbox/src/main/java/io/github/danieloh30/maop/outbox/Outbox.java), [`Inbox.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-outbox/src/main/java/io/github/danieloh30/maop/outbox/Inbox.java)
