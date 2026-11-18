@@ -43,6 +43,7 @@ function routes() {
       ],
     }),
     'GET /api/v1/audit/invocations': () => ({ items: [inv, other] }),
+    'GET /api/v1/audit/invocations/inv-1': () => inv,
   });
 }
 
@@ -71,5 +72,22 @@ describe('task lanes on a redelivery run', () => {
     expect(within(normal).queryByTestId('redelivered-pill')).toBeNull();
     expect(within(normal).queryByRole('list', { name: 'Repeated tool calls' })).toBeNull();
     expect(screen.queryByText('Fault injected')).toBeNull();
+  });
+
+  it('names each call\'s task in the tool audit list and tags only the replayed call', async () => {
+    resetStores();
+    useUi.setState({ inspectorTab: 'audit' });
+    routes();
+    renderApp(`/runs/${RUN_ID}/audit/inv-1`);
+
+    const table = await screen.findByRole('table', { name: 'Tool invocations' });
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(2);
+    const replayed = rows.find((r) => within(r).queryByText('deployment.get_history'))!;
+    const single = rows.find((r) => within(r).queryByText('errors.summarize'))!;
+    expect(await within(replayed).findByTestId('invocation-task')).toHaveTextContent('Deployment history task');
+    expect(within(replayed).getByTestId('requested-again')).toHaveTextContent('Requested 2×');
+    expect(within(single).getByTestId('invocation-task')).toHaveTextContent('Error summary task');
+    expect(within(single).queryByTestId('requested-again')).toBeNull();
   });
 });

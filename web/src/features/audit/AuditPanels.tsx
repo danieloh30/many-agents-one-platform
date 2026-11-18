@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router';
+import { RotateCcw } from 'lucide-react';
 import { describeError } from '../../api/client';
-import { useInvocation, useInvocations } from '../../api/queries';
+import { useInvocation, useInvocations, useRun } from '../../api/queries';
 import type { ToolInvocation } from '../../api/types';
-import { fmtTime, workloadOf } from '../../design/format';
-import { cx, DecisionPill, Skeleton } from '../../design/ui';
+import { fmtTime, humanize, workloadOf } from '../../design/format';
+import { cx, DecisionPill, Pill, Skeleton } from '../../design/ui';
 import { CallerIdentity, EffectText, InvocationDetail } from './InvocationDetail';
 
 function useAudit(runId: string) {
@@ -63,6 +64,11 @@ export function ToolAuditPanel({ runId, invocationId }: { runId: string; invocat
   const navigate = useNavigate();
   const { q, items } = useAudit(runId);
   const detail = useInvocation(invocationId);
+  const tasks = useRun(runId).data?.tasks ?? [];
+  const taskName = (taskId: string | null) => {
+    const t = tasks.find((x) => x.taskId === taskId);
+    return t ? `${humanize(t.topic ?? t.kind)} task` : null;
+  };
   const selected: ToolInvocation | undefined = detail.data ?? items.find((i) => i.invocationId === invocationId);
   if (q.isPending || q.isError) return <Loading q={q} />;
   return (
@@ -98,6 +104,14 @@ export function ToolAuditPanel({ runId, invocationId }: { runId: string; invocat
                   >
                     {inv.toolName}
                   </button>
+                  <div className="flex flex-wrap items-center gap-1 text-xs text-text-muted">
+                    {taskName(inv.taskId) ? <span data-testid="invocation-task">{taskName(inv.taskId)}</span> : null}
+                    {(inv.requests ?? 0) >= 2 ? (
+                      <Pill tone="warn" icon={RotateCcw} testId="requested-again" title="Requested again by a redelivered task; executed once">
+                        Requested {inv.requests}×
+                      </Pill>
+                    ) : null}
+                  </div>
                 </td>
                 <td className="py-1 pr-1 text-text-muted">{workloadOf(inv.caller.spiffeId) ?? 'Unknown'}</td>
                 <td className="py-1 tabular text-text-muted">{fmtTime(inv.createdAt)}</td>
