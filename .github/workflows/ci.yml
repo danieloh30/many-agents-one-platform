@@ -358,10 +358,9 @@ jobs:
   # are being built in parallel; until it has passed repeatedly it would block every update.
   # Runs nightly, on demand (workflow_dispatch input run-e2e), and on PRs labelled `run-e2e`
   # (add the label, then push or re-run; the label alone does not trigger a run).
-  # UNVERIFIED: written without a run on GitHub. It drives demo.sh's kubernetes path
-  # (`up --platform kubernetes --install-platform-components`, then `verify --quick`) against a
-  # kind cluster with kind-action's local registry; the registry address MAOP_REGISTRY and the
-  # demo.sh flags were taken from `./demo.sh --help` and have not been exercised on kind here.
+  # It drives demo.sh's kubernetes path (`up --platform kubernetes --install-platform-components`,
+  # then `verify --quick`) against a kind cluster with kind-action's local registry, which serves
+  # plain HTTP (hence MAOP_REGISTRY_TLS_VERIFY=false). Passing on GitHub since run 44226446717.
   e2e-kind:
     if: >-
       github.event_name == 'schedule' ||
