@@ -402,6 +402,8 @@ jobs:
         env:
           MAOP_PLATFORM: kubernetes
           MAOP_REGISTRY: kind-registry:5000/maop
+          # kind-action's registry serves plain HTTP; podman push defaults to HTTPS.
+          MAOP_REGISTRY_TLS_VERIFY: "false"
           MAOP_SPIRE_TRUST_DOMAIN: e2e.maop.test
         run: ./demo.sh up --platform kubernetes --profile dev --install-platform-components --skip-model-probe --yes
       - name: demo.sh verify --quick (smoke subset)
