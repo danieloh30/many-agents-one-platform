@@ -57,4 +57,13 @@ class ConsoleApiTest {
         given().get("/api/v1/scenarios").then().header("X-Content-Type-Options", "nosniff")
                 .header("Content-Security-Policy", org.hamcrest.Matchers.containsString("frame-ancestors 'none'"));
     }
+
+    @Test
+    void indexIsRevalidatedAndOnlyHashedAssetsAreImmutable() {
+        // A cached index.html would keep pointing at the previous build's assets after a redeploy.
+        given().get("/").then().header("Cache-Control", "no-cache");
+        given().get("/index.html").then().header("Cache-Control", "no-cache");
+        given().get("/assets/cache-probe.txt").then().statusCode(200)
+                .header("Cache-Control", "public, max-age=31536000, immutable");
+    }
 }
