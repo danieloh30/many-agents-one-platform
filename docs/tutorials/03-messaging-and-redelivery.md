@@ -138,8 +138,10 @@ with `replayed: true` and runs nothing. If the arguments differ, it returns `409
 ## What you should see
 
 - The task lanes show the fault-injected evidence task as `delivery 1`, which ends without a result,
-  followed by `delivery 2` after the acknowledgement timeout (about 20 s). The run header carries the
-  amber tag `Fault injected: DROP_ACK_ONCE`.
+  followed by an amber `delivery 2` after the acknowledgement timeout (about 20 s), and a **Redelivered**
+  tag on that lane only. The run header carries the amber tag `Fault injected: DROP_ACK_ONCE`.
+- Under that lane, a line such as `deployment.get_history: requested 2 times, executed once` comes from the
+  tool audit. Its **Open in Tool audit** link opens the invocation.
 - In the API output, one evidence task has `deliveries: 2`, and its tool invocations show
   `requests: 2` and `executions: 1`. The *Tool audit* tab shows the second response as `REPLAYED`.
 - The run still reaches `AWAITING_APPROVAL`. This is end-to-end check 7. After **Reject** it is `COMPLETED`

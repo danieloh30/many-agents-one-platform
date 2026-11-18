@@ -122,7 +122,7 @@ with live `gpt-4o-mini`:
 | **Top bar** | Product name, the model badge (`LIVE <model>` or an amber `DETERMINISTIC`), `SYNTHETIC DATA`, stream status, **Reset** (clears runs, audit and queued messages to start the demo over), the **Light / Dark** theme switch, presenter mode and full screen. |
 | **Left rail** | The four scenario presets with the exact request each one sends, a *New incident* form, and recent runs. |
 | **Topology** (main stage) | A fixed-layout graph of the services and queues. Edges pulse only when a real event arrives. mTLS calls show the verified caller's SPIFFE ID on hover, and a denied call is drawn in red. |
-| **Timeline** (`T` toggles) | The durable state rail, a deadline bar, and task lanes where each delivery attempt is a segment, so a redelivery shows up as `delivery 2`. |
+| **Timeline** (`T` toggles) | The durable state rail, a deadline bar, and task lanes where each delivery attempt is a segment, so a redelivery shows up as `delivery 2` with a **Redelivered** tag and its tool calls' request and execution counts. |
 | **Inspector** (right) | Tabs for the selected run: *Summary*, *Evidence*, *Policy & identity*, *Tool audit* and *Usage*. |
 | **Operations strip** | Queue depth, in-flight work, queue age, replicas (ready, desired, minimum to maximum), worker activity and platform health. Values that cannot be read show **Unavailable**. |
 | **Presenter mode** (`P`) | Larger type and a guide bar for the scenario steps. A checklist item ticks only when the matching real event arrives. `Shift+1…4` runs a scenario, `F` toggles full screen, `?` lists the shortcuts. |

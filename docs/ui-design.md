@@ -92,7 +92,9 @@ A fixed-layout graph (React Flow, positions hand-authored for legibility — no 
   Each step shows its entry time and duration. Source: `GET /runs/{id}/timeline`.
 - **Deadline bar**: remaining time to the run deadline; turns amber under 20 %.
 - **Task lanes**: one lane per task with delivery attempts drawn as segments, so a redelivery is
-  visible as a second segment labelled `delivery 2`.
+  visible as a second segment labelled `delivery 2` and a "Redelivered" tag. Under a redelivered lane, each tool
+  call the tool audit recorded more than once is listed with its request and execution counts ("requested 2
+  times, executed once") and a link to that invocation in *Tool audit*. Source: `GET /audit/invocations?runId=`.
 - **Evidence cards**: topic, finding, confidence, and the facts list. Each fact links to the tool
   invocation that produced it (opens the audit tab). Badge: `SYNTHETIC`.
 - **Recommendation card**: summary, concise explanation, proposed action as a structured table
@@ -229,4 +231,4 @@ Source layout (`web/`): `src/app` (shell, routes, providers), `src/features/{sce
 | Model endpoint failing | Run moves to `NEEDS_REVIEW`/`FAILED` with the server-provided reason; no substitute output is shown. |
 | KEDA/SPIRE/OPA not installed or unhealthy | The relevant tile and node show `Unavailable` and the preflight panel lists it. |
 | Deterministic model mode | Persistent amber top-bar badge and a badge on every model-derived card. |
-| Fault injection on a run | Amber "Fault injected: DROP_ACK_ONCE" tag on the run header and task lane. |
+| Fault injection on a run | Amber "Fault injected: DROP_ACK_ONCE" tag on the run header and a one-line explanation above the task lanes; only a lane that was actually redelivered gets the amber "Redelivered" tag. |

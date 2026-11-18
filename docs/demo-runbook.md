@@ -136,9 +136,11 @@ slowly, which is the problem scale-out solves.
 Only when the slot allows it (for example a longer session).
 
 1. Run the **Redelivery** preset. The run header shows the amber tag `Fault injected: DROP_ACK_ONCE`.
-2. In the task lanes, one evidence task shows `delivery 1` ending without a result, then
-   `delivery 2` after the acknowledgement timeout (about 20 s).
-3. Inspector → **Tool audit** for that task: `requests: 2`, `executions: 1`, second response `REPLAYED`.
+2. In the task lanes, one evidence task shows `delivery 1` ending without a result, then an amber
+   `delivery 2` after the acknowledgement timeout (about 20 s), and a **Redelivered** tag. The other
+   evidence lanes have one delivery.
+3. Under that lane: "requested 2 times, executed once". Click **Open in Tool audit** to show the invocation
+   (`requests: 2`, `executions: 1`, second response `REPLAYED`).
 4. The run itself carries on and reaches `AWAITING_APPROVAL`. On the **Timeline** tab, click **Reject** (or leave
    it: it ends `APPROVAL_EXPIRED` after 10 minutes). Approving would add a simulated action that distracts from
    the one tool call that was requested twice and executed once.

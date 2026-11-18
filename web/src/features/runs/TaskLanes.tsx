@@ -1,5 +1,7 @@
-import { TriangleExclamationPoint } from 'lucide-react';
-import type { Run, RunTimelineEntry } from '../../api/types';
+import { Link } from 'react-router';
+import { RotateCcw } from 'lucide-react';
+import { useInvocations } from '../../api/queries';
+import type { Run, RunTimelineEntry, ToolInvocation } from '../../api/types';
 import { fmtTime, humanize } from '../../design/format';
 import { cx, Pill } from '../../design/ui';
 
@@ -27,49 +29,80 @@ function segmentsFor(taskId: string, deliveries: number | null, timeline: RunTim
 const stateTone = (s: string) =>
   s === 'COMPLETED' ? 'ok' : s === 'FAILED' || s === 'DEAD_LETTERED' || s === 'EXPIRED' ? 'danger' : 'info';
 
-export function TaskLanes({ run, timeline }: { run: Run; timeline: RunTimelineEntry[] }) {
-  if (run.tasks.length === 0) return <p className="text-sm text-text-muted">No tasks dispatched yet.</p>;
-  const fault = run.faultInjection !== 'NONE';
+const times = (n: number | null) => (n === null ? 'an unknown number of times' : n === 1 ? 'once' : `${n} times`);
+
+/** What the tool audit says about a redelivered task's tool calls: requested again, executed once. */
+function ReplayNote({ runId, calls }: { runId: string; calls: ToolInvocation[] }) {
   return (
-    <ul className="space-y-1.5" aria-label="Task lanes">
-      {run.tasks.map((t) => {
-        const segs = segmentsFor(t.taskId, t.deliveries, timeline);
-        return (
-          <li key={t.taskId} className="grid grid-cols-[minmax(9rem,14rem)_1fr_auto] items-center gap-2 text-sm">
-            <span className="truncate font-medium" title={t.taskId}>
-              {humanize(t.kind)}
-              {t.topic ? <span className="text-text-muted"> · {humanize(t.topic)}</span> : null}
-            </span>
-            <span className="flex min-w-0 gap-1">
-              {segs.length === 0 ? (
-                <span className="text-text-muted">Waiting for delivery</span>
-              ) : (
-                segs.map((s) => (
-                  <span
-                    key={s.delivery}
-                    title={s.pod ? `Pod ${s.pod}` : undefined}
-                    className={cx(
-                      'flex-1 truncate rounded border px-1.5 py-0.5',
-                      s.delivery > 1 ? 'border-warn tint-warn text-warn' : 'border-primary/50 tint-primary',
-                    )}
-                  >
-                    delivery {s.delivery}
-                    {s.at ? <span className="text-text-muted tabular"> · {fmtTime(s.at)}</span> : null}
-                  </span>
-                ))
-              )}
-            </span>
-            <span className="flex items-center gap-1">
-              {fault && t.kind === 'EVIDENCE' ? (
-                <Pill tone="warn" icon={TriangleExclamationPoint}>
-                  Fault injected
-                </Pill>
-              ) : null}
-              <Pill tone={stateTone(t.state)}>{humanize(t.state)}</Pill>
-            </span>
-          </li>
-        );
-      })}
+    <ul className="col-span-3 mb-1 ml-2 space-y-0.5 border-l-2 border-warn pl-2 text-xs text-text-muted" aria-label="Repeated tool calls">
+      {calls.map((inv) => (
+        <li key={inv.invocationId}>
+          <span className="font-mono text-text">{inv.toolName}</span>: requested {times(inv.requests)}, executed{' '}
+          {times(inv.executions)}
+          {inv.executions === 1 ? '; the repeat got the recorded result back.' : '.'}{' '}
+          <Link className="text-primary underline" to={`/runs/${runId}/audit/${inv.invocationId}`}>
+            Open in Tool audit
+          </Link>
+        </li>
+      ))}
     </ul>
+  );
+}
+
+export function TaskLanes({ run, timeline }: { run: Run; timeline: RunTimelineEntry[] }) {
+  const invocations = useInvocations(run.runId).data?.items ?? [];
+  if (run.tasks.length === 0) return <p className="text-sm text-text-muted">No tasks dispatched yet.</p>;
+  return (
+    <div className="space-y-2">
+      {run.faultInjection === 'DROP_ACK_ONCE' ? (
+        <p className="text-xs text-text-muted">
+          One evidence task's acknowledgement is dropped once; JetStream redelivers it after the acknowledgement timeout
+          (about 20 s), and the lane gains a <span className="text-warn">delivery 2</span>.
+        </p>
+      ) : null}
+      <ul className="space-y-1.5" aria-label="Task lanes">
+        {run.tasks.map((t) => {
+          const segs = segmentsFor(t.taskId, t.deliveries, timeline);
+          const redelivered = segs.length > 1;
+          const repeated = redelivered ? invocations.filter((i) => i.taskId === t.taskId && (i.requests ?? 0) >= 2) : [];
+          return (
+            <li key={t.taskId} className="grid grid-cols-[minmax(9rem,14rem)_1fr_auto] items-center gap-2 text-sm">
+              <span className="truncate font-medium" title={t.taskId}>
+                {humanize(t.kind)}
+                {t.topic ? <span className="text-text-muted"> · {humanize(t.topic)}</span> : null}
+              </span>
+              <span className="flex min-w-0 gap-1">
+                {segs.length === 0 ? (
+                  <span className="text-text-muted">Waiting for delivery</span>
+                ) : (
+                  segs.map((s) => (
+                    <span
+                      key={s.delivery}
+                      title={s.pod ? `Pod ${s.pod}` : undefined}
+                      className={cx(
+                        'flex-1 truncate rounded border px-1.5 py-0.5',
+                        s.delivery > 1 ? 'border-warn tint-warn text-warn' : 'border-primary/50 tint-primary',
+                      )}
+                    >
+                      delivery {s.delivery}
+                      {s.at ? <span className="text-text-muted tabular"> · {fmtTime(s.at)}</span> : null}
+                    </span>
+                  ))
+                )}
+              </span>
+              <span className="flex items-center gap-1">
+                {redelivered ? (
+                  <Pill tone="warn" icon={RotateCcw} testId="redelivered-pill">
+                    Redelivered
+                  </Pill>
+                ) : null}
+                <Pill tone={stateTone(t.state)}>{humanize(t.state)}</Pill>
+              </span>
+              {repeated.length > 0 ? <ReplayNote runId={run.runId} calls={repeated} /> : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
