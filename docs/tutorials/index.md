@@ -115,7 +115,8 @@ Each tutorial follows the same pattern:
 Tutorial 01 starts the local stack, and tutorials 02 to 05 use it. Tutorials 06 and 07 need a
 Kubernetes or OpenShift cluster (a local kind cluster works) and show the results observed on OpenShift.
 Tutorial 08 covers how the project stays current without manual upgrades. Tutorial 09 is background reading,
-not a hands-on step: why a durable workflow, not a supervisor agent, orchestrates the three agents.
+not a hands-on step: why a durable workflow, not a supervisor agent, orchestrates the three agents, and why
+code, not the model, picks each evidence agent's tool calls.
 
 | # | Tutorial | Needs |
 | --- | --- | --- |

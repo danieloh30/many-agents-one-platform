@@ -4,7 +4,8 @@
 
 Understand who decides the order of work between the three agents, and why this project uses a durable
 workflow instead of a LangChain4j `@SupervisorAgent`, even though a supervisor *can* coordinate agents that run in
-separate pods. This page is background reading: it has no hands-on steps and is not part of the demo flow.
+separate pods. The same question comes up one level down, inside an agent: who decides which tools to call. This
+page is background reading: it has no hands-on steps and is not part of the demo flow.
 
 ## Two ways to coordinate the same three agents
 
@@ -68,6 +69,41 @@ recommendation pods could expose A2A servers, and a supervisor in the triage pod
   cheap. For example, the evidence agent could let a supervisor pick among several local analysts for one task,
   while the task itself stays a durable JetStream message.
 
+## Inside an agent: who picks the tools
+
+The same choice exists inside the evidence agent. A model with tool access could decide for itself which tools to
+call. Here it does not: each evidence topic has a fixed set of starting tool calls, written in Java, and the model
+only reads their results and writes the finding.
+
+| Evidence topic | Tool calls, in order |
+| --- | --- |
+| Deployment history | `deployment.get_history` (last 5) |
+| Error summary | `telemetry.get_error_summary` (last 30 minutes) |
+| Config diff | `deployment.get_history` (last 2), then `deployment.get_diff` from the older to the newer version |
+| Service catalog | `catalog.get_service`, then `catalog.get_dependencies` |
+
+Config diff needs two calls because `deployment.get_diff` takes a *from* and a *to* version, which the agent only
+learns from the history. If the service has fewer than two deployments, the diff call is skipped. This is why the
+*Tool audit* tab shows `deployment.get_history` twice in most runs: once for the Deployment history task and once
+for the Config diff task.
+
+The model's answer is then checked in code. Each fact must cite the invocation ID of a tool call made for this
+task; a fact that cites anything else makes the output invalid, and the agent asks the model once to repair it.
+That is how every fact on an evidence card links to a recorded, policy-checked tool call.
+
+What this buys, and what it costs:
+
+- **Predictable runs.** An evidence topic makes the same tool calls every time, so a demo and a test behave alike.
+  With a live model, the triage plan can still pick or order topics differently, and the findings' wording varies.
+- **Bounded cost.** The number of tool calls per task is known before the model is called; it never loops on tools.
+- **Evidence never depends on the model choosing to look.** A live model that skipped a tool would leave a gap in
+  the evidence; here the calls happen regardless.
+- **Facts are traceable.** Every claim points to an audited call with its caller identity and policy decision
+  ([tutorial 04](04-identity-and-policy.md)).
+- **The cost:** the agent cannot follow a lead it finds, such as fetching a dependency's errors after spotting a
+  timeout. Supporting that would mean letting the model request follow-up calls within the remaining tool-call
+  budget, with the same policy checks and idempotency keys.
+
 ## Read it in the code
 
 - [`Workflow.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/service/Workflow.java)
@@ -76,6 +112,9 @@ recommendation pods could expose A2A servers, and a supervisor in the triage pod
   folds each task result into the run and moves it to `RECOMMENDING` or `AWAITING_APPROVAL`.
 - [`IncidentTriageAgent.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/triage-agent/src/main/java/io/github/danieloh30/maop/triage/agentic/IncidentTriageAgent.java)
   is the model-facing part: an `@Agent` that returns a typed plan. It never calls another agent.
+- [`EvidenceAgent.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/evidence-agent/src/main/java/io/github/danieloh30/maop/evidence/agentic/EvidenceAgent.java)
+  makes the fixed tool calls per topic (`baseline`) and rejects facts that cite a call this task did not make
+  (`parse`).
 
 ## Key takeaways
 
@@ -83,11 +122,14 @@ recommendation pods could expose A2A servers, and a supervisor in the triage pod
 - This project keeps orchestration in a durable workflow because the incident flow must survive restarts, scale
   on queue lag, avoid duplicate effects and stay auditable. The model chooses what to investigate and propose;
   code chooses the order.
+- Inside the evidence agent, code also picks the tool calls; the model interprets the results, and every fact
+  must cite one of those calls.
 - LangChain4j is still used where it shines: the declarative, typed `@Agent` inside each service.
 
 ## Learn more
 
 - [ADR-0003: Explicit durable orchestration](../decisions/0003-explicit-durable-orchestration.md) ·
+  [ADR-0016: Implementation adjustments](../decisions/0016-implementation-adjustments.md) (row 9: fixed tool calls) ·
   [ADR-0017: LangChain4j agent interfaces](../decisions/0017-langchain4j-agent-interfaces.md)
 - [Architecture §4: Durable run state machine](../architecture.md#4-durable-run-state-machine)
 - [Tutorial 02: Durable workflow state](02-durable-workflow.md)
