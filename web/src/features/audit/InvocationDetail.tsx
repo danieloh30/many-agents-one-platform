@@ -1,8 +1,8 @@
-import { Ban, Database, FlaskConical, Lock, ShieldCheck, TriangleExclamationPoint } from 'lucide-react';
+import { Ban, Database, FlaskConical, Lock, RotateCcw, ShieldCheck, TriangleExclamationPoint } from 'lucide-react';
 import { useConfig } from '../../api/queries';
 import type { ToolInvocation } from '../../api/types';
 import { fmtNum, fmtTime, trustDomainOf } from '../../design/format';
-import { DecisionPill, JsonViewer, KeyValue, MonoId, Pill } from '../../design/ui';
+import { cx, DecisionPill, JsonViewer, KeyValue, MonoId, Pill } from '../../design/ui';
 
 export function EffectText({ inv }: { inv: ToolInvocation }) {
   if (inv.status === 'DENIED') {
@@ -56,6 +56,38 @@ export function CallerIdentity({ inv }: { inv: ToolInvocation }) {
           ['SVID expiry', inv.caller.notAfter ? fmtTime(inv.caller.notAfter) : 'Unavailable'],
         ]}
       />
+    </div>
+  );
+}
+
+function Count({ label, value, className, testId }: { label: string; value: number | null; className: string; testId: string }) {
+  return (
+    <div className={cx('rounded-md border px-3 py-2', className)} data-testid={testId}>
+      <div className="text-xs font-semibold uppercase tracking-wide">{label}</div>
+      <div className="text-3xl font-semibold leading-tight tabular">{fmtNum(value)}</div>
+    </div>
+  );
+}
+
+/** Requests vs executions, large: a replayed call (requested again, executed once) is the point of scenario 4. */
+export function IdempotencyCounts({ inv }: { inv: ToolInvocation }) {
+  const replayed = (inv.requests ?? 0) >= 2 && inv.executions === 1;
+  const neutral = 'border-border bg-surface-raised text-text';
+  return (
+    <div className="mb-2 space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <Count label="Requests" value={inv.requests} testId="count-requests" className={replayed ? 'border-warn tint-warn text-warn' : neutral} />
+        <Count label="Executions" value={inv.executions} testId="count-executions" className={replayed ? 'border-teal/40 tint-teal text-teal' : neutral} />
+      </div>
+      {replayed ? (
+        <p className="flex items-start gap-1.5 rounded-md border border-warn tint-warn px-2 py-1.5 font-semibold text-warn" data-testid="replay-callout">
+          <RotateCcw aria-hidden size={16} className="mt-0.5 shrink-0" />
+          <span>
+            Requested {inv.requests} times, executed once. The repeat (a redelivered task) matched this idempotency key and got
+            the recorded result back.
+          </span>
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -114,13 +146,8 @@ export function InvocationDetail({ inv }: { inv: ToolInvocation }) {
 
       <section aria-label="Idempotency">
         <h4 className="mb-1 font-semibold text-text-muted">Idempotency</h4>
-        <KeyValue
-          items={[
-            ['Key', <MonoId value={inv.idempotencyKey} label="Idempotency key" max={36} />],
-            ['Executions', fmtNum(inv.executions)],
-            ['Requests', fmtNum(inv.requests)],
-          ]}
-        />
+        <IdempotencyCounts inv={inv} />
+        <KeyValue items={[['Key', <MonoId value={inv.idempotencyKey} label="Idempotency key" max={36} />]]} />
       </section>
 
       <section aria-label="Effect">
