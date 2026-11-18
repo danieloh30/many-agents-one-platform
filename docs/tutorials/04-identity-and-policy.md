@@ -45,10 +45,10 @@ flowchart LR
 
 ### SPIFFE and SPIRE, and what "agent" means here
 
-**SPIFFE** is a standard for workload identity. It defines the **SPIFFE ID**, a name such as
+**SPIFFE** (Secure Production Identity Framework For Everyone) is a standard for workload identity. It defines the **SPIFFE ID**, a name such as
 `spiffe://<trust domain>/ns/maop/sa/triage-agent`; the **SVID**, the document that proves a workload holds that
 name (here an X.509 certificate with the ID as its only URI SAN); and the **Workload API**, through which a workload
-fetches its SVID. **SPIRE** is the software that implements the standard: the **SPIRE server** signs SVIDs and holds
+fetches its SVID. **SPIRE** (the SPIFFE Runtime Environment) is the software that implements the standard: the **SPIRE server** signs SVIDs and holds
 the rules for who gets which ID, and a **SPIRE agent** runs on every node and hands SVIDs to the pods there. Think of
 SPIFFE as the passport format, and SPIRE as the passport office and its local branches.
 
