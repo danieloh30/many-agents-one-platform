@@ -43,6 +43,26 @@ flowchart LR
 
 ## How identity works
 
+### SPIFFE and SPIRE, and what "agent" means here
+
+**SPIFFE** is a standard for workload identity. It defines the **SPIFFE ID**, a name such as
+`spiffe://<trust domain>/ns/maop/sa/triage-agent`; the **SVID**, the document that proves a workload holds that
+name (here an X.509 certificate with the ID as its only URI SAN); and the **Workload API**, through which a workload
+fetches its SVID. **SPIRE** is the software that implements the standard: the **SPIRE server** signs SVIDs and holds
+the rules for who gets which ID, and a **SPIRE agent** runs on every node and hands SVIDs to the pods there. Think of
+SPIFFE as the passport format, and SPIRE as the passport office and its local branches.
+
+The **SPIRE agent is not one of this project's AI agents.** It is an infrastructure daemon, one per node, with no
+model. `triage-agent`, `evidence-agent` and `recommendation-agent` are *workloads that receive* identities; the
+SPIRE agent is part of the *system that issues* them. Before it hands over an SVID, it checks with Kubernetes which
+namespace and service account the pod actually runs as, so a pod cannot claim another workload's name.
+
+Locally there is no SPIRE: `scripts/local/stack.sh` issues development certificates with the same `spiffe://` IDs
+for trust domain `maop.local`, which is why the local console tags callers **Development static identity** instead
+of **Verified by mTLS**.
+
+### Where the certificates come from and how they are checked
+
 - **On a cluster** (`deploy/components/spiffe`), the SPIFFE CSI driver mounts the SPIRE agent socket.
   `spiffe-helper` runs as a native sidecar (an init container with `restartPolicy: Always`) with
   `daemon_mode = true`, and writes `svid.pem`, `svid_key.pem` and `svid_bundle.pem` into a
