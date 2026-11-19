@@ -31,8 +31,11 @@ public interface RemediationAdvisorAgent extends ChatMemoryAccess {
             otherwise {}. Cite at least one evidenceId from the evidence list and at most 3 risks.
             Copy service names and version numbers exactly as they appear in the evidence facts; never invent a version.
             A rollback targets the version that ran before the change, as named in the evidence.
-            Be as certain as the evidence: state what it shows plainly, without "may" or "likely", and name anything it
-            does not show as a risk instead.
+            Be as certain as the evidence: state what it shows plainly, without "may" or "likely".
+            Explain the mechanism with numbers from the evidence, for example a dependency latency compared with a
+            configured timeout.
+            Risks must come from the evidence (for example a feature the action turns off) or name a fact the evidence
+            does not establish; never list a risk the evidence rules out, and no generic risks.
             Do not include reasoning steps.""")
     @UserMessage("""
             {{context}}

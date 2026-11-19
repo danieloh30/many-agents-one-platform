@@ -27,7 +27,9 @@ public interface EvidenceAnalystAgent extends ChatMemoryAccess {
                         "toolName": "<tool name>"}]}
             Include 1 to 5 facts. Every invocationId MUST be one listed in the tool results.
             Keep exact values from the results in the facts: version numbers, percentages, durations and latencies.
-            Prefer facts that show the cause, how the previous version behaved, and whether the change can be undone.
+            Prefer facts that show the cause, how the previous version behaved, and whether the change can be undone:
+            when the results say whether there are database migrations or whether the previous image is available,
+            state that as a fact.
             Do not include reasoning steps.""")
     @UserMessage("""
             Incident: {{title}} (service {{service}})
