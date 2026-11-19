@@ -100,6 +100,9 @@ A fixed-layout graph (React Flow, positions hand-authored for legibility — no 
   invocation that produced it (opens the audit tab). Badge: `SYNTHETIC`.
 - **Recommendation card**: summary, concise explanation, proposed action as a structured table
   (type, target, parameters, action digest), citations as chips linking to evidence cards, risks.
+  On a run with `remediationMode: ATTEMPT_UNAPPROVED` the card adds the denied execution attempt and a short note,
+  "Why this run differs from a normal run": same incident, data and proposal, but the agent tried to act before
+  approval; it invites **Approve** to show the same action allowed with a person's sign-off.
   Buttons: **Approve (simulate)** and **Reject**, presenter-token gated, both with a confirmation
   step that restates "simulation only — no cluster change".
 - **Trace link**: "Open trace in Jaeger" → `<jaegerBaseUrl>/trace/<traceId>`; disabled with a reason

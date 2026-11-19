@@ -23,7 +23,7 @@ export function usePresets(): { presets: ScenarioPreset[]; loading: boolean } {
 /** How each preset's run is meant to end, so a presenter knows what to click (see the demo runbook). */
 const ENDINGS: Record<string, string> = {
   SUCCESS: 'End it with Approve on the Timeline tab.',
-  POLICY_DENIAL: 'End it with Reject: the agent tried to act without approval.',
+  POLICY_DENIAL: 'End it with Approve: the agent could not act alone, but a person can let the same action through.',
   BURST: 'Nothing to approve: burst runs stop after evidence.',
   REDELIVERY: 'End it with Reject, or let the approval expire.',
 };

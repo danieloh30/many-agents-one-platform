@@ -38,7 +38,7 @@ describe('left rail and inspector layout', () => {
 
     await userEvent.click(within(list).getByRole('button', { name: /^Policy denial$/ }));
     expect(first).toHaveAttribute('aria-expanded', 'false');
-    expect(within(list).getByText('End it with Reject: the agent tried to act without approval.')).toBeInTheDocument();
+    expect(within(list).getByText('End it with Approve: the agent could not act alone, but a person can let the same action through.')).toBeInTheDocument();
     expect(within(list).queryByText('End it with Approve on the Timeline tab.')).toBeNull();
     // Every scenario keeps its Run button while folded.
     expect(within(list).getAllByRole('button', { name: /^Run scenario:/ })).toHaveLength(4);

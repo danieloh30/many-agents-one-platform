@@ -110,9 +110,33 @@ export function RecommendationCard({ run }: { run: Run }) {
           </p>
         </div>
       ) : null}
+      {run.remediationMode === 'ATTEMPT_UNAPPROVED' && a.sideEffect ? <UnapprovedNote run={run} /> : null}
 
       <ApprovalSection run={run} />
     </Card>
+  );
+}
+
+/**
+ * Why a policy-denial run looks like a normal one: same incident, same synthetic data, same kind of proposal. The only
+ * difference is that the run asked the recommendation agent to try the action before anyone approved it.
+ */
+function UnapprovedNote({ run }: { run: Run }) {
+  const approved = run.outcome === 'REMEDIATION_SIMULATED';
+  return (
+    <div className="mt-2 rounded-md border border-border bg-surface-raised p-2 text-sm" data-testid="unapproved-note">
+      <p className="flex items-center gap-1.5 font-semibold">
+        <ShieldCheck aria-hidden size={14} className="text-primary" /> Why this run differs from a normal run
+      </p>
+      <p className="mt-0.5 text-text-muted">
+        The incident, the synthetic data and the proposal are the same. This run was started in{' '}
+        <span className="font-mono">ATTEMPT_UNAPPROVED</span> mode, so the recommendation agent tried to execute its own
+        proposal before anyone approved it, and policy refused: an agent may propose, but not act alone.{' '}
+        {approved
+          ? 'A person then approved it, and the same action was allowed and simulated.'
+          : 'Approve below to see the same action allowed once a person signs off.'}
+      </p>
+    </div>
   );
 }
 

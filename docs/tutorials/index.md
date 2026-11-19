@@ -39,7 +39,7 @@ checklist follows the same order, and the [demo runbook](../demo-runbook.md#3-sc
 | # | Scenario | What you see | End it with | Tutorial |
 | --- | --- | --- | --- | --- |
 | 1 | **Successful run** | Triage, evidence and recommendation agents complete a durable run, and one trace connects every hop. | **Approve (simulate)**: the action runs as a simulation, `REMEDIATION_SIMULATED` | [01](01-run-it-locally.md), [02](02-durable-workflow.md), [05](05-observability.md) |
-| 2 | **Policy denial** | The recommendation agent tries a simulated rollback without approval. The tool service verifies its identity, and policy denies the call before anything executes. | **Reject**: the human confirms the agent should not act, `ACTION_REJECTED` | [04](04-identity-and-policy.md) |
+| 2 | **Policy denial** | The recommendation agent tries a simulated rollback without approval. The tool service verifies its identity, and policy denies the call before anything executes. | **Approve (simulate)**: the same action, denied without approval, is allowed with it, `REMEDIATION_SIMULATED` | [04](04-identity-and-policy.md) |
 | 3 | **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence agents out and back in (verified on Red Hat OpenShift: 1 → 6 replicas); locally, one agent drains the queue slowly. | Nothing to decide: burst runs stop after evidence, `EVIDENCE_ONLY` | [06](06-scaling-with-keda.md) |
 | 4 | **Redelivery** (optional) | An evidence agent abandons a task after its tool call commits. The task is redelivered, and the effect is still recorded only once. | **Reject** (or leave it to expire after 10 minutes) | [03](03-messaging-and-redelivery.md) |
 

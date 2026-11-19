@@ -51,4 +51,28 @@ describe('decision needed', () => {
     renderApp(`/runs/${RUN_ID}`);
     await waitFor(() => expect(useUi.getState().inspectorTab).toBe('policy'));
   });
+
+  it('explains on a policy-denial run why it differs from a normal run, and says to approve', async () => {
+    resetStores();
+    useUi.setState({ view: 'timeline' });
+    routes(
+      run({
+        remediationMode: 'ATTEMPT_UNAPPROVED',
+        executionAttempt: { invocationId: 'inv-9', status: 'DENIED', decisionId: 'd-1', reasons: ['approval_required'] },
+      }),
+    );
+    renderApp(`/runs/${RUN_ID}`);
+    const note = await screen.findByTestId('unapproved-note');
+    expect(note).toHaveTextContent('ATTEMPT_UNAPPROVED');
+    expect(note).toHaveTextContent(/Approve below/);
+  });
+
+  it('shows no such note on a normal run', async () => {
+    resetStores();
+    useUi.setState({ view: 'timeline' });
+    routes(run());
+    renderApp(`/runs/${RUN_ID}`);
+    await screen.findByRole('button', { name: /Approve \(simulate\)/ });
+    expect(screen.queryByTestId('unapproved-note')).toBeNull();
+  });
 });

@@ -62,7 +62,7 @@ Decide on stage, on the run's **Timeline** tab (the recommendation card), so no 
 | Scenario | Decision | Final state | Why |
 | --- | --- | --- | --- |
 | 1 · Success | **Approve (simulate)** | `COMPLETED (REMEDIATION_SIMULATED)` | Shows the full path: a human approval lets policy allow the action, recorded as simulated. |
-| 2 · Policy denial | **Reject** | `COMPLETED (ACTION_REJECTED)` | The human confirms the agent should not act; nothing executes. |
+| 2 · Policy denial | **Approve (simulate)** | `COMPLETED (REMEDIATION_SIMULATED)` | The agent was denied acting alone; with a person's approval the same action is allowed. Both calls stay in the audit. |
 | 3 · Queue burst | none | `COMPLETED (EVIDENCE_ONLY)` | Burst runs gather evidence and stop; there is nothing to approve. |
 | 4 · Redelivery | **Reject** (or leave it) | `COMPLETED (ACTION_REJECTED)`, or `APPROVAL_EXPIRED` after 10 min | The approval is not part of this story; rejecting keeps the audit to the redelivered tool call. |
 
@@ -96,15 +96,17 @@ The approval is bound to the exact proposed action (its digest), so it cannot be
    `…/sa/recommendation-agent`, reason `approval_required`, OPA decision ID, policy revision.
 4. Inspector → **Tool audit**: "No side effect — denied before execution".
 5. Run state: `AWAITING_APPROVAL` with `policyDenials: 1` — the workflow fell back to the safe path.
-6. On the **Timeline** tab, click **Reject** and confirm. The run ends `COMPLETED (ACTION_REJECTED)`; the denied
-   invocation stays in the audit with no side effect.
+6. On the **Timeline** tab, read the note under the denial ("Why this run differs from a normal run"), click
+   **Approve (simulate)** and confirm. The run ends `COMPLETED (REMEDIATION_SIMULATED)`. **Tool audit** now shows the
+   same rollback twice: first `DENIED` (no approval, no side effect), then allowed and `SIMULATED` with the approval.
 
 Say: identity came from the TLS connection, the decision from OPA, and the agent could not have
-supplied either. A person still makes the final call.
+supplied either. The agent was right about what to do, but not allowed to do it on its own; once a person approves,
+the same action goes through. Policy denied acting *without approval*, not the action itself.
 
-Why not approve here: it is valid (OPA would now allow the same rollback, because a matching approval exists),
-but right after a denial it reads as "the denial did not matter". Scenario 1 already showed approval. Approve
-only if you have time to explain that policy denied acting *without approval*, not the action itself.
+Same data as scenario 1: the incident, the synthetic tool results and the proposal are identical. The only
+difference is the run's remediation mode, `ATTEMPT_UNAPPROVED`, which makes the recommendation agent try its proposal
+before anyone approves it.
 
 If the model proposes a no-side-effect action (`ESCALATE_TO_HUMAN`/`OBSERVE`), no remediation is
 attempted and nothing is denied. Say so, and rerun once; if it repeats, continue to scenario 3
