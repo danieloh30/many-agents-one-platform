@@ -123,7 +123,7 @@ export function RunTimelineView({ runId }: { runId: string | undefined }) {
         <TaskLanes run={r} timeline={items} />
       </Card>
       <section aria-labelledby="evidence-h">
-        <h3 id="evidence-h" className="mb-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h3 id="evidence-h" className="mb-2 section-label">
           Evidence
           {r.evidenceCompleteness ? <span className="ml-2 normal-case">({humanize(r.evidenceCompleteness)})</span> : null}
         </h3>

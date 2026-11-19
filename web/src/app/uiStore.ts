@@ -17,6 +17,8 @@ export type TopologyNodeId =
 
 export const THEME_KEY = 'maop.theme';
 const LAST_RUNS_KEY = 'maop.lastRunByScenario';
+const OPEN_SCENARIO_KEY = 'maop.openScenario';
+const OPS_EXPANDED_KEY = 'maop.opsExpanded';
 
 function initialTheme(): ThemeChoice | null {
   const v = readStorage('local', THEME_KEY);
@@ -31,6 +33,11 @@ function initialLastRuns(): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+function initialOpenScenario(): string | null {
+  const v = readStorage('local', OPEN_SCENARIO_KEY);
+  return v === null ? 'SUCCESS' : v === '' ? null : v;
 }
 
 interface UiState {
@@ -50,6 +57,12 @@ interface UiState {
   lastRunByScenario: Record<string, string>;
   /** When this browser started the current burst (ms), for the presenter checklist. */
   burstStartedAt: number | null;
+  /** The scenario row expanded in the left rail (one at a time); null when all are folded. */
+  openScenario: string | null;
+  /** Operations strip: full tiles (true) or one summary line (false). */
+  opsExpanded: boolean;
+  setOpenScenario(id: string | null): void;
+  setOpsExpanded(open: boolean): void;
   setTheme(t: ThemeChoice): void;
   togglePresenter(): void;
   setView(v: StageView): void;
@@ -76,6 +89,16 @@ export const useUi = create<UiState>((set) => ({
   tokenDialogOpen: false,
   lastRunByScenario: initialLastRuns(),
   burstStartedAt: null,
+  openScenario: initialOpenScenario(),
+  opsExpanded: readStorage('local', OPS_EXPANDED_KEY) === 'true',
+  setOpenScenario: (openScenario) => {
+    writeStorage('local', OPEN_SCENARIO_KEY, openScenario ?? '');
+    set({ openScenario });
+  },
+  setOpsExpanded: (opsExpanded) => {
+    writeStorage('local', OPS_EXPANDED_KEY, String(opsExpanded));
+    set({ opsExpanded });
+  },
   setTheme: (t) => {
     writeStorage('local', THEME_KEY, t);
     set({ themeChoice: t });

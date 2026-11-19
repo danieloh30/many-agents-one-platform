@@ -88,7 +88,7 @@ Open <http://localhost:8080>. You can run scenarios, approve actions and reset s
 needs no presenter token. (To require one, for example on a shared screen, start the stack with
 `MAOP_PRESENTER_AUTH=true scripts/local/stack.sh up`; the token is then in `.maop/local/presenter-token`.)
 
-To walk through the demo yourself, run the four scenario cards in order and end each one as listed in
+To walk through the demo yourself, run the four scenarios in order and end each one as listed in
 [the four scenarios](index.md#the-four-scenarios): approve the first, reject the second and fourth, and let the
 burst finish. Approve and Reject are on the run's **Timeline** tab; **Reset** in the top bar starts over.
 
@@ -119,12 +119,12 @@ with live `gpt-4o-mini`:
 
 | Area | What it shows |
 | --- | --- |
-| **Top bar** | Product name, the model badge (`LIVE <model>` or an amber `DETERMINISTIC`), `SYNTHETIC DATA`, stream status, **Reset** (clears runs, audit and queued messages to start the demo over), the **Light / Dark** theme switch, presenter mode and full screen. |
-| **Left rail** | The four scenario presets with the exact request each one sends, a *New incident* form, and recent runs. |
+| **Top bar** | Product name, a status group (the model badge, `LIVE <model>` or an amber `DETERMINISTIC`; `SYNTHETIC DATA`; stream status), **Reset** (clears runs, audit and queued messages to start the demo over), the **Light / Dark** theme switch, presenter mode and full screen. |
+| **Left rail** | The four scenarios as one-line rows with a **Run** button; click a title to unfold its description, how to end the run, its shortcut and the exact request it sends. Below: a *New incident* form and recent runs, where a burst's runs fold into one entry. |
 | **Topology** (main stage) | A fixed-layout graph of the services and queues. Edges pulse only when a real event arrives. mTLS calls show the verified caller's SPIFFE ID on hover, and a denied call is drawn in red. |
 | **Timeline** (`T` toggles) | The durable state rail, a deadline bar, and task lanes where each delivery attempt is a segment, so a redelivery shows up as `delivery 2` with a **Redelivered** tag and its tool calls' request and execution counts. |
-| **Inspector** (right) | Tabs for the selected run: *Summary*, *Evidence*, *Policy & identity*, *Tool audit* and *Usage*. |
-| **Operations strip** | Queue depth, in-flight work, queue age, replicas (ready, desired, minimum to maximum), worker activity and platform health. Values that cannot be read show **Unavailable**. |
+| **Inspector** (right) | Tabs for the selected run: *Summary*, *Evidence*, *Policy* (caller identity and policy decision), *Tool audit* and *Usage*. With no run selected, it says what to do next. |
+| **Operations strip** | One summary line by default; **Show details** opens queue depth, in-flight work, queue age, replicas (ready, desired, minimum to maximum), worker activity and platform health. It opens on its own when a burst starts. Values that cannot be read show **Unavailable**; Kubernetes-only facts on this local stack show a grey **Not on local stack**. |
 | **Presenter mode** (`P`) | Larger type and a guide bar for the scenario steps. A checklist item ticks only when the matching real event arrives. `Shift+1…4` runs a scenario, `F` toggles full screen, `?` lists the shortcuts. |
 
 ### Other UIs

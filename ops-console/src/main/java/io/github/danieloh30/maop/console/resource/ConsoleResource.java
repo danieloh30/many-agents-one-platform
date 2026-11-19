@@ -56,6 +56,8 @@ public class ConsoleResource {
     String identityMode;
     @ConfigProperty(name = "maop.presenter-auth.enabled", defaultValue = "true")
     boolean presenterAuth;
+    @ConfigProperty(name = "maop.kubernetes.enabled", defaultValue = "false")
+    boolean kubernetesEnabled;
     @ConfigProperty(name = "maop.links.jaeger")
     Optional<String> jaeger;
     @ConfigProperty(name = "maop.links.grafana")
@@ -95,6 +97,8 @@ public class ConsoleResource {
                 .put("maxEvidenceTasks", 4);
         n.putObject("features").put("faultInjection", info != null && info.at("/features/faultInjection").asBoolean(false));
         n.putObject("auth").put("presenterTokenRequired", presenterAuth);
+        // false on the cluster-free local stack: Kubernetes-only facts (replicas, scaler, pods) do not exist there.
+        n.putObject("kubernetes").put("enabled", kubernetesEnabled);
         return n;
     }
 

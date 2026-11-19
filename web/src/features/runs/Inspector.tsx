@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Tabs } from 'radix-ui';
 import { X } from 'lucide-react';
 import { describeError } from '../../api/client';
-import { useRun } from '../../api/queries';
+import { useRun, useRuns } from '../../api/queries';
 import type { Run } from '../../api/types';
 import { useUi, type InspectorTab } from '../../app/uiStore';
 import { fmtNum, fmtPct, fmtTime, humanize } from '../../design/format';
@@ -17,7 +17,7 @@ import { TraceLink } from './TraceLink';
 const TABS: Array<[InspectorTab, string]> = [
   ['summary', 'Summary'],
   ['evidence', 'Evidence'],
-  ['policy', 'Policy & identity'],
+  ['policy', 'Policy'],
   ['audit', 'Tool audit'],
   ['usage', 'Usage'],
 ];
@@ -38,7 +38,7 @@ export function Inspector({ runId, invocationId }: { runId: string | undefined; 
       {focusNode ? (
         <div className="border-b border-border p-3">
           <div className="mb-1 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Selected element</h2>
+            <h2 className="section-label">Selected element</h2>
             <Button size="sm" variant="ghost" icon={X} onClick={() => selectNode(null)} aria-label="Clear element selection">
               Clear
             </Button>
@@ -47,12 +47,12 @@ export function Inspector({ runId, invocationId }: { runId: string | undefined; 
         </div>
       ) : null}
       <Tabs.Root value={tab} onValueChange={(v) => setTab(v as InspectorTab)} className="flex min-h-0 flex-1 flex-col">
-        <Tabs.List aria-label="Inspector sections" className="flex flex-wrap gap-1 border-b border-border px-2 pt-2">
+        <Tabs.List aria-label="Inspector sections" className="flex gap-0.5 overflow-x-auto border-b border-border px-2 pt-2">
           {TABS.map(([v, label]) => (
             <Tabs.Trigger
               key={v}
               value={v}
-              className="ui-transition rounded-t-md border-b-2 border-transparent px-2 py-1.5 text-sm text-text-muted hover:text-text data-[state=active]:border-primary data-[state=active]:font-semibold data-[state=active]:text-text"
+              className="ui-transition shrink-0 whitespace-nowrap rounded-t-md border-b-2 border-transparent px-2 py-1.5 text-sm text-text-muted hover:text-text data-[state=active]:border-primary data-[state=active]:font-semibold data-[state=active]:text-text"
             >
               {label}
             </Tabs.Trigger>
@@ -60,7 +60,7 @@ export function Inspector({ runId, invocationId }: { runId: string | undefined; 
         </Tabs.List>
         <div className="min-h-0 flex-1 overflow-auto p-3">
           {!runId ? (
-            <p className="text-sm text-text-muted">Select a run to inspect its evidence, policy decisions, and usage.</p>
+            <EmptyInspector />
           ) : run.isPending ? (
             <Skeleton className="h-40" label="Loading run" />
           ) : run.isError ? (
@@ -89,6 +89,49 @@ export function Inspector({ runId, invocationId }: { runId: string | undefined; 
         </div>
       </Tabs.Root>
     </aside>
+  );
+}
+
+const TAB_HELP: Array<[string, string]> = [
+  ['Summary', 'state, classification and trace link'],
+  ['Evidence', 'what each evidence agent found, with cited tool calls'],
+  ['Policy', 'each tool call\'s verified caller identity and policy decision'],
+  ['Tool audit', 'every tool call, how often it was requested and executed'],
+  ['Usage', 'model calls, tokens and budget'],
+];
+
+/** Nothing selected: say what to do next and what each tab will show. */
+function EmptyInspector() {
+  const runs = useRuns();
+  const none = runs.data?.items.length === 0;
+  return (
+    <div className="space-y-3 text-sm" data-testid="inspector-empty">
+      <p className="rounded-lg border border-border bg-surface-raised p-3">
+        {none ? (
+          <>
+            No runs yet. Run <strong>scenario 1</strong> on the left (or press{' '}
+            <kbd className="rounded border border-border px-1 font-mono text-xs">Shift+1</kbd>) to start.
+          </>
+        ) : (
+          <>
+            Select a run in <strong>Recent runs</strong>, or step through runs with{' '}
+            <kbd className="rounded border border-border px-1 font-mono text-xs">[</kbd> and{' '}
+            <kbd className="rounded border border-border px-1 font-mono text-xs">]</kbd>.
+          </>
+        )}
+      </p>
+      <div>
+        <h3 className="section-label mb-1">For the selected run</h3>
+        <dl className="space-y-1">
+          {TAB_HELP.map(([tab, what]) => (
+            <div key={tab} className="flex gap-2">
+              <dt className="w-20 shrink-0 font-semibold">{tab}</dt>
+              <dd className="text-text-muted">{what}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>
   );
 }
 

@@ -47,6 +47,8 @@ export interface ConsoleConfig {
   features: { faultInjection: boolean };
   /** Absent on older backends: treat as required. */
   auth?: { presenterTokenRequired: boolean };
+  /** false on the cluster-free local stack. Absent on older backends: treat as true. */
+  kubernetes?: { enabled: boolean };
 }
 
 // ---- §2.2 CreateRunRequest / §2.4 scenarios ------------------------------------------------

@@ -23,19 +23,20 @@ decided, and what it cost. Versions are pinned in [versions.md](versions.md).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ Top bar: product name · model badge (LIVE <model> | DETERMINISTIC) · SYNTHETIC DATA    │
-│          · stream status · reset · theme · presenter · full screen                     │
+│ Top bar: product name · status group [model badge · SYNTHETIC DATA · stream status]    │
+│          · reset · theme · presenter · full screen                                     │
 ├───────────────┬──────────────────────────────────────────────┬─────────────────────────┤
 │ Left rail     │ Main stage                                   │ Inspector (right)       │
 │               │                                              │                         │
 │ Scenarios     │  Live topology (default)                     │ Tabs for the selected   │
-│  · Success    │  — or —                                      │ run / node / edge:      │
-│  · Policy     │  Run timeline                                │  Summary · Evidence ·   │
-│  · Burst      │                                              │  Policy & identity ·    │
-│  · Redelivery │                                              │  Tool audit · Usage     │
+│ (fold-out     │  — or —                                      │ run / node / edge:      │
+│  rows, one    │  Run timeline                                │  Summary · Evidence ·   │
+│  open: Run ·  │                                              │  Policy · Tool audit ·  │
+│  description) │                                              │  Usage (one line)       │
 │ New incident  ├──────────────────────────────────────────────┤                         │
-│ Recent runs   │ Operations strip: queue depth · queue age ·  │                         │
-│               │ in-flight · replicas (desired/ready/max)     │                         │
+│ Recent runs   │ Operations: one summary line, or the full    │ No run selected: what   │
+│ (bursts       │ tiles (Show details; opens on a burst)       │ to do next, and what    │
+│  folded)      │                                              │ each tab shows          │
 └───────────────┴──────────────────────────────────────────────┴─────────────────────────┘
 ```
 
@@ -122,7 +123,11 @@ application error — policy working is a success state for the operator.
 
 ### 3.5 Operations strip
 
-Fed by `ops-snapshot` SSE events (2 s cadence):
+Fed by `ops-snapshot` SSE events (2 s cadence). Folded by default to one summary line (queue pending and in
+flight, evidence-agent replicas, platform components OK); **Show details** opens the tiles below, and they open on
+their own when a burst starts. The choice is remembered per browser. On the cluster-free local stack
+(`config.kubernetes.enabled = false`), replica and scaler facts read **Not on local stack** in a neutral tone, as do
+the agent nodes in the topology; on a cluster an `UNAVAILABLE` workload stays red.
 
 - **Queue depth** (pending) and **in-flight** for `evidence-agents`, with a 5-minute sparkline
   built from snapshots received in this browser session (labelled "since page load").

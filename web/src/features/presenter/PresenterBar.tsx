@@ -96,7 +96,7 @@ export function PresenterBar() {
           aria-controls="guide-steps"
           aria-label={collapsed ? 'Expand guide' : 'Collapse guide'}
         />
-        <h2 id="guide-h" className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2 id="guide-h" className="section-label">
           Guide
         </h2>
         <span className="hidden text-sm text-text-muted @3xl:inline">Checklist items tick only when the matching real event arrives.</span>

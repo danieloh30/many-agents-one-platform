@@ -78,7 +78,7 @@ export function NewIncidentForm() {
   return (
     <section aria-labelledby={`${id}-h`}>
       <details className="rounded-lg border border-border bg-surface">
-        <summary id={`${id}-h`} className="cursor-pointer px-3 py-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <summary id={`${id}-h`} className="cursor-pointer px-3 py-2 section-label">
           New incident
         </summary>
         <form noValidate onSubmit={onSubmit} className="space-y-2 px-3 pb-3">

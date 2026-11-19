@@ -277,7 +277,7 @@ export function Card({
       {title || actions ? (
         <div className="mb-2 flex items-center justify-between gap-2">
           {title ? (
-            <h3 id={labelledBy ?? hid} className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+            <h3 id={labelledBy ?? hid} className="section-label">
               {title}
             </h3>
           ) : (

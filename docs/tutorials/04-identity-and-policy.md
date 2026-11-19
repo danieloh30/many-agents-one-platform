@@ -208,7 +208,7 @@ podman run --rm -v "$PWD/policy":/policy:Z docker.io/openpolicyagent/opa:1.22.4-
 ## What you should see
 
 - The topology draws a **red, denied edge** from the recommendation agent to the tool service. Under
-  *Policy & identity*, the inspector shows decision `DENIED`, the verified caller
+  *Policy*, the inspector shows decision `DENIED`, the verified caller
   `…/sa/recommendation-agent`, reason `approval_required`, the OPA decision ID and the policy revision.
   Under *Tool audit*, it shows "No side effect — denied before execution".
 - The run lands in `AWAITING_APPROVAL` with `policyDenials: 1`, which is the safe path. This is

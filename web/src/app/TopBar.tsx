@@ -95,12 +95,18 @@ export function TopBar() {
 
   return (
     <header className="flex flex-wrap items-center gap-2 border-b border-border bg-surface px-3 py-2">
-      <h1 className="mr-2 text-lg font-bold tracking-tight">Agent Operations Console</h1>
-      <ModelBadge />
-      <Pill tone="neutral" icon={Database} testId="synthetic-badge">
-        SYNTHETIC DATA
-      </Pill>
-      <StreamStatusPill />
+      <h1 className="mr-2 text-base font-bold tracking-tight">Agent Operations Console</h1>
+      <div
+        role="group"
+        aria-label="Console status"
+        className="inline-flex flex-wrap items-center gap-1 rounded-full border border-border bg-surface-raised p-0.5"
+      >
+        <ModelBadge />
+        <Pill tone="neutral" icon={Database} testId="synthetic-badge">
+          SYNTHETIC DATA
+        </Pill>
+        <StreamStatusPill />
+      </div>
       <div className="ml-auto flex items-center gap-1">
         {tokenRequired ? (
           <Button

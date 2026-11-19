@@ -10,11 +10,13 @@ import { config, snapshot } from '../../test/fixtures';
 import { resetStores } from '../../test/render';
 import type { OpsSnapshot } from '../../api/types';
 import { OpsStrip } from './OpsStrip';
+import userEvent from '@testing-library/user-event';
+import { useUi } from '../../app/uiStore';
 
-function renderStrip(snap: OpsSnapshot) {
+function renderStrip(snap: OpsSnapshot, cfg = config()) {
   const qc = createQueryClient({ retry: false });
   qc.setQueryData(queryKeys.snapshot, snap);
-  qc.setQueryData(queryKeys.config, config());
+  qc.setQueryData(queryKeys.config, cfg);
   qc.setQueryData(queryKeys.burst, { active: false, burstId: null, runs: null, completed: null, startedAt: null });
   return render(
     <QueryClientProvider client={qc}>
@@ -50,6 +52,7 @@ const nullSnapshot = () =>
 describe('operations strip', () => {
   beforeEach(() => {
     resetStores();
+    useUi.setState({ opsExpanded: true });
     mockFetch({});
   });
 
@@ -85,4 +88,27 @@ describe('operations strip', () => {
     const results = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
   });
+
+  it('folds to one summary line that still says Unavailable, never 0', async () => {
+    useUi.setState({ opsExpanded: false });
+    renderStrip(nullSnapshot());
+    const summary = screen.getByTestId('ops-summary');
+    expect(summary).toHaveTextContent('Unavailable pending · Unavailable in flight');
+    expect(summary).not.toHaveTextContent(/\b0\b/);
+    expect(screen.queryByRole('region', { name: 'Evidence queue' })).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show details' }));
+    expect(screen.getByRole('region', { name: 'Evidence queue' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide details' })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('labels Kubernetes-only facts "Not on local stack" in a neutral tone when Kubernetes is off', () => {
+    renderStrip(nullSnapshot(), config({ kubernetes: { enabled: false } }));
+    const replicas = screen.getByRole('region', { name: 'Evidence agent replicas' });
+    const pill = within(replicas).getByTestId('not-on-local');
+    expect(pill).toHaveTextContent('Not on local stack');
+    expect(pill).toHaveAttribute('data-tone', 'neutral');
+    expect(within(replicas).queryByText('Unavailable', { selector: '[data-tone="danger"] *, [data-tone="danger"]' })).toBeNull();
+  });
 });
+

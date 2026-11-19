@@ -28,7 +28,8 @@ class OpenModeConsoleTest {
 
     @Test
     void mutationsAreOpenAndConfigSaysNoTokenIsRequired() {
-        given().get("/api/v1/config").then().statusCode(200).body("auth.presenterTokenRequired", equalTo(false));
+        given().get("/api/v1/config").then().statusCode(200).body("auth.presenterTokenRequired", equalTo(false))
+                .body("kubernetes.enabled", equalTo(false));
         // Reaches the triage proxy (unreachable here) instead of being rejected for a missing token.
         given().contentType("application/json").header("Idempotency-Key", "k").body("{}").post("/api/v1/runs")
                 .then().statusCode(502).body("code", equalTo("TRIAGE_UNAVAILABLE"));

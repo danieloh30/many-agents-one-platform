@@ -96,7 +96,7 @@ export function runList(...runs: Run[]): RunList {
       title: r.incident.title,
       service: r.incident.service,
       planSource: r.planSource,
-      burstId: null,
+      burstId: r.burstId ?? null,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt ?? null,
       traceId: r.traceId,

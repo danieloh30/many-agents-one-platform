@@ -412,10 +412,14 @@ or the editable form.
     "identity": { "mode": "SPIFFE", "trustDomain": "maop.example" },
     "links": { "jaeger": "https://…", "grafana": "https://…", "grafanaDashboard": "https://…/d/maop-overview" },
     "limits": { "burstMaxRuns": 12, "maxEvidenceTasks": 4 },
-    "features": { "faultInjection": true } }
+    "features": { "faultInjection": true },
+    "auth": { "presenterTokenRequired": false },
+    "kubernetes": { "enabled": true } }
   ```
   Any `links.*` value is `null` when that UI is not reachable/exposed. `identity.mode` is
-  `SPIFFE` or `DEV_STATIC`.
+  `SPIFFE` or `DEV_STATIC`. `kubernetes.enabled` is `false` on the cluster-free local stack, where the ops
+  snapshot's workload fields stay `null` + `UNAVAILABLE`; the UI then labels them "Not on local stack" in a neutral
+  tone instead of as a failure. When it is `true`, an `UNAVAILABLE` workload is a real problem.
 - `GET /api/v1/runs` → `{ "items": [RunSummary], "nextCursor": null }` where
   `RunSummary = {runId, state, outcome, scenario, title, service, planSource, burstId, createdAt, updatedAt, traceId}`.
 - `GET /api/v1/runs/{runId}/timeline` → `{ "items": [ {seq, at, kind, from, to, taskId, message, data} ] }`;

@@ -164,7 +164,7 @@ export function Shell() {
       <OfflineNotice />
       <div className={cx('flex min-h-0 flex-1', !isLg && 'flex-col')}>
         {!presenter ? (
-          <nav aria-label="Scenarios and runs" className={cx('space-y-4 overflow-auto p-3', isLg && 'w-72 shrink-0 border-r border-border 2xl:w-80')}>
+          <nav aria-label="Scenarios and runs" className={cx('space-y-4 overflow-auto p-3', isLg && 'w-80 shrink-0 border-r border-border 2xl:w-[22rem]')}>
             <ScenarioPresets />
             <NewIncidentForm />
             <RecentRuns />

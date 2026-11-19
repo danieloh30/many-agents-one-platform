@@ -9,6 +9,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useStore,
   type Edge,
   type EdgeProps,
   type Node,
@@ -22,6 +23,7 @@ import type { ComponentStatus, OpsSnapshot, PodSnapshot } from '../../api/types'
 import { useUi, type TopologyNodeId } from '../../app/uiStore';
 import { fmtNum, workloadOf } from '../../design/format';
 import { cx, StatusPill } from '../../design/ui';
+import { NotOnLocalStack } from '../ops/OpsStrip';
 import { modelComponent, platform, podLabel, queue, workload } from '../ops/selectors';
 import { ActivityList } from './ActivityList';
 import { EDGES, edgesForEvent, eventMatchesRun, NODE_LABELS, NODE_ORDER, NODE_POSITIONS, nodesForEvent, type EdgeKind } from './graph';
@@ -38,6 +40,8 @@ type ServiceNodeData = {
   icon: 'service' | 'queue' | 'console' | 'policy' | 'model';
   status: ComponentStatus | null;
   showStatus: boolean;
+  /** Kubernetes-only facts on the cluster-free local stack: shown as a neutral "Not on local stack". */
+  localOnly?: boolean;
   lines: Line[];
   pods: PodSnapshot[] | null | undefined;
   showPods: boolean;
@@ -93,7 +97,7 @@ function ServiceNodeView({ data }: NodeProps<ServiceNode>) {
       </div>
       {data.showStatus ? (
         <div className="mt-1">
-          <StatusPill status={data.status} />
+          {data.localOnly ? <NotOnLocalStack /> : <StatusPill status={data.status} />}
         </div>
       ) : null}
       {data.lines.length > 0 ? (
@@ -217,9 +221,10 @@ function countByNode(events: LiveEvent[], runId: string | undefined): Record<str
   return out;
 }
 
-function nodeData(id: TopologyNodeId, snap: OpsSnapshot | undefined, modelName: string | null, modelMode: string | null) {
-  const svc = (name: string): Pick<ServiceNodeData, 'status' | 'showStatus' | 'lines'> => {
+function nodeData(id: TopologyNodeId, snap: OpsSnapshot | undefined, modelName: string | null, modelMode: string | null, kube = true) {
+  const svc = (name: string): Pick<ServiceNodeData, 'status' | 'showStatus' | 'lines' | 'localOnly'> => {
     const w = workload(snap, name);
+    if (!kube) return { status: w?.status ?? null, showStatus: true, localOnly: true, lines: [] };
     return {
       status: w?.status ?? null,
       showStatus: true,
@@ -277,6 +282,20 @@ function FocusController() {
   return null;
 }
 
+/** Re-fit when the canvas changes size (window resize, operations strip folded or opened). */
+function ResizeController() {
+  const width = useStore((s) => s.width);
+  const height = useStore((s) => s.height);
+  const flow = useReactFlow();
+  useEffect(() => {
+    if (!width || !height) return;
+    const id = requestAnimationFrame(() => void flow.fitView({ padding: 0.08 }));
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only on size changes
+  }, [width, height]);
+  return null;
+}
+
 function TopologyGraph({ runId }: { runId: string | undefined }) {
   const events = useLiveStore((s) => s.events);
   const snap = useOpsSnapshot().data;
@@ -309,12 +328,12 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
   }, [events, runId, auditItems]);
 
   const nodes: ServiceNode[] = NODE_ORDER.map((id) => {
-    const d = nodeData(id, snap, config?.model.name ?? null, config?.model.mode ?? null);
+    const d = nodeData(id, snap, config?.model.name ?? null, config?.model.mode ?? null, config?.kubernetes?.enabled !== false);
     return {
       id,
       type: 'service',
       position: NODE_POSITIONS[id],
-      ariaLabel: `${NODE_LABELS[id]}${d.showStatus ? `, status ${d.status ?? 'unknown'}` : ''}`,
+      ariaLabel: `${NODE_LABELS[id]}${d.showStatus ? ('localOnly' in d && d.localOnly ? ', not on local stack' : `, status ${d.status ?? 'unknown'}`) : ''}`,
       data: {
         title: NODE_LABELS[id],
         ...d,
@@ -371,6 +390,7 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
     >
       <Controls showInteractive={false} />
       <FocusController />
+      <ResizeController />
     </ReactFlow>
   );
 }
@@ -428,7 +448,7 @@ export function Topology({ runId, idle }: { runId: string | undefined; idle?: Re
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 pt-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2 className="section-label">
           Live topology {runId ? '— selected run' : '— all runs'}
         </h2>
         <Legend />

@@ -91,7 +91,7 @@ The approval is bound to the exact proposed action (its digest), so it cannot be
 1. Run the **Policy denial** preset. Explain the one difference: the recommendation agent is
    configured to try to execute its proposal without approval.
 2. Wait for the red denied edge between recommendation agent and tool service (expected 20–40 s).
-3. Inspector → **Policy & identity**: decision `DENIED`, verified caller
+3. Inspector → **Policy**: decision `DENIED`, verified caller
    `…/sa/recommendation-agent`, reason `approval_required`, OPA decision ID, policy revision.
 4. Inspector → **Tool audit**: "No side effect — denied before execution".
 5. Run state: `AWAITING_APPROVAL` with `policyDenials: 1` — the workflow fell back to the safe path.
@@ -111,7 +111,8 @@ attempted and nothing is denied. Say so, and rerun once; if it repeats, continue
 
 ### 3.3 Scenario 3 — bounded queue burst and scale-out (2:45)
 
-1. Switch the lower strip into focus; note queue depth 0, replicas `1 / 1`.
+1. Look at the operations strip at the bottom (it opens its tiles by itself when the burst starts; **Show details**
+   opens them earlier); note queue depth 0, replicas `1 / 1`.
 2. Run the **Burst** preset (creates a capped batch of preset-planned evidence runs — the console
    shows the exact count and the `planSource: PRESET` tag).
 3. Queue depth and queue age rise immediately.
@@ -127,7 +128,7 @@ Say: KEDA scales the worker Deployment on consumer lag; the upper bound is delib
 replica can call the model.
 
 There is nothing to approve: burst runs stop after evidence, as `COMPLETED (EVIDENCE_ONLY)`. While the burst is
-active, **Start burst** is disabled and **Reset** is refused. On the local stack (no Kubernetes or KEDA) the replica
+active, the burst scenario's **Run** button is disabled and **Reset** is refused. On the local stack (no Kubernetes or KEDA) the replica
 tiles show Unavailable; show the queue instead: one worker with two model calls in flight drains the backlog
 slowly, which is the problem scale-out solves.
 

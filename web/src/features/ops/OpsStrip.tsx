@@ -1,9 +1,12 @@
-import { ExternalLink, Gauge, Layers, Network, Server } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { ChevronDown, ExternalLink, Gauge, Layers, Network, Server } from 'lucide-react';
 import { useLiveStore, EVIDENCE_CONSUMER, EVIDENCE_WORKLOAD } from '../../api/liveStore';
-import { useConfig, useOpsSnapshot } from '../../api/queries';
+import { useBurstCurrent, useConfig, useOpsSnapshot } from '../../api/queries';
+import type { OpsSnapshot } from '../../api/types';
+import { useUi } from '../../app/uiStore';
 import { describeError } from '../../api/client';
 import { ageSeconds, fmtNum, fmtSeconds } from '../../design/format';
-import { cx, Pill, Skeleton, StatusPill, Tip, Value } from '../../design/ui';
+import { Button, cx, Pill, Skeleton, StatusPill, Tip, Value } from '../../design/ui';
 import { useNow } from '../../design/useNow';
 import { BurstStopButton } from '../scenarios/ScenarioPresets';
 import { Sparkline, StepChart } from './Charts';
@@ -17,7 +20,7 @@ function Tile({ title, icon: Icon, stale, children }: { title: string; icon: typ
       aria-label={title}
       className={cx('ui-transition min-w-0 rounded-lg border border-border bg-surface p-2.5', stale && 'opacity-60 grayscale')}
     >
-      <h3 className="mb-1 flex items-center gap-1 text-sm font-semibold uppercase tracking-wide text-text-muted">
+      <h3 className="mb-1 flex items-center gap-1 section-label">
         <Icon aria-hidden size={14} /> {title}
       </h3>
       {children}
@@ -59,6 +62,68 @@ function GrafanaLink() {
   );
 }
 
+/** False only on the cluster-free local stack (config.kubernetes.enabled=false); older backends count as true. */
+export function useKubernetesEnabled(): boolean {
+  return useConfig().data?.kubernetes?.enabled !== false;
+}
+
+export function NotOnLocalStack() {
+  return (
+    <Pill tone="neutral" testId="not-on-local">
+      Not on local stack
+    </Pill>
+  );
+}
+
+/** One line with the numbers that matter, shown while the strip is folded. Null values read "Unavailable". */
+function OpsSummary({ snap, kube }: { snap: OpsSnapshot; kube: boolean }) {
+  const q = queue(snap, EVIDENCE_CONSUMER);
+  const w = workload(snap, EVIDENCE_WORKLOAD);
+  const ok = snap.platform.filter((p) => p.status === 'OK').length;
+  const n = (v: number | null | undefined) => (v === null || v === undefined ? 'Unavailable' : fmtNum(v));
+  return (
+    <dl className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm" data-testid="ops-summary">
+      <div className="flex items-center gap-1.5">
+        <dt className="flex items-center gap-1 text-text-muted">
+          <Layers aria-hidden size={14} /> Queue
+        </dt>
+        <dd className="tabular">
+          {n(q?.pending)} pending · {n(q?.inFlight)} in flight
+          {q && q.oldestMessageAgeSeconds !== null ? ` · oldest ${fmtSeconds(q.oldestMessageAgeSeconds)}` : ''}
+        </dd>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <dt className="flex items-center gap-1 text-text-muted">
+          <Server aria-hidden size={14} /> Evidence agents
+        </dt>
+        <dd className="tabular">
+          {!kube ? (
+            <NotOnLocalStack />
+          ) : w && w.readyReplicas !== null && w.desiredReplicas !== null ? (
+            `${fmtNum(w.readyReplicas)} / ${fmtNum(w.desiredReplicas)} ready`
+          ) : (
+            <StatusPill status={w?.status ?? null} />
+          )}
+        </dd>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <dt className="flex items-center gap-1 text-text-muted">
+          <Network aria-hidden size={14} /> Platform
+        </dt>
+        <dd>
+          {snap.platform.length === 0 ? (
+            'Unavailable'
+          ) : ok === snap.platform.length ? (
+            <StatusPill status="OK" label={`${ok} of ${snap.platform.length}`} />
+          ) : (
+            <StatusPill status="DEGRADED" label={`${ok} of ${snap.platform.length} OK`} />
+          )}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 export function OpsStrip() {
   const snapQ = useOpsSnapshot();
   const history = useLiveStore((s) => s.history);
@@ -68,11 +133,21 @@ export function OpsStrip() {
   const stale = age !== null && age > STALE_AFTER_S;
   const q = queue(snap, EVIDENCE_CONSUMER);
   const w = workload(snap, EVIDENCE_WORKLOAD);
+  const kube = useKubernetesEnabled();
+  const expanded = useUi((s) => s.opsExpanded);
+  const setExpanded = useUi((s) => s.setOpsExpanded);
+  // A burst is the moment the tiles matter: open them when one starts (the viewer can fold them again).
+  const burstActive = useBurstCurrent().data?.active === true;
+  const wasActive = useRef(burstActive);
+  useEffect(() => {
+    if (burstActive && !wasActive.current) setExpanded(true);
+    wasActive.current = burstActive;
+  }, [burstActive, setExpanded]);
 
   return (
     <section aria-labelledby="ops-h" className="@container shrink-0 border-t border-border bg-bg p-2">
       <div className="mb-1.5 flex flex-wrap items-center gap-2">
-        <h2 id="ops-h" className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2 id="ops-h" className="section-label">
           Operations
         </h2>
         {snap ? (
@@ -89,9 +164,30 @@ export function OpsStrip() {
         <span className="ml-auto flex items-center gap-3">
           <BurstStopButton />
           <GrafanaLink />
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={ChevronDown}
+            aria-expanded={expanded}
+            aria-controls="ops-details"
+            onClick={() => setExpanded(!expanded)}
+            className={cx('[&>svg]:ui-transition', expanded && '[&>svg]:rotate-180')}
+          >
+            {expanded ? 'Hide details' : 'Show details'}
+          </Button>
         </span>
       </div>
-      {snapQ.isPending ? (
+      {!expanded ? (
+        snap ? (
+          <OpsSummary snap={snap} kube={kube} />
+        ) : snapQ.isPending ? (
+          <Skeleton className="h-6" label="Loading operations snapshot" />
+        ) : (
+          <p role="status" className="text-sm text-text-muted">
+            Operations snapshot Unavailable{snapQ.error ? ` — ${describeError(snapQ.error)}` : ''}.
+          </p>
+        )
+      ) : snapQ.isPending ? (
         <div className="grid gap-2 @lg:grid-cols-2 @4xl:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-28" label="Loading operations snapshot" />
@@ -102,7 +198,7 @@ export function OpsStrip() {
           Operations snapshot Unavailable{snapQ.error ? ` — ${describeError(snapQ.error)}` : ''}.
         </p>
       ) : (
-        <div className="grid gap-2 @lg:grid-cols-2 @4xl:grid-cols-4">
+        <div id="ops-details" className="grid gap-2 @lg:grid-cols-2 @4xl:grid-cols-4">
           <Tile title="Evidence queue" icon={Layers} stale={stale}>
             <div className="mb-1">
               <StatusPill status={q?.status} />
@@ -119,8 +215,12 @@ export function OpsStrip() {
           </Tile>
           <Tile title="Evidence agent replicas" icon={Server} stale={stale}>
             <div className="mb-1 flex flex-wrap items-center gap-1">
-              <StatusPill status={w?.status} />
-              {w?.scaler ? (
+              {!kube ? (
+                <NotOnLocalStack />
+              ) : (
+                <StatusPill status={w?.status} />
+              )}
+              {!kube ? null : w?.scaler ? (
                 <Pill tone={w.scaler.active === true ? 'info' : 'neutral'}>
                   {w.scaler.kind ?? 'Scaler'}: {w.scaler.active === null ? 'Unavailable' : w.scaler.active ? 'active' : 'idle'}
                 </Pill>
