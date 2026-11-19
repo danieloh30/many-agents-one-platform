@@ -127,6 +127,22 @@ with live `gpt-4o-mini`:
 | **Operations strip** | One summary line by default; **Show details** opens queue depth, in-flight work, queue age, replicas (ready, desired, minimum to maximum), worker activity and platform health. It opens on its own when a burst starts. Values that cannot be read show **Unavailable**; Kubernetes-only facts on this local stack show a grey **Not on local stack**. |
 | **Presenter mode** (`P`) | Larger type and a guide bar for the scenario steps. A checklist item ticks only when the matching real event arrives. `Shift+1…4` runs a scenario, `F` toggles full screen, `?` lists the shortcuts. |
 
+### What "SYNTHETIC DATA" means
+
+The `SYNTHETIC DATA` badge in the top bar is always on. It says that the *facts* the agents investigate are made
+up, while everything that handles those facts is real.
+
+| Synthetic (made up, safe to show) | Real (actually happens on every run) |
+| --- | --- |
+| The incident: the `checkout` service's error rate rising after a release | The model calls, in `LIVE` mode: the triage plan, each finding and the recommendation |
+| What the read tools return: deployment history, config diff, error summary and service catalogue, from a fixed scenario file in the tool service ([`scenario.json`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/resources/synthetic/scenario.json)), with times shown relative to now | The tool calls themselves: mTLS with a SPIFFE identity, an OPA decision, idempotency keys and an audit record |
+| Remediation: an approved rollback only writes a `simulated_action` row; nothing touches a cluster | Messaging, redelivery, durable state in PostgreSQL, traces, metrics and, on a cluster, KEDA scaling |
+
+So a finding such as "the latest release lowered the payment client timeout" is the model's real reading of
+synthetic tool output. Every tool result carries `dataOrigin: "SYNTHETIC"`, and the console tags evidence cards and
+tool calls with the same label. The point is that the demo can run anywhere, repeatably, without access to a real
+production system, and that no code path can change one: the tool service has no Kubernetes or cloud client.
+
 ### Other UIs
 
 | UI | URL | Notes |
@@ -136,8 +152,8 @@ with live `gpt-4o-mini`:
 | Grafana | <http://localhost:3000> | Project dashboards, anonymous viewer |
 | Prometheus | <http://localhost:9090> | Scrapes the services' metrics |
 
-Locally, the replica tiles read **Unavailable**: there is no Kubernetes API and no KEDA. Identity
-shows `DEV_STATIC`.
+Locally, the replica and scaler facts read **Not on local stack** and the agent nodes **Local process**: there is
+no Kubernetes API and no KEDA. Identity shows `DEV_STATIC`.
 
 ## Deterministic or live model
 
