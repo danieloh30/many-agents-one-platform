@@ -39,10 +39,28 @@ function Metric({ label, value }: { label: string; value: string | null }) {
   );
 }
 
+/** The two queries tutorial 05 (step 3) asks readers to run: tool calls by decision, and evidence queue depth. */
+export const PROMETHEUS_QUERIES = [
+  { expr: 'sum by (decision) (increase(maop_tool_invocations_total[15m]))', tab: 'table' },
+  { expr: 'maop_queue_pending{consumer="evidence-agents"}', tab: 'graph', range: '15m' },
+];
+
+/** Prometheus UI URL that opens with the tutorial's queries already entered (g<n>.expr / tab / range_input). */
+export function prometheusQueryUrl(base: string): string {
+  const params = new URLSearchParams();
+  PROMETHEUS_QUERIES.forEach((q, i) => {
+    params.set(`g${i}.expr`, q.expr);
+    params.set(`g${i}.tab`, q.tab);
+    if (q.range) params.set(`g${i}.range_input`, q.range);
+  });
+  return `${base.replace(/\/$/, '')}/query?${params.toString()}`;
+}
+
 function PrometheusLink() {
   const config = useConfig().data;
   const snap = useOpsSnapshot().data;
-  const url = config?.links.prometheus ?? null;
+  const base = config?.links.prometheus ?? null;
+  const url = base ? prometheusQueryUrl(base) : null;
   const prom = platform(snap, (n) => n.includes('prometheus'));
   const reason = !url ? 'Prometheus is not exposed on this deployment.' : prom?.status === 'UNAVAILABLE' ? 'Prometheus is reported unreachable.' : null;
   if (reason || !url) {
@@ -56,7 +74,13 @@ function PrometheusLink() {
     );
   }
   return (
-    <a href={url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer noopener"
+      title="Opens Prometheus with tutorial 05's queries: tool calls by decision, and evidence queue depth"
+      className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+    >
       <ExternalLink aria-hidden size={14} /> Prometheus
     </a>
   );

@@ -71,8 +71,10 @@ maop.run.id=<runId>
 ### 3. Query the metrics
 
 Services expose Micrometer metrics in Prometheus format on their management port (`/q/metrics`).
-Open <http://localhost:9090> (or the **Prometheus** link at the right of the console's Operations strip; on a
-cluster it works when `EXPOSE_OBSERVABILITY=true`) and try:
+Click the **Prometheus** link at the right of the console's Operations strip: it opens Prometheus with both
+queries below already entered, the first as a table and the second as a 15-minute graph. (On a cluster the link
+works when `EXPOSE_OBSERVABILITY=true`; locally you can also open <http://localhost:9090> and paste them.) The first
+query is empty until a run has made tool calls since the services last started.
 
 ```text
 sum by (decision) (increase(maop_tool_invocations_total[15m]))
