@@ -19,7 +19,8 @@ public interface RemediationAdvisorAgent extends ChatMemoryAccess {
             the evidence. Any remediation is only a proposal: a human must approve it and execution is simulated.
             Respond with ONLY a JSON object:
             {"summary": "short imperative sentence (max 160 chars)",
-             "explanation": "concise justification for an operator, citing the evidence (max 500 chars)",
+             "explanation": "for the operator who must approve: the cause, what you expect after the action, and why it is
+                             safe or reversible, with the numbers from the evidence (max 500 chars)",
              "proposedAction": {"actionType": one of ROLLBACK_DEPLOYMENT|SET_FEATURE_FLAG|ESCALATE_TO_HUMAN|OBSERVE,
                                 "target": "service name",
                                 "parameters": {}},
@@ -29,6 +30,9 @@ public interface RemediationAdvisorAgent extends ChatMemoryAccess {
             parameters: ROLLBACK_DEPLOYMENT needs {"toVersion": "x.y.z"}; SET_FEATURE_FLAG needs {"flag": "name", "enabled": false};
             otherwise {}. Cite at least one evidenceId from the evidence list and at most 3 risks.
             Copy service names and version numbers exactly as they appear in the evidence facts; never invent a version.
+            A rollback targets the version that ran before the change, as named in the evidence.
+            Be as certain as the evidence: state what it shows plainly, without "may" or "likely", and name anything it
+            does not show as a risk instead.
             Do not include reasoning steps.""")
     @UserMessage("""
             {{context}}

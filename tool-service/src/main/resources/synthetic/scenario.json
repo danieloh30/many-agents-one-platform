@@ -17,9 +17,12 @@
   },
   "deployments": {
     "checkout": [
-      {"version": "2.14.0", "minutesAgo": 9, "by": "release-pipeline", "change": "Payment client timeout 2000 ms -> 300 ms; client retries 2 -> 0; enable new-checkout-flow"},
-      {"version": "2.13.2", "minutesAgo": 1560, "by": "release-pipeline", "change": "Dependency patch updates"},
-      {"version": "2.12.4", "minutesAgo": 4320, "by": "release-pipeline", "change": "Address validation fix"}
+      {"version": "2.14.0", "minutesAgo": 9, "by": "release-pipeline", "change": "Payment client timeout 2000 ms -> 300 ms; client retries 2 -> 0; enable new-checkout-flow",
+       "observedWhileLive": {"endpoint": "POST /checkout", "errorRatePct": 7.1, "liveMinutes": 9}},
+      {"version": "2.13.2", "minutesAgo": 1560, "by": "release-pipeline", "change": "Dependency patch updates",
+       "observedWhileLive": {"endpoint": "POST /checkout", "errorRatePct": 0.2, "liveMinutes": 1551}},
+      {"version": "2.12.4", "minutesAgo": 4320, "by": "release-pipeline", "change": "Address validation fix",
+       "observedWhileLive": {"endpoint": "POST /checkout", "errorRatePct": 0.2, "liveMinutes": 2760}}
     ],
     "payment-gateway": [
       {"version": "5.3.1", "minutesAgo": 7200, "by": "release-pipeline", "change": "Logging improvements"}
@@ -35,7 +38,9 @@
         {"key": "payment.client.timeout", "from": "2000ms", "to": "300ms"},
         {"key": "payment.client.retries", "from": "2", "to": "0"},
         {"key": "feature.new-checkout-flow", "from": "false", "to": "true"}
-      ]
+      ],
+      "databaseMigrations": [],
+      "previousImageAvailable": true
     }
   },
   "errors": {
@@ -45,6 +50,10 @@
         {"endpoint": "POST /checkout", "errorRatePct": 7.1, "baselinePct": 0.2,
          "topErrors": [{"type": "PaymentClientTimeoutException", "sharePct": 68}, {"type": "UpstreamResetException", "sharePct": 21}]},
         {"endpoint": "GET /cart", "errorRatePct": 0.1, "baselinePct": 0.1, "topErrors": []}
+      ],
+      "dependencyLatency": [
+        {"service": "payment-gateway", "endpoint": "POST /authorize", "p50Ms": 180, "p95Ms": 310, "p99Ms": 880, "baselineP99Ms": 870,
+         "callsOverClientTimeoutPct": 5}
       ]
     },
     "payment-gateway": {"onsetMinutesAgo": null, "endpoints": [{"endpoint": "POST /authorize", "errorRatePct": 0.3, "baselinePct": 0.3, "topErrors": []}]}

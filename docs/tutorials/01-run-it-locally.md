@@ -144,6 +144,14 @@ synthetic tool output. Every tool result carries `dataOrigin: "SYNTHETIC"`, and 
 tool calls with the same label. The point is that the demo can run anywhere, repeatably, without access to a real
 production system, and that no code path can change one: the tool service has no Kubernetes or cloud client.
 
+The scenario is written so that the rollback is a sound call, and the evidence says why:
+
+- **Cause:** release `2.14.0` cut the payment client timeout from 2000 ms to 300 ms and turned off retries, while the
+  payment gateway's p99 latency is 880 ms, the same as its baseline. Slow payments that used to succeed now time out.
+- **Last good version:** `2.13.2` ran for about 26 hours at 0.2% errors on `POST /checkout`.
+- **Reversible:** the release has no database migrations and the `2.13.2` image is still available.
+- **Trade-off:** rolling back also turns off the new checkout flow, which the recommendation lists as a risk.
+
 ### Other UIs
 
 | UI | URL | Notes |

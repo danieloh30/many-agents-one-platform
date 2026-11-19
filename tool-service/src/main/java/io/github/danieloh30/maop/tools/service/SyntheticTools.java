@@ -68,6 +68,9 @@ public class SyntheticTools {
                     e.put("deployedAt", at(now, d.path("minutesAgo").asLong()));
                     e.put("deployedBy", d.path("by").asText());
                     e.put("change", d.path("change").asText());
+                    if (d.has("observedWhileLive")) {
+                        e.set("observedWhileLive", d.path("observedWhileLive"));
+                    }
                 }
             }
             case "deployment.get_diff" -> {
@@ -82,6 +85,8 @@ public class SyntheticTools {
                     out.put("found", true);
                     out.set("image", diff.path("image"));
                     out.set("config", diff.path("config"));
+                    out.set("databaseMigrations", diff.path("databaseMigrations"));
+                    out.put("previousImageAvailable", diff.path("previousImageAvailable").asBoolean(false));
                 }
             }
             case "telemetry.get_error_summary" -> {
@@ -100,6 +105,9 @@ public class SyntheticTools {
                         out.putNull("onsetAt");
                     }
                     out.set("endpoints", e.path("endpoints"));
+                    if (e.has("dependencyLatency")) {
+                        out.set("dependencyLatency", e.path("dependencyLatency"));
+                    }
                 }
             }
             default -> throw new IllegalArgumentException("Not a read tool: " + tool);

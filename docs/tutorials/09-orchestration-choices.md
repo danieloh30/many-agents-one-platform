@@ -91,6 +91,11 @@ The model's answer is then checked in code. Each fact must cite the invocation I
 task; a fact that cites anything else makes the output invalid, and the agent asks the model once to repair it.
 That is how every fact on an evidence card links to a recorded, policy-checked tool call.
 
+The recommendation agent's answer is checked the same way. Its citations must name evidence collected for the run,
+and every version number it writes, in the explanation or in the rollback target, must appear in that evidence. A
+model that writes "roll back to 2.13.0" when the evidence only names 2.13.2 gets one repair attempt with that
+feedback; the approver never sees an invented version.
+
 What this buys, and what it costs:
 
 - **Predictable runs.** An evidence topic makes the same tool calls every time, so a demo and a test behave alike.

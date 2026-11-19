@@ -174,9 +174,9 @@ Tool catalogue (all data is synthetic; all remediation is simulated):
 | --- | --- | --- | --- |
 | `catalog.get_service` | `READ` | `service` | Owner, tier, runtime, dependencies. |
 | `catalog.get_dependencies` | `READ` | `service`, `depth≤2` | Upstream/downstream graph. |
-| `deployment.get_history` | `READ` | `service`, `limit≤10` | Recent rollouts with versions and times. |
-| `deployment.get_diff` | `READ` | `service`, `fromVersion`, `toVersion` | Config and image changes between versions. |
-| `telemetry.get_error_summary` | `READ` | `service`, `windowMinutes≤60` | Synthetic error-rate summary by endpoint. |
+| `deployment.get_history` | `READ` | `service`, `limit≤10` | Recent rollouts with versions and times, and each version's `observedWhileLive` error rate. |
+| `deployment.get_diff` | `READ` | `service`, `fromVersion`, `toVersion` | Config and image changes between versions, `databaseMigrations` and `previousImageAvailable` (whether a rollback is reversible). |
+| `telemetry.get_error_summary` | `READ` | `service`, `windowMinutes≤60` | Synthetic error-rate summary by endpoint, plus `dependencyLatency` (p50/p95/p99 against baseline) for downstream calls. |
 | `remediation.rollback_deployment` | `REMEDIATION` | `service`, `toVersion` | Writes a `simulated_action` row. Touches no cluster API. |
 | `remediation.set_feature_flag` | `REMEDIATION` | `service`, `flag`, `enabled` | Writes a `simulated_action` row. |
 
@@ -376,7 +376,8 @@ TOOL_DENIED | TOOL_UNAVAILABLE | INVALID_COMMAND | INTERNAL`.
 
 Model-facing structured outputs (`TriagePlan`, `EvidenceItem`, `Recommendation`) are validated
 against their schema and domain rules (every citation must reference an existing `evidenceId`;
-every fact must reference an `invocationId` returned to that task). Explanations are concise,
+every fact must reference an `invocationId` returned to that task; every version number a `Recommendation` names, in its
+text or its `toVersion`, must appear in the cited evidence's findings or facts). Explanations are concise,
 user-facing text. Reasoning traces are never requested, stored, or displayed.
 
 ## 4. Compatibility rules checked in CI

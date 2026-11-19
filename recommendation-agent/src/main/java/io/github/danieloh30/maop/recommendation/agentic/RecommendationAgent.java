@@ -20,6 +20,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -30,6 +33,9 @@ import java.util.stream.Collectors;
 public class RecommendationAgent {
 
     public static final String PURPOSE = "recommendation.propose";
+
+    /** A three-part version number such as 2.13.2 (also inside "v2.13.2"); not part of a longer dotted number. */
+    private static final Pattern VERSION = Pattern.compile("(?<![\\d.])\\d+\\.\\d+\\.\\d+(?!\\.?\\d)");
 
 
     @Inject
@@ -114,6 +120,7 @@ public class RecommendationAgent {
                 // no parameters for actions without side effects
             }
         }
+        checkVersions(cmd, summary, explanation, String.valueOf(params.getOrDefault("toVersion", "")));
         List<String> citations = new ArrayList<>();
         n.path("citations").forEach(c -> citations.add(c.asText()));
         if (citations.isEmpty() || !evidenceIds.containsAll(citations)) {
@@ -131,5 +138,37 @@ public class RecommendationAgent {
         });
         ProposedAction action = ActionDigests.withDigest(cmd.runId(), new ProposedAction(type, target, params, false, null));
         return new Recommendation(summary, explanation, action, citations, confidence, risks);
+    }
+
+    /** Every version the draft names (in its text or its action) must appear in the collected evidence. */
+    static void checkVersions(RecommendationCommand cmd, String... texts) {
+        Set<String> known = new TreeSet<>();
+        if (cmd.evidence() != null) {
+            for (EvidenceItem e : cmd.evidence()) {
+                versions(e.finding(), known);
+                if (e.facts() != null) {
+                    e.facts().forEach(f -> versions(f.statement(), known));
+                }
+            }
+        }
+        Set<String> named = new TreeSet<>();
+        for (String t : texts) {
+            versions(t, named);
+        }
+        named.removeAll(known);
+        if (!named.isEmpty()) {
+            throw new IllegalArgumentException("version " + String.join(", ", named)
+                    + " does not appear in the evidence; use only versions named there " + known);
+        }
+    }
+
+    private static void versions(String text, Set<String> into) {
+        if (text == null) {
+            return;
+        }
+        Matcher m = VERSION.matcher(text);
+        while (m.find()) {
+            into.add(m.group());
+        }
     }
 }

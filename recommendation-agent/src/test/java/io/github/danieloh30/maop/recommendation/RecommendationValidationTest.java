@@ -10,8 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.danieloh30.maop.common.Ids;
 import io.github.danieloh30.maop.common.model.ActionDigests;
 import io.github.danieloh30.maop.common.model.ActionType;
+import io.github.danieloh30.maop.common.model.EvidenceItem;
+import io.github.danieloh30.maop.common.model.Fact;
 import io.github.danieloh30.maop.common.model.Recommendation;
 import io.github.danieloh30.maop.common.model.RecommendationCommand;
+import io.github.danieloh30.maop.common.model.Topic;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +23,35 @@ import org.junit.jupiter.api.Test;
 
 class RecommendationValidationTest {
 
-    static final RecommendationCommand CMD = new RecommendationCommand(Ids.v7(), Ids.v7(), null, null, List.of(), null, null,
-            null, Instant.now().plusSeconds(60));
+    static final EvidenceItem HISTORY = new EvidenceItem("E-1", Ids.v7(), Topic.DEPLOYMENT_HISTORY,
+            "checkout v2.14.0 replaced 2.13.2 nine minutes ago.", 0.9,
+            List.of(new Fact("2.13.2 ran 1551 minutes at 0.2% errors on POST /checkout.", "inv-1", "deployment.get_history")),
+            "SYNTHETIC", null);
+    static final RecommendationCommand CMD = new RecommendationCommand(Ids.v7(), Ids.v7(), null, null, List.of(HISTORY), null,
+            null, null, Instant.now().plusSeconds(60));
 
     static String json(String action, String citations) {
-        return "{\"summary\":\"Roll back\",\"explanation\":\"because\",\"proposedAction\":" + action
+        return json("because", action, citations);
+    }
+
+    static String json(String explanation, String action, String citations) {
+        return "{\"summary\":\"Roll back\",\"explanation\":\"" + explanation + "\",\"proposedAction\":" + action
                 + ",\"citations\":" + citations + ",\"confidence\":0.8,\"risks\":[\"r\"]}";
+    }
+
+    static final String ROLLBACK_2_13_2 =
+            "{\"actionType\":\"ROLLBACK_DEPLOYMENT\",\"target\":\"checkout\",\"parameters\":{\"toVersion\":\"2.13.2\"}}";
+
+    @Test
+    void versionsMustComeFromTheEvidence() {
+        Recommendation ok = RecommendationAgent.validate(CMD, json(
+                "2.14.0 cut the timeout; v2.13.2 ran 26 h at 0.2% errors.", ROLLBACK_2_13_2, "[\"E-1\"]"), Set.of("E-1"));
+        assertEquals("2.13.2", ok.proposedAction().parameters().get("toVersion"));
+        IllegalArgumentException wrongTarget = assertThrows(IllegalArgumentException.class, () -> RecommendationAgent.validate(CMD,
+                json("because", ROLLBACK_2_13_2.replace("2.13.2", "2.13.0"), "[\"E-1\"]"), Set.of("E-1")));
+        assertTrue(wrongTarget.getMessage().contains("2.13.0"), wrongTarget.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> RecommendationAgent.validate(CMD,
+                json("Rolling back to version 2.13.0 restores it.", ROLLBACK_2_13_2, "[\"E-1\"]"), Set.of("E-1")));
     }
 
     @Test

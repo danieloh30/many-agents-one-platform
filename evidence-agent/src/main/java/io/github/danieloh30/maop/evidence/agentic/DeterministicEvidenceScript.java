@@ -42,9 +42,12 @@ public class DeterministicEvidenceScript implements DeterministicScript {
                     + mt.group(1) + "\",\"toolName\":\"" + mt.group(2) + "\"}");
         }
         String finding = switch (topic == null ? Topic.SERVICE_CATALOG : topic) {
-            case DEPLOYMENT_HISTORY -> "[deterministic] A new release of the service was rolled out shortly before the errors began.";
-            case CONFIG_DIFF -> "[deterministic] The latest release lowered the payment client timeout and disabled retries.";
-            case ERROR_SUMMARY -> "[deterministic] Checkout POST errors rose sharply, dominated by payment client timeouts.";
+            case DEPLOYMENT_HISTORY -> "[deterministic] checkout 2.14.0 rolled out shortly before the errors began; the previous"
+                    + " version 2.13.2 ran for about 26 hours at 0.2% errors on POST /checkout.";
+            case CONFIG_DIFF -> "[deterministic] 2.14.0 lowered the payment client timeout from 2000 ms to 300 ms and disabled"
+                    + " retries; it has no database migrations and the 2.13.2 image is still available.";
+            case ERROR_SUMMARY -> "[deterministic] POST /checkout errors rose to 7.1% (baseline 0.2%), mostly payment client"
+                    + " timeouts; payment-gateway p99 latency is 880 ms, unchanged from its baseline.";
             case SERVICE_CATALOG -> "[deterministic] The service is tier 1 and depends on the payment gateway.";
         };
         String text = "{\"finding\":\"" + finding + "\",\"confidence\":0.75,\"facts\":[" + String.join(",", facts) + "]}";
