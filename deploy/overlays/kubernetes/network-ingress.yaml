@@ -1,5 +1,5 @@
 # Ingress controller → exposed UIs. The controller's namespace differs per cluster
-# (ingress-nginx, traefik, ...), so any namespace is allowed on these three ports only.
+# (ingress-nginx, traefik, ...), so any namespace is allowed on these four ports only.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -9,7 +9,7 @@ spec:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
-        values: [ops-console, jaeger, grafana]
+        values: [ops-console, jaeger, grafana, prometheus]
   policyTypes: ["Ingress"]
   ingress:
     - from:
@@ -18,3 +18,4 @@ spec:
         - { protocol: TCP, port: 8080 }
         - { protocol: TCP, port: 16686 }
         - { protocol: TCP, port: 3000 }
+        - { protocol: TCP, port: 9090 }

@@ -110,5 +110,13 @@ describe('operations strip', () => {
     expect(pill).toHaveAttribute('data-tone', 'neutral');
     expect(within(replicas).queryByText('Unavailable', { selector: '[data-tone="danger"] *, [data-tone="danger"]' })).toBeNull();
   });
+
+  it('links to Prometheus when the deployment exposes it, and explains why not otherwise', () => {
+    const { unmount } = renderStrip(snapshot());
+    expect(screen.getByText('Prometheus').closest('[aria-disabled="true"]')).not.toBeNull();
+    unmount();
+    renderStrip(snapshot(), config({ links: { jaeger: null, grafana: null, grafanaDashboard: null, prometheus: 'http://localhost:9090' } }));
+    expect(screen.getByRole('link', { name: 'Prometheus' })).toHaveAttribute('href', 'http://localhost:9090');
+  });
 });
 

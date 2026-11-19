@@ -42,7 +42,7 @@ export interface ConsoleConfig {
   profile?: string | null;
   model: { mode: ModelMode; name: string | null };
   identity: { mode: 'SPIFFE' | 'DEV_STATIC'; trustDomain: string | null };
-  links: { jaeger: string | null; grafana: string | null; grafanaDashboard: string | null };
+  links: { jaeger: string | null; grafana: string | null; grafanaDashboard: string | null; prometheus?: string | null };
   limits: { burstMaxRuns: number | null; maxEvidenceTasks: number | null };
   features: { faultInjection: boolean };
   /** Absent on older backends: treat as required. */

@@ -138,7 +138,8 @@ console's own mTLS health check. On a cluster an `UNAVAILABLE` workload stays re
 - **Worker activity**: active tasks per pod from heartbeats.
 - **Platform**: OPA, SPIRE, NATS, model endpoint, Jaeger, Prometheus/Grafana status dots with text.
 - Links: "Grafana dashboard" → provisioned dashboard URL from `/api/v1/config`; disabled when the
-  backend reports Grafana unreachable.
+  backend reports Grafana unreachable. "Prometheus" → `links.prometheus`; disabled with a reason when the
+  deployment does not expose Prometheus or reports it unreachable.
 
 Each tile shows `observedAt` age; if older than 10 s it greys out and reads "stale 14 s".
 

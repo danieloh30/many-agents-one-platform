@@ -226,6 +226,8 @@ one action cannot authorize another.
   `connect-src 'self'`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
   `frame-ancestors 'none'`. Jaeger and Grafana are opened as links in a new tab, not embedded.
 - Grafana runs with anonymous **Viewer** access and a random admin password; Jaeger is read-only by nature.
+  Prometheus, exposed with them when `EXPOSE_OBSERVABILITY=true`, runs without `--web.enable-admin-api` and
+  `--web.enable-lifecycle`, so its UI and API can query metrics but not delete data or shut it down.
 
 ## 7. Secrets and configuration
 

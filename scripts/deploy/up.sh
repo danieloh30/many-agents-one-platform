@@ -155,6 +155,7 @@ cmd_up() {
   R_CLASS_NAME="$PLAN_CLASS_NAME"
   R_JAEGER_URL="$(current_console_config MAOP_JAEGER_URL)"
   R_GRAFANA_URL="$(current_console_config MAOP_GRAFANA_URL)"
+  R_PROMETHEUS_URL="$(current_console_config MAOP_PROMETHEUS_EXTERNAL_URL)"
   local rendered
   rendered="${MAOP_STATE_DIR}/render/${MAOP_NAMESPACE}.yaml"
   render_manifests "$rendered"
@@ -173,15 +174,16 @@ cmd_up() {
   wait_rollouts
 
   # Console links: discover external hosts, write them into ops-console-config, restart if changed.
-  local jaeger grafana
-  jaeger=""; grafana=""
+  local jaeger grafana prometheus
+  jaeger=""; grafana=""; prometheus=""
   if [[ "$MAOP_EXPOSE_OBSERVABILITY" == "true" ]]; then
-    jaeger="$(route_url jaeger)"; grafana="$(route_url grafana)"
+    jaeger="$(route_url jaeger)"; grafana="$(route_url grafana)"; prometheus="$(route_url prometheus)"
   fi
-  if [[ "$jaeger" != "$R_JAEGER_URL" || "$grafana" != "$R_GRAFANA_URL" ]]; then
-    log "writing external Jaeger/Grafana URLs into ops-console-config and restarting ops-console"
+  if [[ "$jaeger" != "$R_JAEGER_URL" || "$grafana" != "$R_GRAFANA_URL" || "$prometheus" != "$R_PROMETHEUS_URL" ]]; then
+    log "writing external Jaeger/Grafana/Prometheus URLs into ops-console-config and restarting ops-console"
     kn patch configmap ops-console-config --type merge \
-      -p "$(jq -n --arg j "$jaeger" --arg g "$grafana" '{data: {MAOP_JAEGER_URL: $j, MAOP_GRAFANA_URL: $g}}')" >/dev/null
+      -p "$(jq -n --arg j "$jaeger" --arg g "$grafana" --arg p "$prometheus" \
+        '{data: {MAOP_JAEGER_URL: $j, MAOP_GRAFANA_URL: $g, MAOP_PROMETHEUS_EXTERNAL_URL: $p}}')" >/dev/null
     kn rollout restart deployment/ops-console >/dev/null
     kn rollout status deployment/ops-console --timeout=5m
   fi

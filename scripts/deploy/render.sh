@@ -168,9 +168,10 @@ render_manifests() {
     printf '  - patch: |-\n      apiVersion: v1\n      kind: ConfigMap\n      metadata:\n        name: ops-console-config\n      data:\n'
     printf '        MAOP_JAEGER_URL: %s\n' "$(json_str "${R_JAEGER_URL:-}")"
     printf '        MAOP_GRAFANA_URL: %s\n' "$(json_str "${R_GRAFANA_URL:-}")"
+    printf '        MAOP_PROMETHEUS_EXTERNAL_URL: %s\n' "$(json_str "${R_PROMETHEUS_URL:-}")"
     if [[ "$MAOP_PLATFORM" == "kubernetes" ]]; then
       local name sub
-      for name in ops-console jaeger grafana; do
+      for name in ops-console jaeger grafana prometheus; do
         sub="$name"; [[ "$name" == "ops-console" ]] && sub="console"
         printf '  - target: {group: networking.k8s.io, kind: Ingress, name: %s}\n    patch: |-\n' "$name"
         printf '      - {op: replace, path: /spec/rules/0/host, value: %s}\n' "$(json_str "${sub}.${MAOP_INGRESS_DOMAIN}")"
@@ -182,7 +183,7 @@ render_manifests() {
     if [[ "$MAOP_EXPOSE_OBSERVABILITY" == "false" ]]; then
       local kind api
       if [[ "$MAOP_PLATFORM" == "openshift" ]]; then kind=Route; api=route.openshift.io/v1; else kind=Ingress; api=networking.k8s.io/v1; fi
-      for name in jaeger grafana; do
+      for name in jaeger grafana prometheus; do
         # shellcheck disable=SC2016  # literal kustomize directive
         printf '  - patch: |-\n      $patch: delete\n      apiVersion: %s\n      kind: %s\n      metadata:\n        name: %s\n' "$api" "$kind" "$name"
       done

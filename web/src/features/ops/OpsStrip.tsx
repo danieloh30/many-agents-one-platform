@@ -39,6 +39,29 @@ function Metric({ label, value }: { label: string; value: string | null }) {
   );
 }
 
+function PrometheusLink() {
+  const config = useConfig().data;
+  const snap = useOpsSnapshot().data;
+  const url = config?.links.prometheus ?? null;
+  const prom = platform(snap, (n) => n.includes('prometheus'));
+  const reason = !url ? 'Prometheus is not exposed on this deployment.' : prom?.status === 'UNAVAILABLE' ? 'Prometheus is reported unreachable.' : null;
+  if (reason || !url) {
+    return (
+      <Tip content={reason}>
+        <span tabIndex={0} aria-disabled="true" className="inline-flex cursor-not-allowed items-center gap-1 text-sm text-text-muted">
+          <ExternalLink aria-hidden size={14} /> Prometheus
+          <span className="sr-only"> (unavailable: {reason})</span>
+        </span>
+      </Tip>
+    );
+  }
+  return (
+    <a href={url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+      <ExternalLink aria-hidden size={14} /> Prometheus
+    </a>
+  );
+}
+
 function GrafanaLink() {
   const config = useConfig().data;
   const snap = useOpsSnapshot().data;
@@ -173,6 +196,7 @@ export function OpsStrip() {
         <span className="ml-auto flex items-center gap-3">
           <BurstStopButton />
           <GrafanaLink />
+          <PrometheusLink />
           <Button
             size="sm"
             variant="ghost"

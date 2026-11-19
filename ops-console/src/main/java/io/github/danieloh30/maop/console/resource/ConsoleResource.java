@@ -62,6 +62,8 @@ public class ConsoleResource {
     Optional<String> jaeger;
     @ConfigProperty(name = "maop.links.grafana")
     Optional<String> grafana;
+    @ConfigProperty(name = "maop.links.prometheus")
+    Optional<String> prometheus;
 
     private static Optional<String> clean(Optional<String> v) {
         return v.map(String::trim).filter(s -> !s.isEmpty()).map(s -> s.endsWith("/") ? s.substring(0, s.length() - 1) : s);
@@ -93,6 +95,7 @@ public class ConsoleResource {
         links.put("jaeger", j.orElse(null));
         links.put("grafana", g.orElse(null));
         links.put("grafanaDashboard", g.map(u -> u + "/d/maop-overview").orElse(null));
+        links.put("prometheus", clean(prometheus).orElse(null));
         n.putObject("limits").put("burstMaxRuns", info == null ? 12 : info.at("/limits/burstMaxRuns").asInt(12))
                 .put("maxEvidenceTasks", 4);
         n.putObject("features").put("faultInjection", info != null && info.at("/features/faultInjection").asBoolean(false));

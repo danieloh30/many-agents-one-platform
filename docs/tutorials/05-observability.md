@@ -71,7 +71,8 @@ maop.run.id=<runId>
 ### 3. Query the metrics
 
 Services expose Micrometer metrics in Prometheus format on their management port (`/q/metrics`).
-Open <http://localhost:9090> and try:
+Open <http://localhost:9090> (or the **Prometheus** link at the right of the console's Operations strip; on a
+cluster it works when `EXPOSE_OBSERVABILITY=true`) and try:
 
 ```text
 sum by (decision) (increase(maop_tool_invocations_total[15m]))

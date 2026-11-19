@@ -125,6 +125,7 @@ Single replicas are a demo choice; the production note is NATS R3 and a managed/
 | Console (`ops-console:8080`) | Ingress `console.127.0.0.1.nip.io` (ingress-nginx) | Route, `edge` termination, redirect insecure |
 | Jaeger UI | Ingress | Route (`edge`) when `EXPOSE_OBSERVABILITY=true` |
 | Grafana | Ingress | Route (`edge`) when `EXPOSE_OBSERVABILITY=true` |
+| Prometheus UI (read-only: no admin or lifecycle API) | Ingress | Route (`edge`) when `EXPOSE_OBSERVABILITY=true` |
 | Everything else | ClusterIP only | ClusterIP only |
 
 - **SSE through the OpenShift router**: the console Route carries

@@ -2,6 +2,7 @@ package io.github.danieloh30.maop.console;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 
 import io.github.danieloh30.maop.testing.NatsTestResource;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -29,7 +30,7 @@ class OpenModeConsoleTest {
     @Test
     void mutationsAreOpenAndConfigSaysNoTokenIsRequired() {
         given().get("/api/v1/config").then().statusCode(200).body("auth.presenterTokenRequired", equalTo(false))
-                .body("kubernetes.enabled", equalTo(false));
+                .body("kubernetes.enabled", equalTo(false)).body("links.prometheus", nullValue());
         // Reaches the triage proxy (unreachable here) instead of being rejected for a missing token.
         given().contentType("application/json").header("Idempotency-Key", "k").body("{}").post("/api/v1/runs")
                 .then().statusCode(502).body("code", equalTo("TRIAGE_UNAVAILABLE"));
