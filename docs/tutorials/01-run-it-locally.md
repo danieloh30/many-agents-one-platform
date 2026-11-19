@@ -89,7 +89,7 @@ needs no presenter token. (To require one, for example on a shared screen, start
 `MAOP_PRESENTER_AUTH=true scripts/local/stack.sh up`; the token is then in `.maop/local/presenter-token`.)
 
 To walk through the demo yourself, run the four scenarios in order and end each one as listed in
-[the four scenarios](index.md#the-four-scenarios): approve the first two, reject the fourth, and let the
+[the four scenarios](index.md#the-four-scenarios): approve the first, second and fourth, and let the
 burst finish. While a run waits for you, an amber **Your decision is needed** bar shows its remaining time;
 **Review & decide** jumps to Approve and Reject on the run's **Timeline** tab. **Reset** in the top bar starts over.
 

@@ -25,7 +25,7 @@ const ENDINGS: Record<string, string> = {
   SUCCESS: 'End it with Approve on the Timeline tab.',
   POLICY_DENIAL: 'End it with Approve: the agent could not act alone, but a person can let the same action through.',
   BURST: 'Nothing to approve: burst runs stop after evidence.',
-  REDELIVERY: 'End it with Reject, or let the approval expire.',
+  REDELIVERY: 'End it with Approve, or let the approval expire.',
 };
 
 export function ScenarioPresets() {

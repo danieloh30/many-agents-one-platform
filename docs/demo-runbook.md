@@ -64,7 +64,7 @@ Decide on stage, on the run's **Timeline** tab (the recommendation card), so no 
 | 1 · Success | **Approve (simulate)** | `COMPLETED (REMEDIATION_SIMULATED)` | Shows the full path: a human approval lets policy allow the action, recorded as simulated. |
 | 2 · Policy denial | **Approve (simulate)** | `COMPLETED (REMEDIATION_SIMULATED)` | The agent was denied acting alone; with a person's approval the same action is allowed. Both calls stay in the audit. |
 | 3 · Queue burst | none | `COMPLETED (EVIDENCE_ONLY)` | Burst runs gather evidence and stop; there is nothing to approve. |
-| 4 · Redelivery | **Reject** (or leave it) | `COMPLETED (ACTION_REJECTED)`, or `APPROVAL_EXPIRED` after 10 min | The approval is not part of this story; rejecting keeps the audit to the redelivered tool call. |
+| 4 · Redelivery | **Approve (simulate)** (or leave it) | `COMPLETED (REMEDIATION_SIMULATED)`, or `APPROVAL_EXPIRED` after 10 min | A run that survived a worker failure still finishes end to end. The simulated action is a separate `SIMULATED` row; the redelivered call keeps its "Requested 2×" tag. |
 
 ### 3.1 Scenario 1 — successful run with connected traces (2:30)
 
@@ -148,9 +148,10 @@ Only when the slot allows it (for example a longer session).
    evidence lanes have one delivery.
 3. Under that lane: "requested 2 times, executed once". Click **Open in Tool audit** to show the invocation
    (`requests: 2`, `executions: 1`, second response `REPLAYED`).
-4. The run itself carries on and reaches `AWAITING_APPROVAL`. On the **Timeline** tab, click **Reject** (or leave
-   it: it ends `APPROVAL_EXPIRED` after 10 minutes). Approving would add a simulated action that distracts from
-   the one tool call that was requested twice and executed once.
+4. The run itself carries on and reaches `AWAITING_APPROVAL`: the abandoned delivery cost time, not correctness.
+   On the **Timeline** tab, click **Approve (simulate)**; the run ends `COMPLETED (REMEDIATION_SIMULATED)`. In
+   **Tool audit** the simulated rollback is its own `SIMULATED` row, separate from the redelivered call tagged
+   "Requested 2×". When time is short, leave it instead: it ends `APPROVAL_EXPIRED` after 10 minutes.
 
 ## 4. Presenter controls
 

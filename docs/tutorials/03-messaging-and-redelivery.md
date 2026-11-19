@@ -115,9 +115,9 @@ curl -s "http://localhost:8080/api/v1/runs/$RUN" | jq '.tasks[] | {kind, topic, 
 curl -s "http://localhost:8080/api/v1/audit/invocations?runId=$RUN" | jq '.items[] | {toolName, status, requests, executions}'
 ```
 
-The run then waits in `AWAITING_APPROVAL`. The approval is not part of this scenario, so end it with **Reject** on
-its **Timeline** tab, or leave it: it completes as `APPROVAL_EXPIRED` after 10 minutes. Approving would add a
-simulated action next to the one tool call this scenario is about.
+The run then waits in `AWAITING_APPROVAL`: the abandoned delivery delayed it but did not change its result. End it
+with **Approve (simulate)** on its **Timeline** tab, or leave it: it completes as `APPROVAL_EXPIRED` after 10
+minutes. The simulated rollback appears in *Tool audit* as its own `SIMULATED` row, apart from the redelivered call.
 
 ### 4. Follow the idempotency chain
 
@@ -144,8 +144,8 @@ with `replayed: true` and runs nothing. If the arguments differ, it returns `409
   tool audit. Its **Open in Tool audit** link opens the invocation.
 - In the API output, one evidence task has `deliveries: 2`, and its tool invocations show
   `requests: 2` and `executions: 1`. The *Tool audit* tab shows the second response as `REPLAYED`.
-- The run still reaches `AWAITING_APPROVAL`. This is end-to-end check 7. After **Reject** it is `COMPLETED`
-  with outcome `ACTION_REJECTED`.
+- The run still reaches `AWAITING_APPROVAL`. This is end-to-end check 7. After **Approve** it is `COMPLETED`
+  with outcome `REMEDIATION_SIMULATED`.
 
 ## Key takeaways
 
