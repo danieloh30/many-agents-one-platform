@@ -10,6 +10,7 @@ import { fmtPct, fmtTime, humanize } from '../../design/format';
 import { Card, GatedButton, KeyValue, MonoId, Pill } from '../../design/ui';
 import { DECISION_ANCHOR } from './DecisionBar';
 import { ModelBadge } from './ModelBadge';
+import { Highlighted } from './highlight';
 
 export function RecommendationCard({ run }: { run: Run }) {
   const rec = run.recommendation;
@@ -34,8 +35,12 @@ export function RecommendationCard({ run }: { run: Run }) {
         </span>
       }
     >
-      <p className="text-lg font-semibold">{rec.summary}</p>
-      <p className="mt-1 text-sm">{rec.explanation}</p>
+      <p className="text-lg font-semibold" data-testid="rec-summary">
+        <Highlighted text={rec.summary} action={a} />
+      </p>
+      <p className="mt-1 text-sm leading-relaxed" data-testid="rec-explanation">
+        <Highlighted text={rec.explanation} action={a} />
+      </p>
 
       <h4 className="mt-3 text-sm font-semibold text-text-muted">Proposed action</h4>
       <table className="mt-1 w-full text-sm">

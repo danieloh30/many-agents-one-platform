@@ -98,7 +98,9 @@ A fixed-layout graph (React Flow, positions hand-authored for legibility — no 
   times, executed once") and a link to that invocation in *Tool audit*. Source: `GET /audit/invocations?runId=`.
 - **Evidence cards**: topic, finding, confidence, and the facts list. Each fact links to the tool
   invocation that produced it (opens the audit tab). Badge: `SYNTHETIC`.
-- **Recommendation card**: summary, concise explanation, proposed action as a structured table
+- **Recommendation card**: summary and concise explanation with key terms emphasised (the proposed action and its
+  target, version numbers, and measured values such as `7.1%` or `300 ms`; weight and tint, rendered as text only),
+  proposed action as a structured table
   (type, target, parameters, action digest), citations as chips linking to evidence cards, risks.
   On a run with `remediationMode: ATTEMPT_UNAPPROVED` the card adds the denied execution attempt and a short note,
   "Why this run differs from a normal run": same incident, data and proposal, but the agent tried to act before

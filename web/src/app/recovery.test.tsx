@@ -77,7 +77,7 @@ describe('stream reconnect and REST recovery', () => {
     const api = routes();
     renderApp(`/runs/${RUN_ID}`);
     expect(await screen.findByTestId('run-title')).toHaveTextContent('Checkout error rate elevated after release');
-    expect(await screen.findByText('Roll back checkout to v2.13.2.')).toBeInTheDocument();
+    expect(await screen.findByTestId('rec-summary')).toHaveTextContent('Roll back checkout to v2.13.2.');
     expect(api.count('GET', `/api/v1/runs/${RUN_ID}/timeline`)).toBeGreaterThan(0);
     expect(api.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
 
