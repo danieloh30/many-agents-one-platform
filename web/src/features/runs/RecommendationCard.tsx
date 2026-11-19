@@ -8,6 +8,7 @@ import { useCanMutate, useSession } from '../../app/session';
 import { ConfirmDialog } from '../../design/ConfirmDialog';
 import { fmtPct, fmtTime, humanize } from '../../design/format';
 import { Card, GatedButton, KeyValue, MonoId, Pill } from '../../design/ui';
+import { DECISION_ANCHOR } from './DecisionBar';
 import { ModelBadge } from './ModelBadge';
 
 export function RecommendationCard({ run }: { run: Run }) {
@@ -160,7 +161,7 @@ function ApprovalSection({ run }: { run: Run }) {
   };
 
   return (
-    <div className="mt-3 border-t border-border pt-3">
+    <div id={DECISION_ANCHOR} className="mt-3 scroll-mt-4 border-t border-border pt-3">
       <p className="mb-2 flex items-center gap-1.5 text-sm text-text-muted">
         <ShieldCheck aria-hidden size={14} /> Simulation only — approving records a simulated action; no cluster change.
       </p>

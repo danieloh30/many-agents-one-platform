@@ -19,6 +19,8 @@ export const THEME_KEY = 'maop.theme';
 const LAST_RUNS_KEY = 'maop.lastRunByScenario';
 const OPEN_SCENARIO_KEY = 'maop.openScenario';
 const OPS_EXPANDED_KEY = 'maop.opsExpanded';
+const RAIL_HIDDEN_KEY = 'maop.railHidden';
+const INSPECTOR_HIDDEN_KEY = 'maop.inspectorHidden';
 
 function initialTheme(): ThemeChoice | null {
   const v = readStorage('local', THEME_KEY);
@@ -61,8 +63,17 @@ interface UiState {
   openScenario: string | null;
   /** Operations strip: full tiles (true) or one summary line (false). */
   opsExpanded: boolean;
+  /** Side panels hidden to give the stage (topology / timeline) the full width. */
+  railHidden: boolean;
+  inspectorHidden: boolean;
+  /** Bumped to ask the timeline to scroll to the approval decision. */
+  decisionRequest: number;
   setOpenScenario(id: string | null): void;
   setOpsExpanded(open: boolean): void;
+  toggleRail(): void;
+  toggleInspector(): void;
+  /** Switch to the timeline and scroll to the Approve / Reject decision. */
+  goToDecision(): void;
   setTheme(t: ThemeChoice): void;
   togglePresenter(): void;
   setView(v: StageView): void;
@@ -91,6 +102,20 @@ export const useUi = create<UiState>((set) => ({
   burstStartedAt: null,
   openScenario: initialOpenScenario(),
   opsExpanded: readStorage('local', OPS_EXPANDED_KEY) === 'true',
+  railHidden: readStorage('local', RAIL_HIDDEN_KEY) === 'true',
+  inspectorHidden: readStorage('local', INSPECTOR_HIDDEN_KEY) === 'true',
+  decisionRequest: 0,
+  toggleRail: () =>
+    set((s) => {
+      writeStorage('local', RAIL_HIDDEN_KEY, String(!s.railHidden));
+      return { railHidden: !s.railHidden };
+    }),
+  toggleInspector: () =>
+    set((s) => {
+      writeStorage('local', INSPECTOR_HIDDEN_KEY, String(!s.inspectorHidden));
+      return { inspectorHidden: !s.inspectorHidden };
+    }),
+  goToDecision: () => set((s) => ({ view: 'timeline', decisionRequest: s.decisionRequest + 1 })),
   setOpenScenario: (openScenario) => {
     writeStorage('local', OPEN_SCENARIO_KEY, openScenario ?? '');
     set({ openScenario });

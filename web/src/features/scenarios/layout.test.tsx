@@ -54,7 +54,35 @@ describe('left rail and inspector layout', () => {
     expect(screen.queryByText('Load run 1/3: checkout errors')).toBeNull();
     await userEvent.click(group);
     expect(screen.getByText('Load run 1/3: checkout errors')).toBeInTheDocument();
-    expect(screen.getByText('Checkout error rate elevated after release')).toBeInTheDocument();
+    // A preset run leads with its scenario, not the shared incident title.
+    const recent = screen.getByRole('region', { name: 'Recent runs' });
+    expect(within(recent).getByText('Success')).toBeInTheDocument();
+  });
+
+  it('tags runs made by ./demo.sh verify as smoke test', async () => {
+    resetStores();
+    const mine = runList(run()).items[0]!;
+    const smoke = { ...runList(run({ runId: 'smoke-1' })).items[0]!, labels: { source: 'demo-verify' } };
+    routes({ items: [smoke, mine], nextCursor: null });
+    renderApp('/');
+    const tags = await screen.findAllByTestId('smoke-test-tag');
+    expect(tags).toHaveLength(1);
+    expect(tags[0]!.closest('a')).toHaveAttribute('href', '/runs/smoke-1');
+  });
+
+  it('hides and shows the side panels from the stage bar and with L / I', async () => {
+    resetStores();
+    routes();
+    renderApp('/');
+    await screen.findByRole('navigation', { name: 'Scenarios and runs' });
+    await userEvent.click(screen.getByRole('button', { name: 'Hide scenarios and runs (L)' }));
+    expect(screen.queryByRole('navigation', { name: 'Scenarios and runs' })).toBeNull();
+    await userEvent.keyboard('l');
+    expect(screen.getByRole('navigation', { name: 'Scenarios and runs' })).toBeInTheDocument();
+    await userEvent.keyboard('i');
+    expect(screen.queryByRole('complementary', { name: 'Inspector' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Show inspector (I)' }));
+    expect(screen.getByRole('complementary', { name: 'Inspector' })).toBeInTheDocument();
   });
 
   it('keeps list order and places a burst where its first run appears', () => {

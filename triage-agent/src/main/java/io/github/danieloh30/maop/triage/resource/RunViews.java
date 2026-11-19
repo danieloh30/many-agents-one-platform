@@ -27,6 +27,8 @@ final class RunViews {
         n.put("createdAt", r.createdAt.toString());
         n.put("updatedAt", r.updatedAt == null ? null : r.updatedAt.toString());
         n.put("traceId", r.traceId);
+        // Labels let a client tell runs apart by origin, e.g. {"source": "demo-verify"} from ./demo.sh verify.
+        n.set("labels", r.labels == null ? Json.MAPPER.createObjectNode() : r.labels);
         return n;
     }
 

@@ -203,6 +203,8 @@ export interface Run {
 }
 
 export interface RunSummary {
+  /** Labels given at creation; {"source": "demo-verify"} marks runs made by ./demo.sh verify. Absent on older backends. */
+  labels?: Record<string, string> | null;
   runId: string;
   state: RunState;
   outcome: string | null;

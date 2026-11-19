@@ -422,7 +422,9 @@ or the editable form.
   snapshot's workload fields stay `null` + `UNAVAILABLE`; the UI then labels them "Not on local stack" in a neutral
   tone instead of as a failure. When it is `true`, an `UNAVAILABLE` workload is a real problem.
 - `GET /api/v1/runs` → `{ "items": [RunSummary], "nextCursor": null }` where
-  `RunSummary = {runId, state, outcome, scenario, title, service, planSource, burstId, createdAt, updatedAt, traceId}`.
+  `RunSummary = {runId, state, outcome, scenario, title, service, planSource, burstId, createdAt, updatedAt, traceId, labels}`;
+  `labels` is the object given at creation (`{}` when none). `./demo.sh verify` labels its runs `{"source": "demo-verify"}`,
+  which the console shows as "smoke test".
 - `GET /api/v1/runs/{runId}/timeline` → `{ "items": [ {seq, at, kind, from, to, taskId, message, data} ] }`;
   `kind ∈ STATE_CHANGED | TASK_DISPATCHED | TASK_STARTED | TASK_COMPLETED | TASK_FAILED | TASK_DEAD_LETTERED | POLICY_DENIAL | APPROVAL | IGNORED_LATE | BUDGET | NOTE`.
 - `GET /api/v1/audit/invocations?runId=` → `{ "items": [ToolInvocation] }` with

@@ -11,6 +11,7 @@ import { humanize } from '../../design/format';
 import { isTerminal, RunStatePill } from '../../design/runState';
 import { Card, GatedButton, Pill, Skeleton } from '../../design/ui';
 import { DeadlineBar } from './DeadlineBar';
+import { useScrollToDecision } from './DecisionBar';
 import { EvidenceCards } from './EvidenceCards';
 import { ModelBadge } from './ModelBadge';
 import { RecommendationCard } from './RecommendationCard';
@@ -82,6 +83,7 @@ function CancelButton({ run }: { run: Run }) {
 export function RunTimelineView({ runId }: { runId: string | undefined }) {
   const run = useRun(runId);
   const timeline = useTimeline(runId);
+  useScrollToDecision();
   if (!runId) {
     return (
       <div className="grid h-full place-items-center p-6 text-center text-text-muted">

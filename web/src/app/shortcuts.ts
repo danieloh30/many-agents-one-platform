@@ -8,6 +8,8 @@ export interface ShortcutHandlers {
   runPreset(index: number): void;
   prevRun(): void;
   nextRun(): void;
+  toggleRail(): void;
+  toggleInspector(): void;
 }
 
 export const SHORTCUTS: Array<[string, string]> = [
@@ -17,6 +19,8 @@ export const SHORTCUTS: Array<[string, string]> = [
   ['T', 'Toggle topology / timeline'],
   ['Shift + 1…4', 'Run scenario preset 1–4'],
   ['[ / ]', 'Previous / next run'],
+  ['L', 'Hide / show the left rail (scenarios and runs)'],
+  ['I', 'Hide / show the inspector'],
   ['Esc', 'Close dialogs'],
 ];
 
@@ -55,6 +59,16 @@ export function useShortcuts(h: ShortcutHandlers) {
         case 'T':
           if (e.shiftKey) return;
           h.toggleView();
+          break;
+        case 'l':
+        case 'L':
+          if (e.shiftKey) return;
+          h.toggleRail();
+          break;
+        case 'i':
+        case 'I':
+          if (e.shiftKey) return;
+          h.toggleInspector();
           break;
         case '[':
           h.prevRun();

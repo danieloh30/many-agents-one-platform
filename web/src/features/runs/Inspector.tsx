@@ -10,6 +10,7 @@ import { RunStatePill } from '../../design/runState';
 import { Button, Card, KeyValue, MonoId, Skeleton } from '../../design/ui';
 import { PolicyIdentityPanel, ToolAuditPanel } from '../audit/AuditPanels';
 import { ElementDetails } from '../topology/ElementDetails';
+import { DecisionBar } from './DecisionBar';
 import { EvidenceCards } from './EvidenceCards';
 import { ModelBadge } from './ModelBadge';
 import { TraceLink } from './TraceLink';
@@ -32,6 +33,15 @@ export function Inspector({ runId, invocationId }: { runId: string | undefined; 
   useEffect(() => {
     if (invocationId) useUi.getState().setInspectorTab('audit');
   }, [invocationId]);
+
+  // The timeline already shows the run's state, evidence and recommendation, so Summary would repeat it: open the
+  // tab it does not show instead (Policy for a denial run, Tool audit otherwise). A tab the viewer picked is kept.
+  const view = useUi((s) => s.view);
+  const scenario = run.data?.scenario;
+  useEffect(() => {
+    if (view !== 'timeline' || !scenario || invocationId) return;
+    if (useUi.getState().inspectorTab === 'summary') setTab(scenario === 'POLICY_DENIAL' ? 'policy' : 'audit');
+  }, [view, scenario, runId, invocationId, setTab]);
 
   return (
     <aside aria-label="Inspector" className="flex h-full min-h-0 flex-col">
@@ -139,6 +149,7 @@ function SummaryTab({ run }: { run: Run }) {
   const c = run.classification;
   return (
     <div className="space-y-3 text-sm">
+      <DecisionBar runId={run.runId} compact />
       <div className="flex flex-wrap items-center gap-1.5">
         <RunStatePill state={run.state} outcome={run.outcome} />
         <ModelBadge model={run.model} />

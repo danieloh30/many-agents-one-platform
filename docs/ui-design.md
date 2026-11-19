@@ -121,6 +121,20 @@ For each tool invocation (`GET /api/v1/audit/invocations`):
 A denial raises a non-blocking toast and marks the topology edge; it is not styled as an
 application error — policy working is a success state for the operator.
 
+### 3.4a Decisions, side panels and recent runs
+
+- **Decision bar**: while the selected run is `AWAITING_APPROVAL`, an amber bar under the stage tabs (and at the top of
+  the inspector's Summary) reads "Your decision is needed" with the approval time left; **Review & decide** switches to
+  the timeline and scrolls that panel (not the page) to Approve / Reject, focusing Approve.
+- **Side panels**: buttons at both ends of the stage tab bar, and `L` / `I`, hide the left rail and the inspector;
+  remembered per browser. A link to a tool invocation shows the inspector again.
+- **Inspector default beside the timeline**: Summary would repeat the timeline, so it opens on Tool audit (Policy for a
+  denial run) unless the viewer picked a tab.
+- **Recent runs**: rows lead with the scenario (preset runs share one incident title; custom incidents show their
+  title); runs labelled `source: demo-verify` carry a neutral "smoke test" tag.
+- **Evidence facts**: each fact's tool-call link sits under the statement; cards go two per row only when the timeline
+  is at least 48rem wide (container query).
+
 ### 3.5 Operations strip
 
 Fed by `ops-snapshot` SSE events (2 s cadence). Folded by default to one summary line (queue pending and in

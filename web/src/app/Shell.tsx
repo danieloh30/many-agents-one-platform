@@ -2,13 +2,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router';
 import { Dialog } from 'radix-ui';
-import { GitBranch, PanelRight, RefreshCw, TriangleExclamationPoint, Workflow, X } from 'lucide-react';
+import {
+  GitBranch,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRight,
+  PanelRightClose,
+  PanelRightOpen,
+  RefreshCw,
+  TriangleExclamationPoint,
+  Workflow,
+  X,
+} from 'lucide-react';
 import { ApiError, describeError, isNetworkError } from '../api/client';
 import { useConfig, useRuns } from '../api/queries';
 import { useLiveStore } from '../api/liveStore';
 import { Button, cx } from '../design/ui';
 import { OpsStrip } from '../features/ops/OpsStrip';
 import { PresenterBar } from '../features/presenter/PresenterBar';
+import { DecisionBar } from '../features/runs/DecisionBar';
 import { Inspector } from '../features/runs/Inspector';
 import { RunTimelineView } from '../features/runs/RunTimeline';
 import { NewIncidentForm } from '../features/scenarios/NewIncidentForm';
@@ -80,6 +92,10 @@ export function Shell() {
   const presenter = useUi((s) => s.presenter);
   const view = useUi((s) => s.view);
   const setView = useUi((s) => s.setView);
+  const railHidden = useUi((s) => s.railHidden);
+  const inspectorHidden = useUi((s) => s.inspectorHidden);
+  const toggleRail = useUi((s) => s.toggleRail);
+  const toggleInspector = useUi((s) => s.toggleInspector);
   const runs = useRuns();
   const { presets } = usePresets();
   const actions = useScenarioActions();
@@ -89,6 +105,11 @@ export function Shell() {
   useEffect(() => {
     void useSession.getState().revalidate();
   }, []);
+
+  // A link to a tool invocation (e.g. "Open in Tool audit") must show the inspector even if it was hidden.
+  useEffect(() => {
+    if (invocationId && useUi.getState().inspectorHidden) useUi.getState().toggleInspector();
+  }, [invocationId]);
 
   const handlers = useMemo(() => {
     const items = runs.data?.items ?? [];
@@ -108,6 +129,8 @@ export function Shell() {
       },
       prevRun: () => go(idx <= 0 ? 0 : idx - 1),
       nextRun: () => go(idx < 0 ? 0 : Math.min(items.length - 1, idx + 1)),
+      toggleRail: () => useUi.getState().toggleRail(),
+      toggleInspector: () => useUi.getState().toggleInspector(),
     };
   }, [runs.data, runId, navigate, presets, actions]);
   useShortcuts(handlers);
@@ -116,7 +139,19 @@ export function Shell() {
 
   const stage = (
     <div className="flex min-h-[26rem] flex-1 flex-col">
-      <div role="tablist" aria-label="Stage view (T)" className="flex gap-1 border-b border-border px-3 pt-2">
+      <div role="tablist" aria-label="Stage view (T)" className="flex items-end gap-1 border-b border-border px-3 pt-2">
+        {isLg && !presenter ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={railHidden ? PanelLeftOpen : PanelLeftClose}
+            className="mb-1 mr-1"
+            onClick={toggleRail}
+            aria-pressed={!railHidden}
+            aria-label={railHidden ? 'Show scenarios and runs (L)' : 'Hide scenarios and runs (L)'}
+            title={railHidden ? 'Show scenarios and runs (L)' : 'Hide scenarios and runs (L)'}
+          />
+        ) : null}
         {(
           [
             ['topology', 'Topology', Workflow],
@@ -141,8 +176,20 @@ export function Shell() {
           <Button size="sm" variant="ghost" icon={PanelRight} className="ml-auto mb-1" onClick={() => setDrawer(true)}>
             Inspector
           </Button>
-        ) : null}
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={inspectorHidden ? PanelRightOpen : PanelRightClose}
+            className="ml-auto mb-1"
+            onClick={toggleInspector}
+            aria-pressed={!inspectorHidden}
+            aria-label={inspectorHidden ? 'Show inspector (I)' : 'Hide inspector (I)'}
+            title={inspectorHidden ? 'Show inspector (I)' : 'Hide inspector (I)'}
+          />
+        )}
       </div>
+      <DecisionBar runId={runId} />
       <div role="tabpanel" aria-label={view === 'topology' ? 'Topology' : 'Timeline'} className={cx('min-h-0 flex-1', view === 'timeline' && 'overflow-auto')}>
         {view === 'topology' ? (
           <Topology runId={runId} idle={noRuns ? <IdlePrompt /> : undefined} />
@@ -163,7 +210,7 @@ export function Shell() {
       <ApiBanner />
       <OfflineNotice />
       <div className={cx('flex min-h-0 flex-1', !isLg && 'flex-col')}>
-        {!presenter ? (
+        {!presenter && !(isLg && railHidden) ? (
           <nav aria-label="Scenarios and runs" className={cx('space-y-4 overflow-auto p-3', isLg && 'w-80 shrink-0 border-r border-border 2xl:w-[22rem]')}>
             <ScenarioPresets />
             <NewIncidentForm />
@@ -175,7 +222,7 @@ export function Shell() {
           {stage}
           <OpsStrip />
         </main>
-        {isLg ? (
+        {isLg && inspectorHidden ? null : isLg ? (
           <div className={cx('shrink-0 border-l border-border bg-surface', presenter ? 'w-[26rem] 2xl:w-[30rem]' : 'w-96 2xl:w-[26rem]')}>
             <Inspector runId={runId} invocationId={invocationId} />
           </div>

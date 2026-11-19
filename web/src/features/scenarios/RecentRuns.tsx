@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { ChevronRight, Layers } from 'lucide-react';
+import { ChevronRight, FlaskConical, Layers } from 'lucide-react';
 import { useRuns } from '../../api/queries';
 import { describeError } from '../../api/client';
 import type { RunSummary } from '../../api/types';
 import { fmtTime, humanize } from '../../design/format';
 import { isTerminal, RunStatePill } from '../../design/runState';
-import { cx, Skeleton } from '../../design/ui';
+import { cx, Pill, Skeleton } from '../../design/ui';
 
 type Entry = { kind: 'run'; run: RunSummary } | { kind: 'burst'; burstId: string; runs: RunSummary[] };
 
@@ -31,20 +31,33 @@ export function groupRuns(items: RunSummary[]): Entry[] {
   return out;
 }
 
+/** Runs made by ./demo.sh verify carry labels {"source": "demo-verify"}. */
+export const isSmokeTestRun = (r: RunSummary) => r.labels?.source === 'demo-verify';
+
 function RunLink({ run, selected, nested }: { run: RunSummary; selected: boolean; nested?: boolean }) {
+  // Preset scenarios all share one incident title, so lead with the scenario; show the title only for custom incidents.
+  const custom = run.scenario === 'CUSTOM';
   return (
     <Link
       to={`/runs/${run.runId}`}
       aria-current={selected ? 'page' : undefined}
+      title={run.title}
       className={cx(
         'ui-transition block rounded-md border px-2 py-1.5 text-sm hover:bg-surface-raised',
         selected ? 'border-primary bg-surface-raised' : 'border-transparent',
       )}
     >
-      <span className="block truncate font-medium">{run.title}</span>
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span className="truncate font-medium">{nested ? run.title : custom ? run.title : humanize(run.scenario)}</span>
+        {isSmokeTestRun(run) ? (
+          <Pill tone="neutral" icon={FlaskConical} testId="smoke-test-tag" title="Created by ./demo.sh verify, not by a viewer">
+            smoke test
+          </Pill>
+        ) : null}
+      </span>
       <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-text-muted">
         <RunStatePill state={run.state} />
-        {nested ? null : <span>{humanize(run.scenario)}</span>}
+        {custom && !nested ? <span>Custom incident</span> : null}
         <span className="tabular">{fmtTime(run.createdAt)}</span>
       </span>
     </Link>

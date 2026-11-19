@@ -90,7 +90,8 @@ needs no presenter token. (To require one, for example on a shared screen, start
 
 To walk through the demo yourself, run the four scenarios in order and end each one as listed in
 [the four scenarios](index.md#the-four-scenarios): approve the first, reject the second and fourth, and let the
-burst finish. Approve and Reject are on the run's **Timeline** tab; **Reset** in the top bar starts over.
+burst finish. While a run waits for you, an amber **Your decision is needed** bar shows its remaining time;
+**Review & decide** jumps to Approve and Reject on the run's **Timeline** tab. **Reset** in the top bar starts over.
 
 ### 5. Stop the stack
 
@@ -120,10 +121,10 @@ with live `gpt-4o-mini`:
 | Area | What it shows |
 | --- | --- |
 | **Top bar** | Product name, a status group (the model badge, `LIVE <model>` or an amber `DETERMINISTIC`; `SYNTHETIC DATA`; stream status), **Reset** (clears runs, audit and queued messages to start the demo over), the **Light / Dark** theme switch, presenter mode and full screen. |
-| **Left rail** | The four scenarios as one-line rows with a **Run** button; click a title to unfold its description, how to end the run, its shortcut and the exact request it sends. Below: a *New incident* form and recent runs, where a burst's runs fold into one entry. |
+| **Left rail** | The four scenarios as one-line rows with a **Run** button; click a title to unfold its description, how to end the run, its shortcut and the exact request it sends. Below: a *New incident* form and recent runs, listed by scenario, where a burst's runs fold into one entry and runs made by `./demo.sh verify` carry a **smoke test** tag. Hide the rail with the button at the left of the stage tabs, or `L`. |
 | **Topology** (main stage) | A fixed-layout graph of the services and queues. Edges pulse only when a real event arrives. mTLS calls show the verified caller's SPIFFE ID on hover, and a denied call is drawn in red. |
 | **Timeline** (`T` toggles) | The durable state rail, a deadline bar, and task lanes where each delivery attempt is a segment, so a redelivery shows up as `delivery 2` with a **Redelivered** tag and its tool calls' request and execution counts. |
-| **Inspector** (right) | Tabs for the selected run: *Summary*, *Evidence*, *Policy* (caller identity and policy decision), *Tool audit* and *Usage*. With no run selected, it says what to do next. |
+| **Inspector** (right) | Tabs for the selected run: *Summary*, *Evidence*, *Policy* (caller identity and policy decision), *Tool audit* and *Usage*. With no run selected, it says what to do next. Next to the Timeline it opens on *Tool audit* (*Policy* for a denial run), since the Timeline already shows state and evidence. Hide it with the button at the right of the stage tabs, or `I`; hiding both side panels gives the topology the full width. |
 | **Operations strip** | One summary line by default; **Show details** opens queue depth, in-flight work, queue age, replicas (ready, desired, minimum to maximum), worker activity and platform health. It opens on its own when a burst starts. Values that cannot be read show **Unavailable**; Kubernetes-only facts on this local stack show a grey **Not on local stack**. |
 | **Presenter mode** (`P`) | Larger type and a guide bar for the scenario steps. A checklist item ticks only when the matching real event arrives. `Shift+1…4` runs a scenario, `F` toggles full screen, `?` lists the shortcuts. |
 

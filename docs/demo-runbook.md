@@ -79,7 +79,8 @@ Decide on stage, on the run's **Timeline** tab (the recommendation card), so no 
 7. Click **Open trace in Jaeger**: one trace, spans from console, triage, NATS publish/process,
    evidence agents, tool service (with policy decision attributes), recommendation agent.
 
-8. On the **Timeline** tab, in the recommendation card, click **Approve (simulate)** and confirm. The run moves
+8. Click **Review & decide** in the amber *Your decision is needed* bar (or scroll the **Timeline** tab to the
+   recommendation card), click **Approve (simulate)** and confirm. The run moves
    `EXECUTING_ACTION` → `COMPLETED (REMEDIATION_SIMULATED)`; **Tool audit** shows the simulated action with its
    `SIMULATED` badge. Nothing changes on any cluster.
 
