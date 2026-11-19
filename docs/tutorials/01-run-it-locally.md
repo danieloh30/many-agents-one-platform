@@ -126,7 +126,7 @@ with live `gpt-4o-mini`:
 | **Timeline** (`T` toggles) | The durable state rail, a deadline bar, and task lanes where each delivery attempt is a segment, so a redelivery shows up as `delivery 2` with a **Redelivered** tag and its tool calls' request and execution counts. |
 | **Inspector** (right) | Tabs for the selected run: *Summary*, *Evidence*, *Policy* (caller identity and policy decision), *Tool audit* and *Usage*. With no run selected, it says what to do next. Next to the Timeline it opens on *Tool audit* (*Policy* for a denial run), since the Timeline already shows state and evidence. Hide it with the button at the right of the stage tabs, or `I`; hiding both side panels gives the topology the full width. |
 | **Operations strip** | One summary line by default; **Show details** opens queue depth, in-flight work, queue age, replicas (ready, desired, minimum to maximum), worker activity and platform health. It opens on its own when a burst starts. Values that cannot be read show **Unavailable**; Kubernetes-only facts on this local stack show a grey **Not on local stack**. |
-| **Presenter mode** (`P`) | Larger type and a guide bar for the scenario steps. A checklist item ticks only when the matching real event arrives. `Shift+1…4` runs a scenario, `F` toggles full screen, `?` lists the shortcuts. |
+| **Presenter mode** (`P`) | Larger type and a guide bar: one chip per scenario step and the selected step in full, folded with `G`. A checklist item ticks only when the matching real event arrives. `Shift+1…4` runs a scenario, `F` toggles full screen, `?` lists the shortcuts. |
 
 ### What "SYNTHETIC DATA" means
 

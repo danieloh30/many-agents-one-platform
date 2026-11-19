@@ -21,6 +21,7 @@ const OPEN_SCENARIO_KEY = 'maop.openScenario';
 const OPS_EXPANDED_KEY = 'maop.opsExpanded';
 const RAIL_HIDDEN_KEY = 'maop.railHidden';
 const INSPECTOR_HIDDEN_KEY = 'maop.inspectorHidden';
+const GUIDE_FOLDED_KEY = 'maop.guideFolded';
 
 function initialTheme(): ThemeChoice | null {
   const v = readStorage('local', THEME_KEY);
@@ -68,6 +69,11 @@ interface UiState {
   inspectorHidden: boolean;
   /** Bumped to ask the timeline to scroll to the approval decision. */
   decisionRequest: number;
+  /** Presenter guide: the scenario step shown in full, and whether the guide is folded to one line. */
+  guideStep: 'SUCCESS' | 'POLICY_DENIAL' | 'BURST' | 'REDELIVERY';
+  guideFolded: boolean;
+  setGuideStep(step: UiState['guideStep']): void;
+  toggleGuide(): void;
   setOpenScenario(id: string | null): void;
   setOpsExpanded(open: boolean): void;
   toggleRail(): void;
@@ -105,6 +111,14 @@ export const useUi = create<UiState>((set) => ({
   railHidden: readStorage('local', RAIL_HIDDEN_KEY) === 'true',
   inspectorHidden: readStorage('local', INSPECTOR_HIDDEN_KEY) === 'true',
   decisionRequest: 0,
+  guideStep: 'SUCCESS',
+  guideFolded: readStorage('local', GUIDE_FOLDED_KEY) === 'true',
+  setGuideStep: (guideStep) => set({ guideStep }),
+  toggleGuide: () =>
+    set((s) => {
+      writeStorage('local', GUIDE_FOLDED_KEY, String(!s.guideFolded));
+      return { guideFolded: !s.guideFolded };
+    }),
   toggleRail: () =>
     set((s) => {
       writeStorage('local', RAIL_HIDDEN_KEY, String(!s.railHidden));

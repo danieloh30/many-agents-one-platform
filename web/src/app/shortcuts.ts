@@ -10,6 +10,7 @@ export interface ShortcutHandlers {
   nextRun(): void;
   toggleRail(): void;
   toggleInspector(): void;
+  toggleGuide(): void;
 }
 
 export const SHORTCUTS: Array<[string, string]> = [
@@ -21,6 +22,7 @@ export const SHORTCUTS: Array<[string, string]> = [
   ['[ / ]', 'Previous / next run'],
   ['L', 'Hide / show the left rail (scenarios and runs)'],
   ['I', 'Hide / show the inspector'],
+  ['G', 'Fold / unfold the presenter guide'],
   ['Esc', 'Close dialogs'],
 ];
 
@@ -69,6 +71,11 @@ export function useShortcuts(h: ShortcutHandlers) {
         case 'I':
           if (e.shiftKey) return;
           h.toggleInspector();
+          break;
+        case 'g':
+        case 'G':
+          if (e.shiftKey) return;
+          h.toggleGuide();
           break;
         case '[':
           h.prevRun();

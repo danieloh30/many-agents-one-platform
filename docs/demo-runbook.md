@@ -155,10 +155,13 @@ Only when the slot allows it (for example a longer session).
 | `Shift+1…4` | Run scenario 1–4 |
 | `T` | Toggle topology / timeline |
 | `[` `]` | Previous / next run |
+| `G` | Fold / unfold the guide (presenter mode) |
+| `L` / `I` | Hide / show the left rail / the inspector |
 | `?` | Shortcut help |
 
-The guide bar's checklist ticks only when the real event arrives; an unticked item means it has
-not happened yet.
+The guide bar shows one scenario at a time: click a step chip (or press `Shift+1…4`, which also runs it) to switch,
+and fold the guide with `G` when you want the whole stage for the topology. Its checklist ticks only when the real
+event arrives; an unticked item means it has not happened yet.
 
 ## 5. Reset between rehearsals
 

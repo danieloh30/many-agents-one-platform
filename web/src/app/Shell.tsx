@@ -19,6 +19,7 @@ import { useConfig, useRuns } from '../api/queries';
 import { useLiveStore } from '../api/liveStore';
 import { Button, cx } from '../design/ui';
 import { OpsStrip } from '../features/ops/OpsStrip';
+import { GUIDE_STEPS } from '../features/presenter/checklist';
 import { PresenterBar } from '../features/presenter/PresenterBar';
 import { DecisionBar } from '../features/runs/DecisionBar';
 import { Inspector } from '../features/runs/Inspector';
@@ -78,9 +79,12 @@ function OfflineNotice() {
 }
 
 function IdlePrompt() {
+  const presenter = useUi((s) => s.presenter);
   return (
     <p className="pointer-events-auto rounded-lg border border-border bg-surface px-4 py-2 text-sm shadow">
-      No runs yet — run a scenario from the left rail (or Shift+1) to see the agents work.
+      {presenter
+        ? 'No runs yet — press Run in the guide above (or Shift+1) to see the agents work.'
+        : 'No runs yet — run a scenario from the left rail (or Shift+1) to see the agents work.'}
     </p>
   );
 }
@@ -126,11 +130,16 @@ export function Shell() {
       runPreset: (i: number) => {
         const p = presets[i];
         if (p && actions.canMutate) void actions.runPreset(p);
+        const step = GUIDE_STEPS[i];
+        if (step) useUi.getState().setGuideStep(step.id);
       },
       prevRun: () => go(idx <= 0 ? 0 : idx - 1),
       nextRun: () => go(idx < 0 ? 0 : Math.min(items.length - 1, idx + 1)),
       toggleRail: () => useUi.getState().toggleRail(),
       toggleInspector: () => useUi.getState().toggleInspector(),
+      toggleGuide: () => {
+        if (useUi.getState().presenter) useUi.getState().toggleGuide();
+      },
     };
   }, [runs.data, runId, navigate, presets, actions]);
   useShortcuts(handlers);

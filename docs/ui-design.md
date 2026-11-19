@@ -161,12 +161,15 @@ Each tile shows `observedAt` age; if older than 10 s it greys out and reads "sta
 ### 3.6 Presenter controls and full-screen mode
 
 - Toggle with `P`; full screen with `F` (Fullscreen API); `?` shows shortcuts.
-- A slim guide bar lists the scenario steps (1 Success · 2 Policy denial · 3 Burst · optional
-  Redelivery). Each step has: **Run** (fires the preset), an auto-advancing checklist of expected
+- A slim guide bar lists the scenario steps as chips (1 Success · 2 Policy denial · 3 Burst · optional
+  Redelivery), each with its observed/total count and a check when all are seen. Only the selected step is shown in
+  full below the chips (`Shift+1…4` also selects its step); `G` or the chevron folds the guide to the chip line,
+  remembered per browser. The shown step has: **Run** (fires the preset), an auto-advancing checklist of expected
   observations that tick only when the corresponding real event arrives
   (e.g. "✓ Tool call denied — decision `…`"), and **Focus** buttons that pan/zoom the stage to the
   relevant element. Nothing in the guide simulates an outcome.
-- Presenter mode raises the type scale (§4.2), hides the left rail, and enlarges the stage.
+- Presenter mode raises the type scale (§4.2), hides the left rail, and enlarges the stage. Empty-state hints point
+  at the guide's **Run** buttons there, since Recent runs is hidden; `I` still hides the inspector.
 - **Reset** (delete runs, audit, simulated actions and queued messages, after a confirm dialog) sits in the top
   bar outside presenter mode and in the guide bar in presenter mode; it is refused while a burst is active.
 - `1`–`4` trigger presets (after a confirm chord `Shift`), `T` toggles topology/timeline,

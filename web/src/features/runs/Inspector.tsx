@@ -114,10 +114,25 @@ const TAB_HELP: Array<[string, string]> = [
 function EmptyInspector() {
   const runs = useRuns();
   const none = runs.data?.items.length === 0;
+  // Presenter mode hides the left rail (scenarios and Recent runs): point at the guide instead.
+  const presenter = useUi((s) => s.presenter);
   return (
     <div className="space-y-3 text-sm" data-testid="inspector-empty">
       <p className="rounded-lg border border-border bg-surface-raised p-3">
-        {none ? (
+        {presenter ? (
+          <>
+            Press <strong>Run</strong> in the guide above (or{' '}
+            <kbd className="rounded border border-border px-1 font-mono text-xs">Shift+1</kbd>…
+            <kbd className="rounded border border-border px-1 font-mono text-xs">4</kbd>); the run you start opens here.
+            {none ? null : (
+              <>
+                {' '}
+                Step through earlier runs with <kbd className="rounded border border-border px-1 font-mono text-xs">[</kbd> and{' '}
+                <kbd className="rounded border border-border px-1 font-mono text-xs">]</kbd>.
+              </>
+            )}
+          </>
+        ) : none ? (
           <>
             No runs yet. Run <strong>scenario 1</strong> on the left (or press{' '}
             <kbd className="rounded border border-border px-1 font-mono text-xs">Shift+1</kbd>) to start.

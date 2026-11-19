@@ -17,7 +17,7 @@ export function resetStores({ token }: { token?: string } = {}) {
     /* ignore */
   }
   useLiveStore.setState({ status: 'connecting', events: [], history: [] });
-  useUi.setState({ ...initialUi, themeChoice: null, presenter: false, view: 'topology', inspectorTab: 'summary', lastRunByScenario: {}, focusNode: null, openScenario: 'SUCCESS', opsExpanded: false, railHidden: false, inspectorHidden: false });
+  useUi.setState({ ...initialUi, themeChoice: null, presenter: false, view: 'topology', inspectorTab: 'summary', lastRunByScenario: {}, focusNode: null, openScenario: 'SUCCESS', opsExpanded: false, railHidden: false, inspectorHidden: false, guideStep: 'SUCCESS', guideFolded: false });
   useNotify.setState({ toasts: [], announcement: null });
   if (token) {
     sessionStorage.setItem('maop.presenterToken', token);
