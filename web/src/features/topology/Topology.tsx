@@ -23,7 +23,7 @@ import type { ComponentStatus, OpsSnapshot, PodSnapshot } from '../../api/types'
 import { useUi, type TopologyNodeId } from '../../app/uiStore';
 import { fmtNum, workloadOf } from '../../design/format';
 import { cx, StatusPill } from '../../design/ui';
-import { NotOnLocalStack } from '../ops/OpsStrip';
+import { LocalProcess } from '../ops/OpsStrip';
 import { modelComponent, platform, podLabel, queue, workload } from '../ops/selectors';
 import { ActivityList } from './ActivityList';
 import { EDGES, edgesForEvent, eventMatchesRun, NODE_LABELS, NODE_ORDER, NODE_POSITIONS, nodesForEvent, type EdgeKind } from './graph';
@@ -97,7 +97,7 @@ function ServiceNodeView({ data }: NodeProps<ServiceNode>) {
       </div>
       {data.showStatus ? (
         <div className="mt-1">
-          {data.localOnly ? <NotOnLocalStack /> : <StatusPill status={data.status} />}
+          {data.localOnly ? <LocalProcess /> : <StatusPill status={data.status} />}
         </div>
       ) : null}
       {data.lines.length > 0 ? (
@@ -256,7 +256,10 @@ function nodeData(id: TopologyNodeId, snap: OpsSnapshot | undefined, modelName: 
     case 'recommendation':
       return { icon: 'service' as const, ...svc('recommendation-agent') };
     case 'tool-service':
-      return { icon: 'service' as const, ...svc('tool-service') };
+      // Locally there are no replica facts, but the console's own mTLS call reports the tool service's health.
+      return kube
+        ? { icon: 'service' as const, ...svc('tool-service') }
+        : { icon: 'service' as const, status: platform(snap, (n) => n === 'tool-service')?.status ?? null, showStatus: true, lines: [] };
     case 'opa':
       return { icon: 'policy' as const, status: platform(snap, (n) => n === 'opa')?.status ?? null, showStatus: true, lines: [] };
     case 'model':
@@ -333,7 +336,7 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
       id,
       type: 'service',
       position: NODE_POSITIONS[id],
-      ariaLabel: `${NODE_LABELS[id]}${d.showStatus ? ('localOnly' in d && d.localOnly ? ', not on local stack' : `, status ${d.status ?? 'unknown'}`) : ''}`,
+      ariaLabel: `${NODE_LABELS[id]}${d.showStatus ? ('localOnly' in d && d.localOnly ? ', local process' : `, status ${d.status ?? 'unknown'}`) : ''}`,
       data: {
         title: NODE_LABELS[id],
         ...d,

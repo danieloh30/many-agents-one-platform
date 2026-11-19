@@ -126,8 +126,9 @@ application error — policy working is a success state for the operator.
 Fed by `ops-snapshot` SSE events (2 s cadence). Folded by default to one summary line (queue pending and in
 flight, evidence-agent replicas, platform components OK); **Show details** opens the tiles below, and they open on
 their own when a burst starts. The choice is remembered per browser. On the cluster-free local stack
-(`config.kubernetes.enabled = false`), replica and scaler facts read **Not on local stack** in a neutral tone, as do
-the agent nodes in the topology; on a cluster an `UNAVAILABLE` workload stays red.
+(`config.kubernetes.enabled = false`), replica and scaler facts read **Not on local stack** in a neutral tone, the agent
+nodes in the topology read **Local process** (they run as plain JVMs), and the tool-service node shows the
+console's own mTLS health check. On a cluster an `UNAVAILABLE` workload stays red.
 
 - **Queue depth** (pending) and **in-flight** for `evidence-agents`, with a 5-minute sparkline
   built from snapshots received in this browser session (labelled "since page load").

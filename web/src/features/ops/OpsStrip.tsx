@@ -75,6 +75,15 @@ export function NotOnLocalStack() {
   );
 }
 
+/** A service that runs as a plain JVM on the local stack: up, but with no Kubernetes replica facts. */
+export function LocalProcess() {
+  return (
+    <Pill tone="neutral" testId="local-process" title="Runs as a local JVM process; replica counts need Kubernetes.">
+      Local process
+    </Pill>
+  );
+}
+
 /** One line with the numbers that matter, shown while the strip is folded. Null values read "Unavailable". */
 function OpsSummary({ snap, kube }: { snap: OpsSnapshot; kube: boolean }) {
   const q = queue(snap, EVIDENCE_CONSUMER);
