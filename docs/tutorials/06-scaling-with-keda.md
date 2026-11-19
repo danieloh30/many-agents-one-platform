@@ -145,6 +145,10 @@ On a cluster (observed on Red Hat OpenShift):
 
 - The desired replicas step up from 1 toward 6, and new pod pills appear in the topology's evidence
   node as `Pending`, `Running`, then `Ready`.
+- While those pods start, the evidence node's status reads **Scaling up** ("2 of 6 replicas ready" in its details).
+  It is still the real Deployment status: the console reports Scaling up only when every pod that is not ready yet
+  is under five minutes old, has not restarted and is not stuck in `CrashLoopBackOff` or `ImagePullBackOff`.
+  Otherwise fewer ready replicas than desired reads **Degraded**.
 - After the queue drains and the 60 s scale-down stabilization window passes, replicas return to 1.
   The design estimate is one to two minutes after the queue drains. Replace it with your measured
   value.

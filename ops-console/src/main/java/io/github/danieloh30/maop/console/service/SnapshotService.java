@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -211,6 +212,8 @@ public class SnapshotService {
                 }
                 continue;
             }
+            int statusDesired = -1;
+            int statusReady = -1;
             try {
                 Deployment d = k.apps().deployments().inNamespace(namespace).withName(name).get();
                 if (d == null) {
@@ -222,6 +225,8 @@ public class SnapshotService {
                     int desired = d.getSpec().getReplicas() == null ? 0 : d.getSpec().getReplicas();
                     int ready = d.getStatus() == null || d.getStatus().getReadyReplicas() == null ? 0 : d.getStatus().getReadyReplicas();
                     w.put("status", ready >= Math.max(1, desired) ? "OK" : ready > 0 ? "DEGRADED" : "UNAVAILABLE");
+                    statusDesired = desired;
+                    statusReady = ready;
                     w.put("desiredReplicas", desired);
                     w.put("readyReplicas", ready);
                     if (scaled) {
@@ -237,7 +242,12 @@ public class SnapshotService {
                     w.putNull("scaler");
                 }
                 ArrayNode pods = w.putArray("pods");
-                for (Pod p : k.pods().inNamespace(namespace).withLabel("app.kubernetes.io/name", name).list().getItems()) {
+                List<Pod> podList = k.pods().inNamespace(namespace).withLabel("app.kubernetes.io/name", name).list().getItems();
+                if (statusDesired >= 0 && isScalingUp(statusDesired, statusReady, podList, Instant.now())) {
+                    w.put("status", "SCALING");
+                    w.put("detail", "Scaling up: " + statusReady + " of " + statusDesired + " replicas ready");
+                }
+                for (Pod p : podList) {
                     ObjectNode pn = pods.addObject();
                     pn.put("name", p.getMetadata().getName());
                     pn.put("phase", p.getStatus() == null ? null : p.getStatus().getPhase());
@@ -260,6 +270,49 @@ public class SnapshotService {
                 w.putNull("pods");
             }
         }
+    }
+
+    /** Container waiting reasons that mean a pod is failing, not merely starting. */
+    private static final Set<String> FAILING_REASONS = Set.of("CrashLoopBackOff", "ImagePullBackOff", "ErrImagePull",
+            "CreateContainerConfigError", "CreateContainerError", "InvalidImageName", "RunContainerError");
+
+    /**
+     * A planned scale-out, not a fault: some replicas are ready, fewer than desired, and every pod that is not ready
+     * yet is new (created within the last five minutes), has not restarted and is not in a failing waiting state.
+     */
+    static boolean isScalingUp(int desired, int ready, List<Pod> pods, Instant now) {
+        if (ready <= 0 || ready >= desired) {
+            return false;
+        }
+        int starting = 0;
+        for (Pod p : pods) {
+            if (p.getMetadata() != null && p.getMetadata().getDeletionTimestamp() != null) {
+                continue;
+            }
+            var st = p.getStatus();
+            boolean podReady = st != null && st.getConditions() != null && st.getConditions().stream()
+                    .anyMatch(c -> "Ready".equals(c.getType()) && "True".equals(c.getStatus()));
+            if (podReady) {
+                continue;
+            }
+            String created = p.getMetadata() == null ? null : p.getMetadata().getCreationTimestamp();
+            if (created == null || Duration.between(Instant.parse(created), now).toMinutes() >= 5) {
+                return false;
+            }
+            if (st != null && st.getContainerStatuses() != null) {
+                for (var cs : st.getContainerStatuses()) {
+                    if (cs.getRestartCount() != null && cs.getRestartCount() > 0) {
+                        return false;
+                    }
+                    var waiting = cs.getState() == null ? null : cs.getState().getWaiting();
+                    if (waiting != null && waiting.getReason() != null && FAILING_REASONS.contains(waiting.getReason())) {
+                        return false;
+                    }
+                }
+            }
+            starting++;
+        }
+        return starting > 0 && ready + starting >= desired;
     }
 
     @SuppressWarnings("unchecked")

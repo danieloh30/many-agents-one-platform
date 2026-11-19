@@ -19,7 +19,8 @@ export function preflightIssues(snap: OpsSnapshot | undefined, config: ConsoleCo
   const out: PreflightIssue[] = [];
   if (!snap) out.push({ name: 'Operations snapshot', status: 'UNAVAILABLE', detail: 'No snapshot could be read.' });
   for (const q of snap?.queues ?? []) if (q.status !== 'OK') out.push({ name: `Queue ${q.consumer}`, status: q.status });
-  for (const w of snap?.workloads ?? []) if (w.status !== 'OK') out.push({ name: `Workload ${w.name}`, status: w.status });
+  // SCALING is a planned scale-out in progress, not something to fix before presenting.
+  for (const w of snap?.workloads ?? []) if (w.status !== 'OK' && w.status !== 'SCALING') out.push({ name: `Workload ${w.name}`, status: w.status });
   for (const p of snap?.platform ?? [])
     if (p.status !== 'OK') out.push({ name: componentLabel(p.component), status: p.status, detail: p.detail });
   if (!config) out.push({ name: 'Console configuration', status: 'UNAVAILABLE' });

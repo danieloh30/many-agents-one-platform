@@ -9,6 +9,7 @@ import type { OpsSnapshot } from './types';
 export const TYPE_PREFIX = 'io.github.danieloh30.maop.';
 
 const status = z.enum(['OK', 'DEGRADED', 'UNAVAILABLE']).catch('UNAVAILABLE');
+const workloadStatus = z.enum(['OK', 'SCALING', 'DEGRADED', 'UNAVAILABLE']).catch('UNAVAILABLE');
 const nnum = z.number().nullable().catch(null);
 
 export const opsSnapshotSchema = z.looseObject({
@@ -30,7 +31,8 @@ export const opsSnapshotSchema = z.looseObject({
     .array(
       z.looseObject({
         name: z.string(),
-        status,
+        status: workloadStatus,
+        detail: z.string().nullable().optional().catch(null),
         desiredReplicas: nnum,
         readyReplicas: nnum,
         minReplicas: nnum,

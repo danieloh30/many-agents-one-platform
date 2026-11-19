@@ -9,6 +9,7 @@ import {
   CircleX,
   Copy,
   RotateCcw,
+  TrendingUp,
   TriangleExclamationPoint,
   type LucideIcon,
 } from 'lucide-react';
@@ -144,6 +145,12 @@ export function StatusPill({ status, label }: { status: string | null | undefine
       return (
         <Pill tone="ok" icon={CircleCheck}>
           {label ? `${label}: ` : ''}OK
+        </Pill>
+      );
+    case 'SCALING':
+      return (
+        <Pill tone="info" icon={TrendingUp}>
+          {label ? `${label}: ` : ''}Scaling up
         </Pill>
       );
     case 'DEGRADED':

@@ -30,7 +30,7 @@ Timings below are design targets. They become facts only after rehearsal on the 
 1. `./demo.sh reset` (clears runs, audit, queues; leaves the platform).
 2. `./demo.sh verify --quick` → pass. Then `./demo.sh reset` again so the console starts clean (or use **Reset** in the presenter controls).
 3. Open three browser tabs: **Console** (presenter mode `P`, full screen `F`), **Jaeger**, **Grafana →
-   "Queue and scaling"** (auto-refresh 5 s, last 15 min).
+   "Queue and scaling"** (**Agent platform** menu, or `/d/maop-queue-scaling`; auto-refresh 5 s, last 15 min).
 4. In the console, open the presenter preflight panel: every component `OK`; model badge shows
    `LIVE <model>`; stream status `Live`.
 5. If `MAOP_PRESENTER_AUTH=true`, enter the presenter token (print it with `./demo.sh token`; it is never shown in the UI). With the default `false` the controls are already enabled.
@@ -118,10 +118,13 @@ attempted and nothing is denied. Say so, and rerun once; if it repeats, continue
    shows the exact count and the `planSource: PRESET` tag).
 3. Queue depth and queue age rise immediately.
 4. Within the rehearsed scale-out time (design target ≤ 45 s): desired replicas step up; new pod
-   pills appear `Pending` → `Running` → `Ready`; in-flight count rises.
+   pills appear `Pending` → `Running` → `Ready`; in-flight count rises. While new pods start, the evidence-agent
+   node shows **Scaling up**, not Degraded; Degraded is kept for pods that crash or fail to pull their image.
 5. Queue drains; queue age falls to 0.
 6. Show Grafana "Queue and scaling" for the same curve from Prometheus — two independent views
-   of the same real signal.
+   of the same real signal. The console's Grafana button opens *Run overview*; switch with the **Agent platform**
+   menu at its top left (or open `<grafana>/d/maop-queue-scaling`). Point at *Evidence-agent replicas (desired vs
+   ready)* and *NATS exporter: consumer pending (cross-check)*.
 7. Scale-in begins after the stabilization window; it may complete after the demo ends. Say so
    rather than waiting.
 

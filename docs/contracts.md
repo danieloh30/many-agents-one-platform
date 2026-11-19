@@ -217,7 +217,9 @@ Tool catalogue (all data is synthetic; all remediation is simulated):
 }
 ```
 
-Every element has `status: OK | DEGRADED | UNAVAILABLE`. When a source cannot be read, its numeric
+Every element has `status: OK | DEGRADED | UNAVAILABLE`. A workload can also be `SCALING`: some replicas are ready,
+fewer than desired, and every pod not ready yet is new (under 5 minutes old), has not restarted and is not in a failing
+waiting state such as `CrashLoopBackOff` or `ImagePullBackOff`; its `detail` reads "Scaling up: N of M replicas ready". When a source cannot be read, its numeric
 fields are **`null`**, never `0`, and the UI renders "unavailable". `activeTasks` comes from worker
 heartbeat events and is `null` if no heartbeat was seen within 10 s.
 

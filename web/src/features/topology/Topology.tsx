@@ -19,7 +19,7 @@ import { Ban, Brain, Inbox, Lock, Monitor, Server, ShieldCheck, type LucideIcon 
 import { useLiveStore } from '../../api/liveStore';
 import type { LiveEvent } from '../../api/events';
 import { useConfig, useInvocations, useOpsSnapshot } from '../../api/queries';
-import type { ComponentStatus, OpsSnapshot, PodSnapshot } from '../../api/types';
+import type { OpsSnapshot, PodSnapshot, WorkloadStatus } from '../../api/types';
 import { useUi, type TopologyNodeId } from '../../app/uiStore';
 import { fmtNum, workloadOf } from '../../design/format';
 import { cx, StatusPill } from '../../design/ui';
@@ -38,7 +38,7 @@ interface Line {
 type ServiceNodeData = {
   title: string;
   icon: 'service' | 'queue' | 'console' | 'policy' | 'model';
-  status: ComponentStatus | null;
+  status: WorkloadStatus | null;
   showStatus: boolean;
   /** Kubernetes-only facts on the cluster-free local stack: shown as a neutral "Not on local stack". */
   localOnly?: boolean;

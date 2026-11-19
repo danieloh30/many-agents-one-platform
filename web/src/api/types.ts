@@ -8,6 +8,8 @@
 
 export type ModelMode = 'LIVE' | 'DETERMINISTIC';
 export type ComponentStatus = 'OK' | 'DEGRADED' | 'UNAVAILABLE';
+/** Workloads add SCALING: a planned scale-out whose new pods are still starting (contracts §2.5). */
+export type WorkloadStatus = ComponentStatus | 'SCALING';
 
 export type RunState =
   | 'SUBMITTED'
@@ -327,7 +329,8 @@ export interface PodSnapshot {
 
 export interface WorkloadSnapshot {
   name: string;
-  status: ComponentStatus;
+  status: WorkloadStatus;
+  detail?: string | null;
   desiredReplicas: number | null;
   readyReplicas: number | null;
   minReplicas: number | null;
