@@ -32,7 +32,7 @@
     <quarkus.platform.version>3.40.1.2</quarkus.platform.version>
 
     <!-- Independently versioned libraries (each owns its property; never reuse the platform property). -->
-    <jnats.version>2.26.4</jnats.version>
+    <jnats.version>2.27.0</jnats.version>
     <!-- BouncyCastle LTS line: bcprov-lts8on comes with jnats; bcpkix-lts8on is the test PKI helper. -->
     <bouncycastle-lts.version>2.73.13</bouncycastle-lts.version>
 
