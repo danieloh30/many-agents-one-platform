@@ -132,7 +132,7 @@ export function LocalProcess() {
 }
 
 /** One line with the numbers that matter, shown while the strip is folded. Null values read "Unavailable". */
-function OpsSummary({ snap, kube }: { snap: OpsSnapshot; kube: boolean }) {
+function OpsSummary({ snap, kube, slim = false }: { snap: OpsSnapshot; kube: boolean; slim?: boolean }) {
   const q = queue(snap, EVIDENCE_CONSUMER);
   const w = workload(snap, EVIDENCE_WORKLOAD);
   const ok = snap.platform.filter((p) => p.status === 'OK').length;
@@ -145,7 +145,7 @@ function OpsSummary({ snap, kube }: { snap: OpsSnapshot; kube: boolean }) {
         </dt>
         <dd className="tabular">
           {n(q?.pending)} pending · {n(q?.inFlight)} in flight
-          {q && q.oldestMessageAgeSeconds !== null ? ` · oldest ${fmtSeconds(q.oldestMessageAgeSeconds)}` : ''}
+          {!slim && q && q.oldestMessageAgeSeconds !== null ? ` · oldest ${fmtSeconds(q.oldestMessageAgeSeconds)}` : ''}
         </dd>
       </div>
       <div className="flex items-center gap-1.5">
@@ -192,6 +192,8 @@ export function OpsStrip() {
   const kube = useKubernetesEnabled();
   const expanded = useUi((s) => s.opsExpanded);
   const setExpanded = useUi((s) => s.setOpsExpanded);
+  // Presenter mode keeps the folded strip to one row, so the stage above it keeps its height.
+  const slim = useUi((s) => s.presenter) && !expanded;
   // A burst is the moment the tiles matter: open them when one starts (the viewer can fold them again).
   const burstActive = useBurstCurrent().data?.active === true;
   const wasActive = useRef(burstActive);
@@ -201,18 +203,18 @@ export function OpsStrip() {
   }, [burstActive, setExpanded]);
 
   return (
-    <section aria-labelledby="ops-h" className="@container shrink-0 border-t border-border bg-surface px-4 py-2.5">
+    <section aria-labelledby="ops-h" className={cx('@container shrink-0 border-t border-border bg-surface px-4', slim ? 'py-1.5' : 'py-2.5')}>
       <div className={cx('flex flex-wrap items-center gap-x-4 gap-y-2', expanded && 'mb-3')}>
-        <h2 id="ops-h" className="section-label">
+        <h2 id="ops-h" className={slim ? 'sr-only' : 'section-label'}>
           Operations
         </h2>
-        {!expanded && snap ? <OpsSummary snap={snap} kube={kube} /> : null}
+        {!expanded && snap ? <OpsSummary snap={snap} kube={kube} slim={slim} /> : null}
         {snap ? (
           stale ? (
             <Pill tone="warn" testId="snapshot-age">
               Stale {Math.round(age ?? 0)} s
             </Pill>
-          ) : (
+          ) : slim ? null : (
             <span className="text-sm text-text-muted tabular" data-testid="snapshot-age">
               Observed {age === null ? 'Unavailable' : `${Math.round(age)} s ago`}
             </span>
@@ -220,8 +222,8 @@ export function OpsStrip() {
         ) : null}
         <span className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-2">
           <BurstStopButton />
-          <GrafanaLink />
-          <PrometheusLink />
+          {slim ? null : <GrafanaLink />}
+          {slim ? null : <PrometheusLink />}
           <Button
             size="sm"
             variant="ghost"
@@ -231,7 +233,7 @@ export function OpsStrip() {
             onClick={() => setExpanded(!expanded)}
             className={cx('[&>svg]:ui-transition', expanded && '[&>svg]:rotate-180')}
           >
-            {expanded ? 'Hide details' : 'Show details'}
+            {slim ? <span className="sr-only">Show details</span> : expanded ? 'Hide details' : 'Show details'}
           </Button>
         </span>
       </div>

@@ -78,6 +78,12 @@ html[data-presenter='true'] {
   font-size: 125%;
 }
 
+/* Topology nodes keep their designed size in presenter mode: the graph is scaled by fitting it to the stage instead,
+   so larger root type would only wrap titles and make nodes collide. 0.8 undoes the 125% above. */
+html[data-presenter='true'] .topology-node {
+  zoom: 0.8;
+}
+
 body {
   margin: 0;
   background: var(--bg);

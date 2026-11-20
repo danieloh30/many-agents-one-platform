@@ -19,7 +19,8 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: process.env.MAOP_API_TARGET ?? 'http://localhost:8080',
-        changeOrigin: false,
+        // A remote target (for example a cluster route) is matched by Host header, so rewrite it then.
+        changeOrigin: !!process.env.MAOP_API_TARGET,
         // Server-Sent Events: keep the upstream response streaming (no buffering, no timeout).
         timeout: 0,
         proxyTimeout: 0,

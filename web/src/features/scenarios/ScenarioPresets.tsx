@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
+import { useParams } from 'react-router';
 import { Activity, Ban, ChevronRight, Layers, Play, RotateCcw, Square, type LucideIcon } from 'lucide-react';
-import { useBurstCurrent, useConfig, useScenarios } from '../../api/queries';
+import { useBurstCurrent, useConfig, useRun, useScenarios } from '../../api/queries';
 import type { ScenarioPreset } from '../../api/types';
 import { fmtNum, fmtTime } from '../../design/format';
 import { useUi } from '../../app/uiStore';
@@ -35,6 +37,13 @@ export function ScenarioPresets() {
   const actions = useScenarioActions();
   const openScenario = useUi((s) => s.openScenario);
   const setOpenScenario = useUi((s) => s.setOpenScenario);
+  // Selecting a run unfolds that run's scenario, so the description beside it matches what is on screen.
+  const { runId } = useParams();
+  const scenario = useRun(runId).data?.scenario;
+  useEffect(() => {
+    if (scenario && presets.some((p) => p.id === scenario)) setOpenScenario(scenario);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the selected run (or its scenario) changes
+  }, [runId, scenario]);
 
   return (
     <section aria-labelledby="scenarios-h" className="space-y-2">

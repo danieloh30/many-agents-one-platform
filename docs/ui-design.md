@@ -63,12 +63,25 @@ is 1920×1080 and 1280×720 projector output.
 A fixed-layout graph (React Flow, positions hand-authored for legibility — no auto-layout jitter):
 
 ```
- Console ──▶ Triage agent ──▶ [ work queue: evidence ] ──▶ Evidence agents ×N ──┐
-                 │  ▲                                                            ├─▶ Tool service ─▶ OPA
-                 │  └──────────── results (events) ◀─────────────────────────────┤     (mTLS, SVID)
-                 └─▶ [ work queue: recommendation ] ──▶ Recommendation agent ────┘
-                          Model endpoint (external) ◀── agents
+                      ┌─▶ [ queue: evidence ] ───────▶ Evidence agents ×N ──┐
+ Console ─▶ Triage ───┼──────────────────────────────▶ Model endpoint       ├─▶ Tool service (mTLS, SVID)
+              ▲       └─▶ [ queue: recommendation ] ─▶ Recommendation agent ┘         │
+              └─ results (events), arcs above and below                               ▼
+                                                                                     OPA
 ```
+
+The layout is compact on purpose (five columns, about 1220 × 480 units): the model sits between the two agents and
+OPA under the tool service, so the graph fills the stage and its text stays readable on a projector. Node titles are
+18 px and facts 16 px at zoom 1; a single fact (for example `1 / 1 ready`) sits beside the status pill. The graph is
+re-fitted when the stage or a node changes size. Node geometry is the same in presenter mode (a CSS zoom on the node
+undoes the larger root type), because the fit already scales the graph.
+
+- **Stage caption**: while a selected run is in flight, one line above the graph says what is happening in plain
+  words, from the run's real state ("Evidence agents are calling protected tools: 2 of 3 tasks done"). A policy
+  denial replaces it with a red line naming the reason and a link to the *Policy* tab. Finished runs have none, and
+  a run waiting for approval relies on the decision bar.
+- **Dimming**: while a selected run is in flight, nodes that take no part in its current state are dimmed, so the
+  active hop stands out. Both ends of a denied call always stay lit.
 
 - **Nodes**: services (with ready/desired replicas from the ops snapshot), queues (pending /
   in-flight), tool service with OPA attached, model endpoint. Evidence agents render as one node
@@ -96,12 +109,16 @@ A fixed-layout graph (React Flow, positions hand-authored for legibility — no 
   visible as a second segment labelled `delivery 2` and a "Redelivered" tag. Under a redelivered lane, each tool
   call the tool audit recorded more than once is listed with its request and execution counts ("requested 2
   times, executed once") and a link to that invocation in *Tool audit*. Source: `GET /audit/invocations?runId=`.
-- **Evidence cards**: topic, finding, confidence, and the facts list. Each fact links to the tool
-  invocation that produced it (opens the audit tab). Badge: `SYNTHETIC`.
+- **Order**: header, state, then the **recommendation** (once there is one), then tasks and evidence. The proposal
+  and its Approve / Reject buttons are therefore never below a screen of detail.
+- **Evidence cards**: on the timeline each card is folded to one line (topic, fact count, confidence and the start
+  of the finding) and opens on click or when a citation chip points at it. Open, it shows the finding and the facts
+  list; each fact links to the tool invocation that produced it (opens the audit tab). Badge: `SYNTHETIC`. The
+  inspector's *Evidence* tab shows the same cards open.
 - **Recommendation card**: summary and concise explanation with key terms emphasised (the proposed action and its
   target, version numbers, and measured values such as `7.1%` or `300 ms`; weight and tint, rendered as text only),
-  proposed action as a structured table
-  (type, target, parameters, action digest), citations as chips linking to evidence cards, risks.
+  the proposed action on one line (type, target, parameters, "simulated only") with the full table (including the
+  action digest) under *Action details*, citations as chips linking to evidence cards, risks.
   On a run with `remediationMode: ATTEMPT_UNAPPROVED` the card adds the denied execution attempt and a short note,
   "Why this run differs from a normal run": same incident, data and proposal, but the agent tried to act before
   approval; it invites **Approve** to show the same action allowed with a person's sign-off.
@@ -173,10 +190,12 @@ Each tile shows `observedAt` age; if older than 10 s it greys out and reads "sta
   observations that tick only when the corresponding real event arrives
   (e.g. "✓ Tool call denied — decision `…`"), and **Focus** buttons that pan/zoom the stage to the
   relevant element. Nothing in the guide simulates an outcome.
+- The guide follows the run on screen: selecting a run switches the guide to that run's scenario.
 - Presenter mode raises the type scale (§4.2), hides the left rail, and enlarges the stage. Empty-state hints point
-  at the guide's **Run** buttons there, since Recent runs is hidden; `I` still hides the inspector.
+  at the guide's **Run** buttons there, since Recent runs is hidden; `I` still hides the inspector. The folded
+  operations strip shrinks to one row (queue, replicas, platform).
 - **Reset** (delete runs, audit, simulated actions and queued messages, after a confirm dialog) sits in the top
-  bar outside presenter mode and in the guide bar in presenter mode; it is refused while a burst is active.
+  bar in both modes, with **Preflight** beside it in presenter mode; it is refused while a burst is active.
 - `1`–`4` trigger presets (after a confirm chord `Shift`), `T` toggles topology/timeline,
   `[` / `]` move between runs. All shortcuts are listed in the help dialog and avoid browser defaults.
 - A "preflight" panel (presenter only) runs `GET /api/v1/ops/snapshot` + `/config` and lists any

@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../../design/ConfirmDialog';
 import { fmtPct, fmtTime, humanize } from '../../design/format';
 import { Card, GatedButton, KeyValue, MonoId, Pill } from '../../design/ui';
 import { DECISION_ANCHOR } from './DecisionBar';
+import { openEvidence } from './EvidenceCards';
 import { ModelBadge } from './ModelBadge';
 import { Highlighted } from './highlight';
 
@@ -42,7 +43,15 @@ export function RecommendationCard({ run }: { run: Run }) {
         <Highlighted text={rec.explanation} action={a} />
       </p>
 
-      <h4 className="mt-3 text-sm font-semibold text-text-muted">Proposed action</h4>
+      <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm" data-testid="action-line">
+        <span className="font-semibold text-text-muted">Proposed action</span>
+        <span className="rounded border border-border bg-surface-raised px-1.5 font-mono">{a.actionType}</span>
+        <span className="font-mono">{a.target}</span>
+        {params.length > 0 ? <span className="font-mono">{params.map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(', ')}</span> : null}
+        <span className="text-text-muted">{a.sideEffect ? '· simulated only' : '· no side effect'}</span>
+      </p>
+      <details className="mt-1 text-sm">
+        <summary className="cursor-pointer text-text-muted">Action details</summary>
       <table className="mt-1 w-full text-sm">
         <caption className="sr-only">Proposed action</caption>
         <tbody className="[&_th]:w-36 [&_th]:py-0.5 [&_th]:pr-2 [&_th]:text-left [&_th]:font-normal [&_th]:text-text-muted [&_td]:py-0.5">
@@ -73,6 +82,8 @@ export function RecommendationCard({ run }: { run: Run }) {
         </tbody>
       </table>
 
+      </details>
+
       {rec.citations.length > 0 ? (
         <div className="mt-3">
           <h4 className="text-sm font-semibold text-text-muted">Citations</h4>
@@ -83,6 +94,7 @@ export function RecommendationCard({ run }: { run: Run }) {
                 <li key={c}>
                   <a
                     href={`#evidence-${c}`}
+                    onClick={() => openEvidence(c)}
                     className="inline-flex rounded-full border border-primary/50 tint-primary px-2 py-0.5 text-sm text-primary hover:underline"
                   >
                     {ev ? humanize(ev.topic) : c.slice(0, 8)}

@@ -1,7 +1,7 @@
 import { Ban, Database, FlaskConical, Lock, RotateCcw, ShieldCheck, TriangleExclamationPoint } from 'lucide-react';
 import { useConfig } from '../../api/queries';
 import type { ToolInvocation } from '../../api/types';
-import { fmtNum, fmtTime, trustDomainOf } from '../../design/format';
+import { fmtNum, fmtTime, trustDomainOf, workloadOf } from '../../design/format';
 import { cx, DecisionPill, JsonViewer, KeyValue, MonoId, Pill } from '../../design/ui';
 
 export function EffectText({ inv }: { inv: ToolInvocation }) {
@@ -29,10 +29,50 @@ export function EffectText({ inv }: { inv: ToolInvocation }) {
   return <span className="text-text-muted">No simulated action recorded</span>;
 }
 
-export function CallerIdentity({ inv }: { inv: ToolInvocation }) {
+/**
+ * Who made the call. `compact` (used in lists) leads with the workload name and how it was verified, and keeps the
+ * full SPIFFE ID and certificate facts one click away, so a list of calls stays scannable.
+ */
+export function CallerIdentity({ inv, compact = false }: { inv: ToolInvocation; compact?: boolean }) {
   const config = useConfig();
   const mode = config.data?.identity.mode;
   const trustDomain = trustDomainOf(inv.caller.spiffeId) ?? config.data?.identity.trustDomain ?? null;
+  const verified =
+    mode === 'DEV_STATIC' ? (
+      <Pill tone="warn" icon={TriangleExclamationPoint}>
+        Development static identity
+      </Pill>
+    ) : (
+      <Pill tone="purple" icon={Lock}>
+        Verified by mTLS
+      </Pill>
+    );
+  if (compact) {
+    return (
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-text-muted">Caller</span>
+          <span className="font-mono font-semibold text-purple">{workloadOf(inv.caller.spiffeId) ?? 'Unknown'}</span>
+          {verified}
+        </div>
+        <details className="text-sm">
+          <summary className="cursor-pointer text-text-muted">Identity details</summary>
+          <div className="mt-1 space-y-1">
+            <span className="block font-mono text-sm break-all text-purple" data-testid="caller-spiffe-id">
+              {inv.caller.spiffeId}
+            </span>
+            <KeyValue
+              items={[
+                ['Trust domain', trustDomain ?? 'Unavailable'],
+                ['SVID serial', inv.caller.serial ? <MonoId value={inv.caller.serial} label="SVID serial" /> : 'Unavailable'],
+                ['SVID expiry', inv.caller.notAfter ? fmtTime(inv.caller.notAfter) : 'Unavailable'],
+              ]}
+            />
+          </div>
+        </details>
+      </div>
+    );
+  }
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap items-center gap-1.5">

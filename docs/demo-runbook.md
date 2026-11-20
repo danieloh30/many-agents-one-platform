@@ -165,9 +165,15 @@ Only when the slot allows it (for example a longer session).
 | `L` / `I` | Hide / show the left rail / the inspector |
 | `?` | Shortcut help |
 
-The guide bar shows one scenario at a time: click a step chip (or press `Shift+1…4`, which also runs it) to switch,
-and fold the guide with `G` when you want the whole stage for the topology. Its checklist ticks only when the real
-event arrives; an unticked item means it has not happened yet.
+The guide bar shows one scenario at a time: click a step chip (or press `Shift+1…4`, which also runs it) to switch;
+it also follows the run you select. Its checklist ticks only when the real event arrives; an unticked item means it
+has not happened yet. **Preflight** and **Reset** are in the top bar.
+
+For the largest topology, press `G` (fold the guide) and `I` (hide the inspector) once a scenario is running: the
+graph then fills the stage, with node titles at about 20 px on a 1440 × 900 screen. With the guide and the inspector
+both open, the same graph is about 13 px. While a run is in flight, a caption above the graph says what is happening
+and idle nodes are dimmed; a denial shows in red with its reason. Bring the inspector back with `I` for the
+**Policy** and **Tool audit** tabs.
 
 ## 5. Reset between rehearsals
 

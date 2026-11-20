@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, Circle, CircleCheck, ClipboardCheck, Crosshair, Layers, Play } from 'lucide-react';
+import { useEffect } from 'react';
+import { useParams } from 'react-router';
+import { ChevronDown, ChevronRight, Circle, CircleCheck, Crosshair, Layers, Play } from 'lucide-react';
 import { useLiveStore } from '../../api/liveStore';
 import { useBurstCurrent, useConfig, useRun } from '../../api/queries';
 import { useUi } from '../../app/uiStore';
@@ -8,8 +9,6 @@ import { Button, cx, GatedButton, Pill } from '../../design/ui';
 import { BurstStatusLine, BurstStopButton, usePresets } from '../scenarios/ScenarioPresets';
 import { useScenarioActions } from '../scenarios/useScenarioActions';
 import { checklist, GUIDE_STEPS, type GuideStep } from './checklist';
-import { PreflightPanel } from './PreflightPanel';
-import { ResetControl } from './ResetControl';
 
 /** Checklist items for one guide step, from real events and REST state only. */
 function useStepItems(step: GuideStep) {
@@ -127,12 +126,18 @@ function StepCard({ step }: { step: GuideStep }) {
 }
 
 export function PresenterBar() {
-  const [preflight, setPreflight] = useState(false);
   const folded = useUi((s) => s.guideFolded);
   const toggleGuide = useUi((s) => s.toggleGuide);
   const active = useUi((s) => s.guideStep);
   const setActive = useUi((s) => s.setGuideStep);
   const step = GUIDE_STEPS.find((g) => g.id === active) ?? GUIDE_STEPS[0]!;
+  // The guide follows the run on screen: selecting a run shows that run's scenario step.
+  const { runId } = useParams();
+  const scenario = useRun(runId).data?.scenario;
+  useEffect(() => {
+    const match = GUIDE_STEPS.find((g) => g.id === scenario);
+    if (match) setActive(match.id);
+  }, [runId, scenario, setActive]);
   return (
     <section aria-labelledby="guide-h" className="@container shrink-0 border-b border-border bg-bg p-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -154,18 +159,11 @@ export function PresenterBar() {
             <StepChip key={g.id} step={g} active={g.id === step.id} onSelect={() => setActive(g.id)} />
           ))}
         </div>
-        <span className="ml-auto flex gap-1.5">
-          <Button size="sm" icon={ClipboardCheck} onClick={() => setPreflight(true)}>
-            Preflight
-          </Button>
-          <ResetControl />
-        </span>
       </div>
       <div id="guide-steps" hidden={folded} className="mt-2">
         <StepCard step={step} />
         <p className="mt-1 hidden text-xs text-text-muted @3xl:block">Checklist items tick only when the matching real event arrives.</p>
       </div>
-      <PreflightPanel open={preflight} onOpenChange={setPreflight} />
     </section>
   );
 }

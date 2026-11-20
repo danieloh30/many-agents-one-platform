@@ -147,7 +147,7 @@ export function Shell() {
   const noRuns = runs.data?.items.length === 0 && !runId;
 
   const stage = (
-    <div className="flex min-h-[26rem] flex-1 flex-col">
+    <div className="flex min-h-[416px] flex-1 flex-col">
       <div role="tablist" aria-label="Stage view (T)" className="flex items-end gap-1 border-b border-border px-3 pt-2">
         {isLg && !presenter ? (
           <Button

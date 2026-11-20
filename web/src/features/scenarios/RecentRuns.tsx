@@ -56,7 +56,7 @@ function RunLink({ run, selected, nested }: { run: RunSummary; selected: boolean
         ) : null}
       </span>
       <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-text-muted">
-        <RunStatePill state={run.state} />
+        <RunStatePill state={run.state} outcome={run.outcome} />
         {custom && !nested ? <span>Custom incident</span> : null}
         <span className="tabular">{fmtTime(run.createdAt)}</span>
       </span>

@@ -48,7 +48,8 @@ export function StateRail({ run, timeline }: { run: Run; timeline: RunTimelineEn
   const now = useNow(1000);
   const steps = buildSteps(run, timeline, now);
   return (
-    <ol aria-label="Run state" className="flex flex-wrap gap-1">
+    <div className="@container">
+    <ol aria-label="Run state" className="grid grid-cols-4 gap-1 @4xl:grid-cols-7">
       {steps.map((s) => {
         const m = stateMeta(s.state);
         const Icon = s.status === 'done' ? Check : m.icon;
@@ -58,18 +59,18 @@ export function StateRail({ run, timeline }: { run: Run; timeline: RunTimelineEn
             key={s.state}
             aria-current={s.status === 'current' ? 'step' : undefined}
             className={cx(
-              'min-w-[7.5rem] flex-1 rounded-md border px-2 py-1.5 text-sm',
+              'min-w-0 rounded-md border px-2 py-1.5 text-sm',
               s.status === 'current' && 'border-primary tint-primary',
               s.status === 'done' && !alt && 'border-teal/50',
               s.status === 'done' && alt && 'border-danger tint-danger',
               (s.status === 'todo' || s.status === 'skipped') && 'border-border opacity-70',
             )}
           >
-            <span className="flex items-center gap-1 font-semibold">
-              <Icon aria-hidden size={14} className={s.status === 'done' && !alt ? 'text-teal' : undefined} />
-              {m.label}
+            <span className="flex items-start gap-1 font-semibold leading-snug">
+              <Icon aria-hidden size={14} className={cx('mt-0.5 shrink-0', s.status === 'done' && !alt && 'text-teal')} />
+              <span className="min-w-0">{m.label}</span>
             </span>
-            <span className="block text-text-muted tabular">
+            <span className="block text-xs text-text-muted tabular">
               {s.at !== null ? fmtTime(new Date(s.at).toISOString()) : s.status === 'skipped' ? 'Skipped' : 'Not reached'}
               {s.durationMs !== null ? ` · ${fmtDuration(s.durationMs)}` : ''}
             </span>
@@ -80,5 +81,6 @@ export function StateRail({ run, timeline }: { run: Run; timeline: RunTimelineEn
         );
       })}
     </ol>
+    </div>
   );
 }

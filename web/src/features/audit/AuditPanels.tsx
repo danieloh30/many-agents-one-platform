@@ -48,7 +48,7 @@ export function PolicyIdentityPanel({ runId }: { runId: string }) {
             </p>
           ) : null}
           <div className="mt-1.5">
-            <CallerIdentity inv={inv} />
+            <CallerIdentity inv={inv} compact={inv.status !== 'DENIED'} />
           </div>
           <p className="mt-1.5">
             <EffectText inv={inv} />

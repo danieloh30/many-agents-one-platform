@@ -2,17 +2,33 @@ import type { LiveEvent } from '../../api/events';
 import type { TopologyNodeId } from '../../app/uiStore';
 import { fmtDuration, fmtNum, humanize, workloadOf } from '../../design/format';
 
-/** Hand-authored positions (no auto-layout) for legibility on 1920×1080 and 1280×720. */
+/**
+ * Hand-authored positions (no auto-layout). The graph is kept compact (about 1220 × 480) so it stays readable on a
+ * projector: five columns, with the model between the two agents and policy under the tool service.
+ */
 export const NODE_POSITIONS: Record<TopologyNodeId, { x: number; y: number }> = {
-  console: { x: 0, y: 210 },
-  triage: { x: 230, y: 210 },
-  'evidence-queue': { x: 490, y: 60 },
-  'evidence-agents': { x: 750, y: 40 },
-  'recommendation-queue': { x: 490, y: 360 },
-  recommendation: { x: 750, y: 360 },
-  'tool-service': { x: 1030, y: 210 },
-  opa: { x: 1270, y: 210 },
-  model: { x: 490, y: 560 },
+  console: { x: 0, y: 190 },
+  triage: { x: 200, y: 190 },
+  'evidence-queue': { x: 455, y: 40 },
+  'evidence-agents': { x: 710, y: 0 },
+  'recommendation-queue': { x: 455, y: 310 },
+  recommendation: { x: 710, y: 380 },
+  'tool-service': { x: 1010, y: 100 },
+  opa: { x: 1010, y: 290 },
+  model: { x: 710, y: 190 },
+};
+
+/** Nodes drawn narrower than the default 210 px. */
+export const NARROW_NODES: ReadonlySet<TopologyNodeId> = new Set(['console']);
+
+/** Nodes that take part in each non-terminal run state; the rest are dimmed while a run is in that state. */
+export const ACTIVE_NODES: Record<string, TopologyNodeId[]> = {
+  SUBMITTED: ['console', 'triage'],
+  TRIAGING: ['console', 'triage', 'model'],
+  GATHERING_EVIDENCE: ['triage', 'evidence-queue', 'evidence-agents', 'tool-service', 'opa', 'model'],
+  RECOMMENDING: ['triage', 'recommendation-queue', 'recommendation', 'tool-service', 'opa', 'model'],
+  AWAITING_APPROVAL: ['console', 'triage'],
+  EXECUTING_ACTION: ['triage', 'recommendation-queue', 'recommendation', 'tool-service', 'opa'],
 };
 
 export const NODE_LABELS: Record<TopologyNodeId, string> = {
@@ -48,6 +64,9 @@ export interface EdgeDef {
   target: TopologyNodeId;
   kind: EdgeKind;
   label: string;
+  /** Handles other than the default right (source) and left (target): b / ts = bottom / top source, t / bt = top / bottom target. */
+  sourceHandle?: 'b' | 'ts';
+  targetHandle?: 't' | 'bt';
 }
 
 export const EDGES: EdgeDef[] = [
@@ -55,15 +74,15 @@ export const EDGES: EdgeDef[] = [
   { id: 'triage-evq', source: 'triage', target: 'evidence-queue', kind: 'async', label: 'Evidence command' },
   { id: 'evq-workers', source: 'evidence-queue', target: 'evidence-agents', kind: 'async', label: 'Task delivered' },
   { id: 'workers-tool', source: 'evidence-agents', target: 'tool-service', kind: 'mtls', label: 'Tool call (mTLS)' },
-  { id: 'tool-opa', source: 'tool-service', target: 'opa', kind: 'policy', label: 'Policy query' },
+  { id: 'tool-opa', source: 'tool-service', target: 'opa', kind: 'policy', label: 'Policy query', sourceHandle: 'b', targetHandle: 't' },
   { id: 'triage-recq', source: 'triage', target: 'recommendation-queue', kind: 'async', label: 'Recommendation command' },
   { id: 'recq-rec', source: 'recommendation-queue', target: 'recommendation', kind: 'async', label: 'Task delivered' },
   { id: 'rec-tool', source: 'recommendation', target: 'tool-service', kind: 'mtls', label: 'Tool call (mTLS)' },
-  { id: 'workers-triage', source: 'evidence-agents', target: 'triage', kind: 'result', label: 'Results (events)' },
-  { id: 'rec-triage', source: 'recommendation', target: 'triage', kind: 'result', label: 'Results (events)' },
+  { id: 'workers-triage', source: 'evidence-agents', target: 'triage', kind: 'result', label: 'Results (events)', sourceHandle: 'ts', targetHandle: 't' },
+  { id: 'rec-triage', source: 'recommendation', target: 'triage', kind: 'result', label: 'Results (events)', sourceHandle: 'b', targetHandle: 'bt' },
   { id: 'triage-model', source: 'triage', target: 'model', kind: 'model', label: 'Model call' },
-  { id: 'workers-model', source: 'evidence-agents', target: 'model', kind: 'model', label: 'Model call' },
-  { id: 'rec-model', source: 'recommendation', target: 'model', kind: 'model', label: 'Model call' },
+  { id: 'workers-model', source: 'evidence-agents', target: 'model', kind: 'model', label: 'Model call', sourceHandle: 'b', targetHandle: 't' },
+  { id: 'rec-model', source: 'recommendation', target: 'model', kind: 'model', label: 'Model call', sourceHandle: 'ts', targetHandle: 'bt' },
 ];
 
 function serviceOf(e: LiveEvent): string | null {

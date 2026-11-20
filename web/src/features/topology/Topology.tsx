@@ -18,21 +18,35 @@ import {
 import { Ban, Brain, Inbox, Lock, Monitor, Server, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { useLiveStore } from '../../api/liveStore';
 import type { LiveEvent } from '../../api/events';
-import { useConfig, useInvocations, useOpsSnapshot } from '../../api/queries';
-import type { OpsSnapshot, PodSnapshot, WorkloadStatus } from '../../api/types';
+import { useConfig, useInvocations, useOpsSnapshot, useRun } from '../../api/queries';
+import type { OpsSnapshot, PodSnapshot, Run, WorkloadStatus } from '../../api/types';
 import { useUi, type TopologyNodeId } from '../../app/uiStore';
-import { fmtNum, workloadOf } from '../../design/format';
+import { fmtNum, humanize, workloadOf } from '../../design/format';
+import { isTerminal, stateMeta } from '../../design/runState';
 import { cx, StatusPill } from '../../design/ui';
 import { LocalProcess } from '../ops/OpsStrip';
 import { modelComponent, platform, podLabel, queue, workload } from '../ops/selectors';
 import { ActivityList } from './ActivityList';
-import { EDGES, edgesForEvent, eventMatchesRun, NODE_LABELS, NODE_ORDER, NODE_POSITIONS, nodesForEvent, type EdgeKind } from './graph';
+import {
+  ACTIVE_NODES,
+  EDGES,
+  edgesForEvent,
+  eventMatchesRun,
+  NARROW_NODES,
+  NODE_LABELS,
+  NODE_ORDER,
+  NODE_POSITIONS,
+  nodesForEvent,
+  type EdgeKind,
+} from './graph';
 
 // ---- node data -----------------------------------------------------------------------------
 
 interface Line {
   label: string;
   value: string | null;
+  /** Shown after the value when the line sits beside the status pill, e.g. "1 / 1 ready". */
+  suffix?: string;
 }
 
 type ServiceNodeData = {
@@ -47,6 +61,9 @@ type ServiceNodeData = {
   showPods: boolean;
   pulse: number;
   selected: boolean;
+  /** Not part of what the selected run is doing right now. */
+  dim: boolean;
+  narrow: boolean;
 };
 
 type ServiceNode = Node<ServiceNodeData, 'service'>;
@@ -77,12 +94,18 @@ function podTone(label: string) {
 
 function ServiceNodeView({ data }: NodeProps<ServiceNode>) {
   const Icon = ICONS[data.icon];
+  // A single fact sits beside the status pill, so the node stays short and its text large.
+  const single = data.showStatus && data.lines.length === 1 ? data.lines[0]! : null;
   return (
     <div
       className={cx(
-        'relative w-[210px] rounded-[10px] border bg-surface px-3 py-2 text-left text-text shadow-sm',
+        'ui-transition relative rounded-[10px] border bg-surface px-3 py-2 text-left text-text shadow-sm',
+        // rem widths plus the presenter-mode zoom in index.css keep node geometry identical in both modes.
+        'topology-node', data.narrow ? 'w-[9.375rem]' : 'w-[13.125rem]',
         data.selected ? 'border-primary ring-2 ring-primary/40' : 'border-border',
+        data.dim && 'opacity-45',
       )}
+      data-dim={data.dim || undefined}
     >
       {data.pulse > 0 ? (
         <span key={data.pulse} aria-hidden className="node-pulse pointer-events-none absolute inset-0 rounded-[10px] ring-4 ring-accent" />
@@ -91,17 +114,26 @@ function ServiceNodeView({ data }: NodeProps<ServiceNode>) {
       <Handle type="source" position={Position.Right} className="!h-1.5 !w-1.5 !border-0 !bg-border" />
       <Handle id="b" type="source" position={Position.Bottom} className="!h-1.5 !w-1.5 !border-0 !bg-border" />
       <Handle id="t" type="target" position={Position.Top} className="!h-1.5 !w-1.5 !border-0 !bg-border" />
+      <Handle id="ts" type="source" position={Position.Top} className="!h-1.5 !w-1.5 !border-0 !bg-border" />
+      <Handle id="bt" type="target" position={Position.Bottom} className="!h-1.5 !w-1.5 !border-0 !bg-border" />
       <div className="flex items-center gap-1.5">
-        <Icon aria-hidden size={16} className={data.icon === 'model' ? 'text-purple' : 'text-primary'} />
-        <span className="text-sm font-semibold leading-tight">{data.title}</span>
+        <Icon aria-hidden size={18} className={cx('shrink-0', data.icon === 'model' ? 'text-purple' : 'text-primary')} />
+        <span className="text-lg font-semibold leading-tight">{data.title}</span>
       </div>
       {data.showStatus ? (
-        <div className="mt-1">
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           {data.localOnly ? <LocalProcess /> : <StatusPill status={data.status} />}
+          {single ? (
+            <span className={cx('tabular text-base', single.value === null && 'italic text-text-muted')} title={single.label}>
+              <span className="sr-only">{single.label}: </span>
+              {single.value ?? 'Unavailable'}
+              {single.value !== null && single.suffix ? <span className="text-text-muted"> {single.suffix}</span> : null}
+            </span>
+          ) : null}
         </div>
       ) : null}
-      {data.lines.length > 0 ? (
-        <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 text-sm">
+      {!single && data.lines.length > 0 ? (
+        <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 text-base leading-snug">
           {data.lines.map((l) => (
             <div key={l.label} className="contents">
               <dt className="text-text-muted">{l.label}</dt>
@@ -124,7 +156,7 @@ function ServiceNodeView({ data }: NodeProps<ServiceNode>) {
                   <li
                     key={p.name}
                     title={`${p.name} — ${label}${p.activeTasks !== null ? `, ${p.activeTasks} active tasks` : ''}`}
-                    className={cx('rounded-full border px-1.5 text-sm leading-5', podTone(label))}
+                    className={cx('rounded-full border px-1.5 text-sm font-medium leading-5', podTone(label))}
                   >
                     {label}
                   </li>
@@ -228,7 +260,7 @@ function nodeData(id: TopologyNodeId, snap: OpsSnapshot | undefined, modelName: 
     return {
       status: w?.status ?? null,
       showStatus: true,
-      lines: [{ label: 'Ready / desired', value: w ? `${fmtNum(w.readyReplicas)} / ${fmtNum(w.desiredReplicas)}` : null }],
+      lines: [{ label: 'Ready / desired', value: w ? `${fmtNum(w.readyReplicas)} / ${fmtNum(w.desiredReplicas)}` : null, suffix: 'ready' }],
     };
   };
   const q = (consumer: string): Pick<ServiceNodeData, 'status' | 'showStatus' | 'lines'> => {
@@ -285,17 +317,25 @@ function FocusController() {
   return null;
 }
 
-/** Re-fit when the canvas changes size (window resize, operations strip folded or opened). */
+/**
+ * Re-fit when the canvas changes size (window resize, panels or the operations strip folded or opened) and when the
+ * nodes change size (first measurement, presenter mode's larger type, pods appearing during a scale-out).
+ */
 function ResizeController() {
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
+  const measured = useStore((s) => {
+    let sum = 0;
+    for (const n of s.nodeLookup.values()) sum += (n.measured.width ?? 0) + (n.measured.height ?? 0);
+    return Math.round(sum);
+  });
   const flow = useReactFlow();
   useEffect(() => {
-    if (!width || !height) return;
-    const id = requestAnimationFrame(() => void flow.fitView({ padding: 0.08 }));
+    if (!width || !height || !measured) return;
+    const id = requestAnimationFrame(() => void flow.fitView({ padding: 0.1 }));
     return () => cancelAnimationFrame(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only on size changes
-  }, [width, height]);
+  }, [width, height, measured]);
   return null;
 }
 
@@ -306,6 +346,8 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
   const auditItems = useInvocations(runId).data?.items;
   const focusNode = useUi((s) => s.focusNode);
   const selectNode = useUi((s) => s.selectNode);
+  const runState = useRun(runId).data?.state;
+  const active = runState && !isTerminal(runState) ? ACTIVE_NODES[runState] : undefined;
 
   const edgeCounts = useMemo(() => countByEdge(events, runId), [events, runId]);
   const nodeCounts = useMemo(() => countByNode(events, runId), [events, runId]);
@@ -330,6 +372,11 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
     return latest;
   }, [events, runId, auditItems]);
 
+  // A denied call is the point of the run: both of its ends stay lit whatever the run is doing.
+  const deniedNodes = new Set<string>(
+    EDGES.filter((e) => deniedEdges[e.id]?.denied).flatMap((e) => [e.source, e.target, ...(e.target === 'tool-service' ? ['opa'] : [])]),
+  );
+
   const nodes: ServiceNode[] = NODE_ORDER.map((id) => {
     const d = nodeData(id, snap, config?.model.name ?? null, config?.model.mode ?? null, config?.kubernetes?.enabled !== false);
     return {
@@ -344,6 +391,8 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
         showPods: id === 'evidence-agents',
         pulse: Math.max(0, (nodeCounts[id] ?? 0) - (nodeBase[id] ?? 0)),
         selected: focusNode === id,
+        dim: active !== undefined && !active.includes(id) && !deniedNodes.has(id),
+        narrow: NARROW_NODES.has(id),
       },
       draggable: false,
       connectable: false,
@@ -354,8 +403,8 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
     id: def.id,
     source: def.source,
     target: def.target,
-    sourceHandle: def.kind === 'model' ? 'b' : undefined,
-    targetHandle: def.kind === 'result' || def.kind === 'model' ? 't' : undefined,
+    sourceHandle: def.sourceHandle,
+    targetHandle: def.targetHandle,
     type: 'flow',
     ariaLabel: `${def.label}: ${NODE_LABELS[def.source]} to ${NODE_LABELS[def.target]}`,
     data: {
@@ -374,7 +423,7 @@ function TopologyGraph({ runId }: { runId: string | undefined }) {
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       fitView
-      fitViewOptions={{ padding: 0.08 }}
+      fitViewOptions={{ padding: 0.1 }}
       minZoom={0.3}
       maxZoom={1.6}
       nodesDraggable={false}
@@ -439,6 +488,70 @@ function Legend() {
   );
 }
 
+/** One plain sentence about what the selected run is doing right now, from its real state. */
+export function stageCaption(run: Run): { text: string; denied: boolean } {
+  const denied = run.executionAttempt?.status === 'DENIED';
+  const evidence = run.tasks.filter((t) => t.kind === 'EVIDENCE');
+  const done = evidence.filter((t) => t.state === 'COMPLETED').length;
+  switch (run.state) {
+    case 'SUBMITTED':
+      return { text: 'The incident was submitted to the triage agent.', denied: false };
+    case 'TRIAGING':
+      return { text: 'The triage agent is classifying the incident and planning evidence tasks.', denied: false };
+    case 'GATHERING_EVIDENCE':
+      return {
+        text: `Evidence agents are calling protected tools: ${done} of ${evidence.length} tasks done.`,
+        denied: false,
+      };
+    case 'RECOMMENDING':
+      return { text: 'The recommendation agent is writing a proposal from the evidence.', denied: false };
+    case 'AWAITING_APPROVAL':
+      return denied
+        ? {
+            text: `Policy denied the agent's own attempt: ${run.executionAttempt?.reasons.join(', ') || 'no reason reported'}.`,
+            denied: true,
+          }
+        : { text: 'The proposal is ready. A person must approve or reject it.', denied: false };
+    case 'EXECUTING_ACTION':
+      return { text: 'Approved: the action is running as a simulation.', denied: false };
+    default:
+      return { text: `Run ${humanize(run.state).toLowerCase()}${run.outcome ? `: ${humanize(run.outcome).toLowerCase()}` : ''}.`, denied };
+  }
+}
+
+function StageCaption({ runId }: { runId: string }) {
+  const run = useRun(runId).data;
+  const setInspectorTab = useUi((s) => s.setInspectorTab);
+  // A finished run needs no narration; its outcome is in the header and the inspector.
+  if (!run || isTerminal(run.state)) return null;
+  const c = stageCaption(run);
+  // While a run waits for a person, the decision bar above already says so; only a denial adds something here.
+  if (run.state === 'AWAITING_APPROVAL' && !c.denied) return null;
+  const m = stateMeta(run.state);
+  const Icon = c.denied ? Ban : m.icon;
+  return (
+    <div className="flex justify-center px-3 pt-1.5">
+      <p
+        role="status"
+        data-testid="stage-caption"
+        className={cx(
+          'flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-0.5 rounded-lg border bg-surface px-3 py-1 text-sm shadow-sm',
+          c.denied ? 'border-danger text-danger' : 'border-primary/50',
+        )}
+      >
+        <Icon aria-hidden size={15} className="shrink-0" />
+        {c.denied ? null : <span className="font-semibold text-text">{m.label}</span>}
+        <span className={c.denied ? 'font-semibold' : 'text-text-muted'}>{c.text}</span>
+        {c.denied ? (
+          <button type="button" className="shrink-0 font-semibold underline" onClick={() => setInspectorTab('policy')}>
+            Open Policy
+          </button>
+        ) : null}
+      </p>
+    </div>
+  );
+}
+
 export function Topology({ runId, idle }: { runId: string | undefined; idle?: ReactNode }) {
   const fallback = (
     <div className="p-3">
@@ -450,13 +563,16 @@ export function Topology({ runId, idle }: { runId: string | undefined; idle?: Re
   );
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 pt-2">
-        <h2 className="section-label">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 pt-2">
+        <h2 className="section-label shrink-0">
           Live topology {runId ? '— selected run' : '— all runs'}
         </h2>
-        <Legend />
+        <div className="min-w-0">
+          <Legend />
+        </div>
       </div>
-      <div className="relative min-h-[320px] flex-1" data-testid="topology">
+      {runId ? <StageCaption runId={runId} /> : null}
+      <div className="relative min-h-[240px] flex-1" data-testid="topology">
         <TopologyBoundary fallback={fallback}>
           <ReactFlowProvider>
             {/* Remount per run so pulses count only events that arrive while it is shown. */}

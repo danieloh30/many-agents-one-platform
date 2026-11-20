@@ -127,6 +127,8 @@ export function RunTimelineView({ runId }: { runId: string | undefined }) {
           <p className="mt-2 text-sm text-danger">Timeline unavailable: {describeError(timeline.error)}</p>
         ) : null}
       </Card>
+      {/* The proposal and its decision come before the detail they rest on, so they are never below the fold. */}
+      {r.recommendation ? <RecommendationCard run={r} /> : null}
       <Card title="Tasks and deliveries">
         <TaskLanes run={r} timeline={items} />
       </Card>
@@ -135,9 +137,9 @@ export function RunTimelineView({ runId }: { runId: string | undefined }) {
           Evidence
           {r.evidenceCompleteness ? <span className="ml-2 normal-case">({humanize(r.evidenceCompleteness)})</span> : null}
         </h3>
-        <EvidenceCards runId={r.runId} evidence={r.evidence} />
+        <EvidenceCards runId={r.runId} evidence={r.evidence} collapsible />
       </section>
-      <RecommendationCard run={r} />
+      {r.recommendation ? null : <RecommendationCard run={r} />}
     </div>
   );
 }

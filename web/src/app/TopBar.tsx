@@ -1,6 +1,7 @@
 import {
   Brain,
   CircleQuestionMark,
+  ClipboardCheck,
   Database,
   FlaskConical,
   KeyRound,
@@ -19,6 +20,7 @@ import { useLiveStore } from '../api/liveStore';
 import { useConfig } from '../api/queries';
 import type { StreamStatus } from '../api/streamClient';
 import { Button, Pill, Tip } from '../design/ui';
+import { PreflightPanel } from '../features/presenter/PreflightPanel';
 import { ResetControl } from '../features/presenter/ResetControl';
 import { usePresenterTokenRequired, useSession } from './session';
 import { useEffectiveTheme } from './theme';
@@ -92,6 +94,7 @@ export function TopBar() {
   const session = useSession((s) => s.state);
   const tokenRequired = usePresenterTokenRequired();
   const [fs, toggleFs] = useFullscreen();
+  const [preflight, setPreflight] = useState(false);
 
   return (
     <header className="flex flex-wrap items-center gap-2 border-b border-border bg-surface px-3 py-2">
@@ -118,8 +121,12 @@ export function TopBar() {
             {session === 'valid' ? 'Presenter token active' : 'Presenter sign-in'}
           </Button>
         ) : null}
-        {/* Always reachable; presenter mode shows the same control in its guide bar instead. */}
-        {presenter ? null : <ResetControl />}
+        {presenter ? (
+          <Button size="sm" variant="ghost" icon={ClipboardCheck} onClick={() => setPreflight(true)}>
+            Preflight
+          </Button>
+        ) : null}
+        <ResetControl />
         <div
           role="group"
           aria-label="Color theme"
@@ -160,6 +167,7 @@ export function TopBar() {
         <Button size="sm" variant="ghost" icon={fs ? Minimize : Maximize} onClick={toggleFs} aria-label="Full screen (F)" />
         <Button size="sm" variant="ghost" icon={CircleQuestionMark} onClick={() => setHelpOpen(true)} aria-label="Keyboard shortcuts (?)" />
       </div>
+      <PreflightPanel open={preflight} onOpenChange={setPreflight} />
     </header>
   );
 }
