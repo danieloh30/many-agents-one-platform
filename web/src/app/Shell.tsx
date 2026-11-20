@@ -210,7 +210,7 @@ export function Shell() {
   );
 
   return (
-    <div className={cx('flex flex-col bg-bg text-text', isLg ? 'h-screen' : 'min-h-screen')}>
+    <div data-testid="shell" className={cx('flex flex-col bg-bg text-text', isLg ? 'h-screen overflow-clip' : 'min-h-screen')}>
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-surface focus:p-2">
         Skip to main content
       </a>

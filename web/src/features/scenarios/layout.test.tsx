@@ -26,6 +26,16 @@ const burstRun = (n: number, state: 'COMPLETED' | 'GATHERING_EVIDENCE') =>
   });
 
 describe('left rail and inspector layout', () => {
+  it('never lets the page itself scroll in the wide layout: the shell clips, the panels scroll', async () => {
+    resetStores();
+    routes();
+    renderApp('/');
+    const shell = await screen.findByTestId('shell');
+    expect(shell.className).toContain('h-screen');
+    expect(shell.className).toContain('overflow-clip');
+  });
+
+
   it('shows scenarios as one-line rows, one expanded at a time, with how each run ends', async () => {
     resetStores();
     routes();
