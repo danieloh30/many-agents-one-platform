@@ -21,20 +21,26 @@ import { TraceLink } from './TraceLink';
 
 export function RunHeader({ run }: { run: Run }) {
   return (
-    <header className="flex flex-wrap items-center gap-2">
-      <h2 className="mr-auto min-w-0 text-xl font-semibold" data-testid="run-title">
+    <header className="space-y-3 border-b border-border/60 pb-4 pt-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <RunStatePill state={run.state} outcome={run.outcome} />
+        {run.faultInjection !== 'NONE' ? (
+          <Pill tone="warn" icon={TriangleExclamationPoint}>
+            Fault injected: {run.faultInjection}
+          </Pill>
+        ) : null}
+      </div>
+      <h2 className="min-w-0 break-words text-2xl font-semibold leading-tight tracking-tight" data-testid="run-title">
         {run.incident.title}
       </h2>
-      <RunStatePill state={run.state} outcome={run.outcome} />
-      <Pill tone="neutral">{humanize(run.scenario)}</Pill>
-      {run.faultInjection !== 'NONE' ? (
-        <Pill tone="warn" icon={TriangleExclamationPoint}>
-          Fault injected: {run.faultInjection}
-        </Pill>
-      ) : null}
-      <ModelBadge model={run.model} />
-      <TraceLink traceId={run.traceId} />
-      <CancelButton run={run} />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-text-muted">
+        <span>{humanize(run.scenario)}</span>
+        <ModelBadge model={run.model} compact />
+        <span className="ml-auto flex flex-wrap items-center gap-2">
+          <TraceLink traceId={run.traceId} />
+          <CancelButton run={run} />
+        </span>
+      </div>
     </header>
   );
 }
@@ -110,7 +116,7 @@ export function RunTimelineView({ runId }: { runId: string | undefined }) {
   const r = run.data;
   const items = timeline.data?.items ?? [];
   return (
-    <div className="space-y-3 p-3" aria-label="Run timeline">
+    <div className="space-y-4 p-4" aria-label="Run timeline">
       <RunHeader run={r} />
       <Card title="State">
         <StateRail run={r} timeline={items} />

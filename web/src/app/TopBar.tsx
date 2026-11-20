@@ -99,15 +99,15 @@ export function TopBar() {
       <div
         role="group"
         aria-label="Console status"
-        className="inline-flex flex-wrap items-center gap-1 rounded-full border border-border bg-surface-raised p-0.5"
+        className="inline-flex flex-wrap items-center gap-x-3 gap-y-1.5"
       >
         <ModelBadge />
-        <Pill tone="neutral" icon={Database} testId="synthetic-badge">
-          SYNTHETIC DATA
-        </Pill>
+        <span className="inline-flex items-center gap-1 text-sm text-text-muted" data-testid="synthetic-badge">
+          <Database aria-hidden size={14} /> SYNTHETIC DATA
+        </span>
         <StreamStatusPill />
       </div>
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex flex-wrap items-center gap-1">
         {tokenRequired ? (
           <Button
             size="sm"

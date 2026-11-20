@@ -34,7 +34,7 @@ const times = (n: number | null) => (n === null ? 'an unknown number of times' :
 /** What the tool audit says about a redelivered task's tool calls: requested again, executed once. */
 function ReplayNote({ runId, calls }: { runId: string; calls: ToolInvocation[] }) {
   return (
-    <ul className="col-span-3 mb-1 ml-2 space-y-0.5 border-l-2 border-warn pl-2 text-xs text-text-muted" aria-label="Repeated tool calls">
+    <ul className="col-span-full mb-1 ml-2 space-y-0.5 border-l-2 border-warn pl-2 text-xs text-text-muted" aria-label="Repeated tool calls">
       {calls.map((inv) => (
         <li key={inv.invocationId}>
           <span className="font-mono text-text">{inv.toolName}</span>: requested {times(inv.requests)}, executed{' '}
@@ -53,7 +53,7 @@ export function TaskLanes({ run, timeline }: { run: Run; timeline: RunTimelineEn
   const invocations = useInvocations(run.runId).data?.items ?? [];
   if (run.tasks.length === 0) return <p className="text-sm text-text-muted">No tasks dispatched yet.</p>;
   return (
-    <div className="space-y-2">
+    <div className="@container space-y-2">
       {run.faultInjection === 'DROP_ACK_ONCE' ? (
         <p className="text-xs text-text-muted">
           One evidence task's acknowledgement is dropped once; JetStream redelivers it after the acknowledgement timeout
@@ -66,8 +66,8 @@ export function TaskLanes({ run, timeline }: { run: Run; timeline: RunTimelineEn
           const redelivered = segs.length > 1;
           const repeated = redelivered ? invocations.filter((i) => i.taskId === t.taskId && (i.requests ?? 0) >= 2) : [];
           return (
-            <li key={t.taskId} className="grid grid-cols-[minmax(9rem,14rem)_1fr_auto] items-center gap-2 text-sm">
-              <span className="truncate font-medium" title={t.taskId}>
+            <li key={t.taskId} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-sm @md:grid-cols-[minmax(9rem,14rem)_minmax(0,1fr)_auto]">
+              <span className="col-span-full truncate font-medium @md:col-span-1" title={t.taskId}>
                 {humanize(t.kind)}
                 {t.topic ? <span className="text-text-muted"> · {humanize(t.topic)}</span> : null}
               </span>

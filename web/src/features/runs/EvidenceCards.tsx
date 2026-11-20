@@ -3,7 +3,6 @@ import { useNavigate } from "react-router";
 import type { EvidenceItem } from "../../api/types";
 import { useUi } from "../../app/uiStore";
 import { fmtPct, humanize } from "../../design/format";
-import { Pill } from "../../design/ui";
 import { ModelBadge } from "./ModelBadge";
 
 export function EvidenceCards({
@@ -29,15 +28,11 @@ export function EvidenceCards({
           <li
             key={ev.evidenceId}
             id={`evidence-${ev.evidenceId}`}
-            className="scroll-mt-4 rounded-lg border border-border bg-surface p-3"
+            className="min-w-0 scroll-mt-4 rounded-xl border border-border/60 bg-surface p-4"
           >
             <article aria-label={`Evidence: ${humanize(ev.topic)}`}>
-              <header className="flex flex-wrap items-center gap-1.5">
+              <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 <h4 className="font-semibold">{humanize(ev.topic)}</h4>
-                <Pill tone="neutral" icon={Database}>
-                  {ev.dataOrigin}
-                </Pill>
-                <ModelBadge model={ev.model} />
                 <span className="ml-auto text-sm text-text-muted">
                   Confidence{" "}
                   <span className="tabular font-semibold text-text">
@@ -45,7 +40,13 @@ export function EvidenceCards({
                   </span>
                 </span>
               </header>
-              <p className="mt-1.5 text-sm">{ev.finding}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <span className="inline-flex items-center gap-1 text-text-muted">
+                  <Database aria-hidden size={13} /> {ev.dataOrigin}
+                </span>
+                <ModelBadge model={ev.model} compact />
+              </div>
+              <p className="mt-3 text-sm leading-relaxed">{ev.finding}</p>
               {ev.facts.length > 0 ? (
                 <ul className="mt-2 space-y-1 border-t border-border pt-2 text-sm">
                   {ev.facts.map((f, i) => (

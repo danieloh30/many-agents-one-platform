@@ -27,8 +27,8 @@ export function RecommendationCard({ run }: { run: Run }) {
     <Card
       title="Recommendation"
       actions={
-        <span className="flex items-center gap-1.5">
-          <ModelBadge model={run.model} />
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <ModelBadge model={run.model} compact />
           <span className="text-sm text-text-muted">
             Confidence <span className="tabular font-semibold text-text">{fmtPct(rec.confidence)}</span>
           </span>

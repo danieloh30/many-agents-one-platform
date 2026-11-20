@@ -201,11 +201,12 @@ export function OpsStrip() {
   }, [burstActive, setExpanded]);
 
   return (
-    <section aria-labelledby="ops-h" className="@container shrink-0 border-t border-border bg-bg p-2">
-      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+    <section aria-labelledby="ops-h" className="@container shrink-0 border-t border-border bg-surface px-4 py-2.5">
+      <div className={cx('flex flex-wrap items-center gap-x-4 gap-y-2', expanded && 'mb-3')}>
         <h2 id="ops-h" className="section-label">
           Operations
         </h2>
+        {!expanded && snap ? <OpsSummary snap={snap} kube={kube} /> : null}
         {snap ? (
           stale ? (
             <Pill tone="warn" testId="snapshot-age">
@@ -217,7 +218,7 @@ export function OpsStrip() {
             </span>
           )
         ) : null}
-        <span className="ml-auto flex items-center gap-3">
+        <span className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-2">
           <BurstStopButton />
           <GrafanaLink />
           <PrometheusLink />
@@ -235,9 +236,7 @@ export function OpsStrip() {
         </span>
       </div>
       {!expanded ? (
-        snap ? (
-          <OpsSummary snap={snap} kube={kube} />
-        ) : snapQ.isPending ? (
+        snap ? null : snapQ.isPending ? (
           <Skeleton className="h-6" label="Loading operations snapshot" />
         ) : (
           <p role="status" className="text-sm text-text-muted">
@@ -255,7 +254,7 @@ export function OpsStrip() {
           Operations snapshot Unavailable{snapQ.error ? ` — ${describeError(snapQ.error)}` : ''}.
         </p>
       ) : (
-        <div id="ops-details" className="grid gap-2 @lg:grid-cols-2 @4xl:grid-cols-4">
+        <div id="ops-details" tabIndex={0} aria-label="Operations details" className="grid max-h-[30vh] gap-2 overflow-y-auto @lg:grid-cols-2 @4xl:grid-cols-4">
           <Tile title="Evidence queue" icon={Layers} stale={stale}>
             <div className="mb-1">
               <StatusPill status={q?.status} />
