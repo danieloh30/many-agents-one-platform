@@ -90,7 +90,15 @@ jobs:
             done
           done
       - name: Build and test (unit + integration with Testcontainers)
-        run: ./mvnw -B -ntp verify
+        # Maven 3.9 uses Resolver 1.x. Back off individual downloads on Central's
+        # HTTP 429/503 responses rather than rerunning compilation or failed tests.
+        # https://maven.apache.org/resolver-archives/resolver-LATEST-1.x/configuration.html
+        run: >-
+          ./mvnw -B -ntp
+          -Daether.connector.http.retryHandler.count=6
+          -Daether.connector.http.retryHandler.interval=10000
+          -Daether.connector.http.retryHandler.intervalMax=60000
+          verify
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
