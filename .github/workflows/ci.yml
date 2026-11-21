@@ -29,6 +29,15 @@ concurrency:
 
 env:
   MAOP_MODEL_MODE: deterministic
+  # Every Maven call in this workflow (the backend and images jobs, and the build inside ./demo.sh up in e2e-kind)
+  # reads MAVEN_ARGS (Maven 3.9+). Maven 3.9 uses Resolver 1.x: back off individual downloads on Central's HTTP
+  # 429/503 responses instead of failing the job or rerunning compilation and tests. Central throttles shared
+  # runners most when the dependency cache misses, which is every run after a pom.xml change.
+  # https://maven.apache.org/resolver-archives/resolver-LATEST-1.x/configuration.html
+  MAVEN_ARGS: >-
+    -Daether.connector.http.retryHandler.count=6
+    -Daether.connector.http.retryHandler.interval=10000
+    -Daether.connector.http.retryHandler.intervalMax=60000
   KUBECONFORM_VERSION: v0.8.0
   # sha256 of kubeconform-linux-amd64.tar.gz from the v0.8.0 release CHECKSUMS file.
   KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
@@ -90,15 +99,7 @@ jobs:
             done
           done
       - name: Build and test (unit + integration with Testcontainers)
-        # Maven 3.9 uses Resolver 1.x. Back off individual downloads on Central's
-        # HTTP 429/503 responses rather than rerunning compilation or failed tests.
-        # https://maven.apache.org/resolver-archives/resolver-LATEST-1.x/configuration.html
-        run: >-
-          ./mvnw -B -ntp
-          -Daether.connector.http.retryHandler.count=6
-          -Daether.connector.http.retryHandler.interval=10000
-          -Daether.connector.http.retryHandler.intervalMax=60000
-          verify
+        run: ./mvnw -B -ntp verify
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
