@@ -36,8 +36,9 @@ public class DeterministicRecommendationScript implements DeterministicScript {
                 {"summary":"[deterministic] Roll back checkout to 2.13.2",
                  "explanation":"[deterministic] checkout 2.14.0 cut the payment client timeout to 300 ms and disabled retries, while payment-gateway p99 latency is an unchanged 880 ms, so slow payments now fail. 2.13.2 ran about 26 hours at 0.2% errors. The release has no database migrations, so the rollback is reversible; expect POST /checkout errors back near 0.2%.",
                  "proposedAction":{"actionType":"ROLLBACK_DEPLOYMENT","target":"checkout","parameters":{"toVersion":"2.13.2"}},
-                 "citations":[%s],"confidence":0.8,"risks":["Rollback also disables the new checkout flow"]}"""
-                .formatted(String.join(",", ids));
+                 "citations":[CITATIONS],"confidence":0.8,"risks":["Rollback also disables the new checkout flow"]}"""
+                // Plain replacement, not String.format: the text contains literal percent signs ("0.2% errors").
+                .replace("CITATIONS", String.join(",", ids));
         return ChatResponse.builder().aiMessage(AiMessage.from(text)).build();
     }
 }
