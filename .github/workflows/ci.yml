@@ -406,6 +406,26 @@ jobs:
         # kind-action configures nodes to pull from kind-registry:5000 (bound to host port 5000);
         # the same name must work for pushes from the runner.
         run: echo "127.0.0.1 kind-registry" | sudo tee -a /etc/hosts
+      - name: Preload Docker Hub images into kind
+        # Pull through the runner's Docker daemon with backoff, then import into containerd.
+        # Direct kubelet pulls hit Docker Hub's anonymous rate limit (429), leaving NATS and
+        # Prometheus in ImagePullBackOff and the agents waiting for NATS until up times out.
+        # Read the rendered profile so dependency updates do not leave a stale image list here.
+        timeout-minutes: 15
+        run: |
+          ./demo.sh render --platform kubernetes --profile dev --output "$RUNNER_TEMP/kind-images.yaml"
+          awk '$1 == "image:" && $2 ~ /^docker\.io\// {print $2}' "$RUNNER_TEMP/kind-images.yaml" \
+            | sort -u >"$RUNNER_TEMP/kind-images.txt"
+          test -s "$RUNNER_TEMP/kind-images.txt"
+          while IFS= read -r image; do
+            for attempt in 1 2 3 4; do
+              if docker pull --quiet "$image"; then break; fi
+              if [ "$attempt" = 4 ]; then echo "::error::could not pull $image"; exit 1; fi
+              sleep $((attempt * 20))
+            done
+            # Manifests use IfNotPresent, so pods use these imported images without Hub requests.
+            kind load docker-image --name maop "$image"
+          done <"$RUNNER_TEMP/kind-images.txt"
       - name: demo.sh up (kubernetes, installs pinned KEDA + SPIRE charts, deterministic model)
         env:
           MAOP_PLATFORM: kubernetes
