@@ -46,7 +46,10 @@ flowchart LR
 
     subgraph BOUNDARY[Protected tool boundary]
         TOOLS[tool-service<br/>enforces] -->|allow / deny| OPA[OPA<br/>decides]
+        TOOLS -.->|allowed sandboxed calls| SANDBOX[Sandbox executor<br/>simulated today]
     end
+
+    SANDBOX -.->|optional, not installed| SUBSTRATE([Agent Substrate<br/>sandbox runtime])
 
     TRIAGE --> PG[(PostgreSQL<br/>runs · audit · outbox)]
     TOOLS --> PG
@@ -64,6 +67,8 @@ flowchart LR
     style BOUNDARY fill:#F5F5F0,stroke:#8B8070,color:#1F1F1F,stroke-width:2px
     style TOOLS fill:#D8F0D8,stroke:#3D7A3D,color:#1F1F1F,stroke-width:2px
     style OPA fill:#F8D7D0,stroke:#A34736,color:#1F1F1F,stroke-width:2px
+    style SANDBOX fill:#E8E0F0,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px,stroke-dasharray: 6 4
+    style SUBSTRATE fill:#F3EEF8,stroke:#6B5B8A,color:#1F1F1F,stroke-width:2px,stroke-dasharray: 6 4
     style KEDA fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
     style OBS fill:#E8DCC4,stroke:#6B5B45,color:#1F1F1F,stroke-width:2px
 ```
