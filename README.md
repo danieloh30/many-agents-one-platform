@@ -245,9 +245,10 @@ and are not re-run automatically:
 | Kubernetes (Red Hat OpenShift), `./demo.sh up` + `./demo.sh verify` | All six checks pass: success run, one trace across six services, policy denial, SPIRE identity enforcement, KEDA scale-out 1 → 6, redelivery without a duplicate effect |
 | kind (`scripts/local/kind.sh`) | All six checks pass, with NetworkPolicies off |
 
-These results predate the optional sandboxed-analysis scenario. Its checks (`./demo.sh verify` check 7, and the last two
-checks of `scripts/local/stack.sh e2e`) are covered by unit, integration and policy tests; their cluster and local
-results are not recorded here yet.
+These results predate the optional sandboxed-analysis scenario. Its check (`./demo.sh verify` check 7) passed on
+Red Hat OpenShift with live `gpt-4o-mini`, as part of the smoke test `./demo.sh up` ends with (checks 1 to 4 and 7).
+The last two checks of `scripts/local/stack.sh e2e` cover the same scenario and have not been run on the local stack
+yet.
 
 Details and the items not yet exercised: [deployment.md §8](docs/deployment.md#8-items-that-require-cluster-verification-summary).
 `./demo.sh verify` writes its evidence to `artifacts/verify-<timestamp>/` so you can check your own cluster.

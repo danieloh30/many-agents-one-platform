@@ -292,6 +292,11 @@ and SPIRE uses a local Kubernetes cluster (for example kind) with `./demo.sh up 
 
 ## 8. Items that require cluster verification (summary)
 
+**Scenario 5 (sandboxed analysis), added later.** `./demo.sh verify` check 7 passed on OpenShift with live
+`gpt-4o-mini` in the smoke test of `./demo.sh up` (checks 1 to 4 and 7): one `EXECUTED` `analysis.run_script` call
+for `evidence-agent`, sandbox mode `SIMULATED`, `LOG_ANALYSIS` evidence recorded, run in `AWAITING_APPROVAL`. The
+full `./demo.sh verify` (with checks 5 and 6) has not been re-run since.
+
 **Verified on OpenShift 4.22** (cluster admin, `./demo.sh up --platform openshift --profile summit
 --install-platform-components`, then `./demo.sh verify`, all six checks PASS): C1 (no CMA present; upstream KEDA
 2.21.0 installed and scaled evidence-agent 1 → 6; upgraded in place to 2.21.1, 1 → 6 again), C3 and C4 (SPIRE 0.30.4,

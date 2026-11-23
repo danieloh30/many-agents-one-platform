@@ -114,7 +114,7 @@ on observed data:
 | 7 | Sandboxed analysis | One `EXECUTED` `analysis.run_script` invocation of class `SANDBOXED` for `evidence-agent`, the sandbox mode it reports, and `LOG_ANALYSIS` evidence on the run |
 
 `./demo.sh verify --quick` runs checks 1 to 4 and 7, which is the smoke test `up` ends with. Check 7 was added after
-the results recorded at the top of this page.
+the results recorded at the top of this page; it has since passed on OpenShift with the live model.
 
 ### 5. Open, operate, reset
 
