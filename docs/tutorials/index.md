@@ -30,11 +30,13 @@ interface that returns a typed result (`IncidentTriageAgent`, `EvidenceAnalystAg
 | `recommendation-agent` | **Agentic AI Java app** (`@Agent`) | Proposes a remediation, grounded in the evidence and cited. It can try to execute the proposal only through the tool service. |
 | `tool-service` | Java app (policy enforcement point, no model) | The protected boundary. It verifies the caller's SPIFFE ID over mTLS, asks OPA for a decision, audits it, and runs only synthetic or simulated tools. |
 
-### The four scenarios
+<a id="the-four-scenarios"></a>
+
+### The five scenarios
 
 Demo them in this order: each one builds on what the audience saw in the previous one. The console's presenter
 checklist follows the same order, and the [demo runbook](../demo-runbook.md#3-script-800) has the timed script
-(about 8 minutes).
+(about 8 minutes). Scenarios 4 and 5 are optional extras outside that script.
 
 | # | Scenario | What you see | End it with | Tutorial |
 | --- | --- | --- | --- | --- |
@@ -42,12 +44,7 @@ checklist follows the same order, and the [demo runbook](../demo-runbook.md#3-sc
 | 2 | **Policy denial** | The recommendation agent tries a simulated rollback without approval. The tool service verifies its identity, and policy denies the call before anything executes. | **Approve (simulate)**: the same action, denied without approval, is allowed with it, `REMEDIATION_SIMULATED` | [04](04-identity-and-policy.md) |
 | 3 | **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence agents out and back in (verified on Red Hat OpenShift: 1 → 6 replicas); locally, one agent drains the queue slowly. | Nothing to decide: burst runs stop after evidence, `EVIDENCE_ONLY` | [06](06-scaling-with-keda.md) |
 | 4 | **Redelivery** (optional) | An evidence agent abandons a task after its tool call commits. The task is redelivered, and the effect is still recorded only once. | **Approve (simulate)**, or leave it to expire after 10 minutes | [03](03-messaging-and-redelivery.md) |
-
-**Optional scenario 5: sandboxed analysis.** It is outside the 8-minute script and goes with the production
-blueprint ([tutorial 10](10-production-blueprint-agent-substrate.md#try-it-scenario-5)). An evidence agent asks the
-tool service to run an analysis script in a sandbox. Policy decides first, and only that agent holds the permission.
-The sandbox is a labelled simulation: no sandbox runtime is installed, and the script is recorded, not executed.
-End it with **Approve (simulate)**.
+| 5 | **Sandboxed analysis** (optional) | An evidence agent asks the tool service to run an analysis script in a sandbox. Policy decides first, and only that agent holds the permission. The sandbox is a labelled simulation: no sandbox runtime is installed, and the script is recorded, not executed. | **Approve (simulate)**, `REMEDIATION_SIMULATED` | [10](10-production-blueprint-agent-substrate.md#try-it-scenario-5) |
 
 A run that proposes an action waits in `AWAITING_APPROVAL` for a person. Decide on the run's **Timeline** tab, in
 the recommendation card, so no run is left waiting. Use **Reset** in the top bar to start the demo over.

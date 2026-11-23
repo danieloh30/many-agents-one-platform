@@ -88,8 +88,8 @@ Open <http://localhost:8080>. You can run scenarios, approve actions and reset s
 needs no presenter token. (To require one, for example on a shared screen, start the stack with
 `MAOP_PRESENTER_AUTH=true scripts/local/stack.sh up`; the token is then in `.maop/local/presenter-token`.)
 
-To walk through the demo yourself, run the four scenarios in order and end each one as listed in
-[the four scenarios](index.md#the-four-scenarios): approve the first, second and fourth, and let the
+To walk through the demo yourself, run the first four scenarios in order and end each one as listed in
+[the five scenarios](index.md#the-five-scenarios): approve the first, second and fourth, and let the
 burst finish. While a run waits for you, an amber **Your decision is needed** bar shows its remaining time;
 **Review & decide** jumps to Approve and Reject on the run's **Timeline** tab. **Reset** in the top bar starts over.
 A fifth, optional scenario (sandboxed analysis) is covered in
@@ -131,7 +131,7 @@ They were added later and are not part of the recorded result above:
 | Area | What it shows |
 | --- | --- |
 | **Top bar** | Product name, a status group (the model badge, `LIVE <model>` or an amber `DETERMINISTIC`; `SYNTHETIC DATA`; stream status), **Reset** (clears runs, audit and queued messages to start the demo over), the **Light / Dark** theme switch, presenter mode and full screen. |
-| **Left rail** | The four scenarios as one-line rows with a **Run** button; click a title to unfold its description, how to end the run, its shortcut and the exact request it sends. Below: a *New incident* form and recent runs, listed by scenario, where a burst's runs fold into one entry and runs made by `./demo.sh verify` carry a **smoke test** tag. Hide the rail with the button at the left of the stage tabs, or `L`. |
+| **Left rail** | The five scenarios as one-line rows with a **Run** button; click a title to unfold its description, how to end the run, its shortcut and the exact request it sends. Below: a *New incident* form and recent runs, listed by scenario, where a burst's runs fold into one entry and runs made by `./demo.sh verify` carry a **smoke test** tag. Hide the rail with the button at the left of the stage tabs, or `L`. |
 | **Topology** (main stage) | A fixed-layout graph of the services and queues. Edges pulse only when a real event arrives. mTLS calls show the verified caller's SPIFFE ID on hover, and a denied call is drawn in red. |
 | **Timeline** (`T` toggles) | The durable state rail, a deadline bar, and task lanes where each delivery attempt is a segment, so a redelivery shows up as `delivery 2` with a **Redelivered** tag and its tool calls' request and execution counts. |
 | **Inspector** (right) | Tabs for the selected run: *Summary*, *Evidence*, *Policy* (caller identity and policy decision), *Tool audit* and *Usage*. With no run selected, it says what to do next. Next to the Timeline it opens on *Tool audit* (*Policy* for a denial run), since the Timeline already shows state and evidence. Hide it with the button at the right of the stage tabs, or `I`; hiding both side panels gives the topology the full width. |
