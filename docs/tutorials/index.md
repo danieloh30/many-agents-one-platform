@@ -43,6 +43,12 @@ checklist follows the same order, and the [demo runbook](../demo-runbook.md#3-sc
 | 3 | **Queue burst** | A bounded burst of evidence work raises queue depth and age. On a cluster, KEDA scales the evidence agents out and back in (verified on Red Hat OpenShift: 1 → 6 replicas); locally, one agent drains the queue slowly. | Nothing to decide: burst runs stop after evidence, `EVIDENCE_ONLY` | [06](06-scaling-with-keda.md) |
 | 4 | **Redelivery** (optional) | An evidence agent abandons a task after its tool call commits. The task is redelivered, and the effect is still recorded only once. | **Approve (simulate)**, or leave it to expire after 10 minutes | [03](03-messaging-and-redelivery.md) |
 
+**Optional scenario 5: sandboxed analysis.** It is outside the 8-minute script and goes with the production
+blueprint ([tutorial 10](10-production-blueprint-agent-substrate.md#try-it-scenario-5)). An evidence agent asks the
+tool service to run an analysis script in a sandbox. Policy decides first, and only that agent holds the permission.
+The sandbox is a labelled simulation: no sandbox runtime is installed, and the script is recorded, not executed.
+End it with **Approve (simulate)**.
+
 A run that proposes an action waits in `AWAITING_APPROVAL` for a person. Decide on the run's **Timeline** tab, in
 the recommendation card, so no run is left waiting. Use **Reset** in the top bar to start the demo over.
 
@@ -116,8 +122,9 @@ Tutorial 01 starts the local stack, and tutorials 02 to 05 use it. Tutorials 06 
 Kubernetes or OpenShift cluster (a local kind cluster works) and show the results observed on OpenShift.
 Tutorial 08 covers how the project stays current without manual upgrades. Tutorial 09 is background reading,
 not a hands-on step: why a durable workflow, not a supervisor agent, orchestrates the three agents, and why
-code, not the model, picks each evidence agent's tool calls. Tutorial 10 is also background reading: the
-production blueprint around the demo, and where the optional Agent Substrate runtime would fit next to KEDA.
+code, not the model, picks each evidence agent's tool calls. Tutorial 10 covers the
+production blueprint around the demo and where the optional Agent Substrate runtime would fit next to KEDA; its
+hands-on part is scenario 5, which runs on the local stack or a cluster.
 
 | # | Tutorial | Needs |
 | --- | --- | --- |
@@ -130,7 +137,7 @@ production blueprint around the demo, and where the optional Agent Substrate run
 | 07 | [Deploy to Kubernetes](07-deploy-to-kubernetes.md) | Cluster (OpenShift or kind) |
 | 08 | [Dependency automation](08-dependency-automation.md) | GitHub repository |
 | 09 | [Orchestration choices: workflow or supervisor agent](09-orchestration-choices.md) | Nothing (background reading) |
-| 10 | [Production blueprint: where Agent Substrate fits](10-production-blueprint-agent-substrate.md) | Nothing (background reading) |
+| 10 | [Production blueprint: where Agent Substrate fits](10-production-blueprint-agent-substrate.md) | Background reading; scenario 5 needs the local stack or a cluster |
 
 ## Prerequisites
 

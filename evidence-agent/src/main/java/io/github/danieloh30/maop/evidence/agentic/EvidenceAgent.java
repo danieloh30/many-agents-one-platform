@@ -34,6 +34,8 @@ public class EvidenceAgent {
 
     public static final String PURPOSE = "evidence.summarize";
 
+    /** The fixed analysis script for the LOG_ANALYSIS topic. Code writes it; the model never does. */
+    public static final String ANALYSIS_SCRIPT = "group errors by signature; top 3; compare with previous version";
 
 
     @Inject
@@ -55,6 +57,8 @@ public class EvidenceAgent {
                 call(cmd, budget, results, "catalog.get_service", Map.of("service", svc));
                 call(cmd, budget, results, "catalog.get_dependencies", Map.of("service", svc, "depth", 1));
             }
+            case LOG_ANALYSIS -> call(cmd, budget, results, ToolCatalog.ANALYSIS_RUN_SCRIPT,
+                    Map.of("service", svc, "script", ANALYSIS_SCRIPT, "windowMinutes", 30));
             case CONFIG_DIFF -> {
                 ToolResult history = call(cmd, budget, results, "deployment.get_history", Map.of("service", svc, "limit", 2));
                 JsonNode deps = history == null ? null : history.result().path("deployments");

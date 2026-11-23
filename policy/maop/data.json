@@ -1,9 +1,10 @@
 {
-  "policy_revision": "2026-11-15.1",
+  "policy_revision": "2026-11-23.1",
   "trust_domain": "",
   "callers": {
     "evidence-agent": [
       "tool.read",
+      "tool.sandbox",
       "tools.list"
     ],
     "recommendation-agent": [

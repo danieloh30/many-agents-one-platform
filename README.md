@@ -21,6 +21,7 @@ identity, runtime policy enforcement, connected telemetry, and demand-driven sca
 | Policy denial | An agent attempts a simulated remediation without approval; the tool service verifies its identity and policy denies the call before anything executes. |
 | Queue burst | A bounded burst of evidence work raises queue lag; evidence agents scale out and back. |
 | Redelivery (optional) | A worker abandons a task after its tool call commits; the task is redelivered and the effect is still recorded once. |
+| Sandboxed analysis (optional) | An evidence agent asks the tool service to run an analysis script in a sandbox. Policy decides first, and only that agent holds the permission. The sandbox is a labelled simulation: the script is recorded, not executed. |
 
 Tool data is synthetic and remediation is simulated — the system cannot change a real cluster.
 Model calls are real by default; a deterministic substitute exists for tests and is always labelled.
@@ -243,6 +244,10 @@ and are not re-run automatically:
 | Local stack (`scripts/local/stack.sh e2e`) | All 9 checks pass with the deterministic model and with live `gpt-4o-mini` |
 | Kubernetes (Red Hat OpenShift), `./demo.sh up` + `./demo.sh verify` | All six checks pass: success run, one trace across six services, policy denial, SPIRE identity enforcement, KEDA scale-out 1 → 6, redelivery without a duplicate effect |
 | kind (`scripts/local/kind.sh`) | All six checks pass, with NetworkPolicies off |
+
+These results predate the optional sandboxed-analysis scenario. Its checks (`./demo.sh verify` check 7, and the last two
+checks of `scripts/local/stack.sh e2e`) are covered by unit, integration and policy tests; their cluster and local
+results are not recorded here yet.
 
 Details and the items not yet exercised: [deployment.md §8](docs/deployment.md#8-items-that-require-cluster-verification-summary).
 `./demo.sh verify` writes its evidence to `artifacts/verify-<timestamp>/` so you can check your own cluster.

@@ -24,15 +24,17 @@ export type RunState =
   | 'NEEDS_REVIEW'
   | 'CANCELLED';
 
-export type Scenario = 'SUCCESS' | 'POLICY_DENIAL' | 'BURST' | 'REDELIVERY' | 'CUSTOM';
+export type Scenario = 'SUCCESS' | 'POLICY_DENIAL' | 'BURST' | 'REDELIVERY' | 'SANDBOX' | 'CUSTOM';
 export type RemediationMode = 'PROPOSE_ONLY' | 'ATTEMPT_UNAPPROVED';
 export type FaultInjection = 'NONE' | 'DROP_ACK_ONCE';
+/** SANDBOXED_SCRIPT adds one evidence task that runs an analysis script through the sandboxed tool. */
+export type AnalysisMode = 'NONE' | 'SANDBOXED_SCRIPT';
 export type PlanSource = 'MODEL' | 'PRESET' | (string & {});
-export type EvidenceTopic = 'SERVICE_CATALOG' | 'DEPLOYMENT_HISTORY' | 'CONFIG_DIFF' | 'ERROR_SUMMARY';
+export type EvidenceTopic = 'SERVICE_CATALOG' | 'DEPLOYMENT_HISTORY' | 'CONFIG_DIFF' | 'ERROR_SUMMARY' | 'LOG_ANALYSIS';
 export type ActionType = 'ROLLBACK_DEPLOYMENT' | 'SET_FEATURE_FLAG' | 'ESCALATE_TO_HUMAN' | 'OBSERVE';
 export type TaskKind = 'EVIDENCE' | 'RECOMMENDATION' | 'ACTION' | (string & {});
 export type TaskState = 'DISPATCHED' | 'COMPLETED' | 'FAILED' | 'DEAD_LETTERED' | 'EXPIRED' | (string & {});
-export type ToolClass = 'READ' | 'REMEDIATION';
+export type ToolClass = 'READ' | 'REMEDIATION' | 'SANDBOXED';
 export type InvocationStatus = 'EXECUTED' | 'DENIED' | 'REPLAYED';
 
 // ---- §5.2 GET /api/v1/config -------------------------------------------------------------
@@ -62,6 +64,8 @@ export interface CreateRunRequest {
   scenario: Scenario;
   remediationMode: RemediationMode;
   faultInjection: FaultInjection;
+  /** Omitted means NONE. */
+  analysisMode?: AnalysisMode;
   labels?: Record<string, string>;
 }
 
@@ -184,6 +188,8 @@ export interface Run {
   scenario: Scenario;
   remediationMode: RemediationMode;
   faultInjection: FaultInjection;
+  /** Absent on runs created before the setting existed; treat as NONE. */
+  analysisMode?: AnalysisMode;
   planSource: PlanSource | null;
   incident: Incident;
   classification: Classification | null;

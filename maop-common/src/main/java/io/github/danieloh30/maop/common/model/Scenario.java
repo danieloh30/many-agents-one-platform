@@ -5,5 +5,6 @@ public enum Scenario {
     POLICY_DENIAL,
     BURST,
     REDELIVERY,
+    SANDBOX,
     CUSTOM
 }

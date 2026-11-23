@@ -12,6 +12,7 @@ export function EffectText({ inv }: { inv: ToolInvocation }) {
       </span>
     );
   }
+  if (inv.toolClass === 'SANDBOXED') return <SandboxText inv={inv} />;
   if (inv.toolClass !== 'REMEDIATION') return <span className="text-text-muted">Read-only tool — no side effect</span>;
   if (inv.sideEffect) {
     const params = Object.entries(inv.sideEffect.parameters ?? {})
@@ -27,6 +28,33 @@ export function EffectText({ inv }: { inv: ToolInvocation }) {
     );
   }
   return <span className="text-text-muted">No simulated action recorded</span>;
+}
+
+/** Where a sandboxed tool ran, as the tool service reported it. Nothing is assumed when the result does not say. */
+export function sandboxOf(result: unknown): { mode: string | null; executed: boolean | null } {
+  const s = (result as { sandbox?: { mode?: unknown; executed?: unknown } } | null)?.sandbox;
+  return {
+    mode: typeof s?.mode === 'string' ? s.mode : null,
+    executed: typeof s?.executed === 'boolean' ? s.executed : null,
+  };
+}
+
+function SandboxText({ inv }: { inv: ToolInvocation }) {
+  const { mode, executed } = sandboxOf(inv.result);
+  if (mode === 'SIMULATED') {
+    return (
+      <span data-testid="sandbox-effect">
+        Sandbox: <span className="font-semibold">simulated</span>. The script was recorded, not executed, and no sandbox
+        runtime was contacted — no side effect
+      </span>
+    );
+  }
+  return (
+    <span data-testid="sandbox-effect">
+      Sandbox mode: <span className="font-mono">{mode ?? 'not reported'}</span>
+      {executed === null ? null : executed ? ' — script executed inside the sandbox' : ' — script not executed'}
+    </span>
+  );
 }
 
 /**
@@ -139,7 +167,7 @@ export function InvocationDetail({ inv }: { inv: ToolInvocation }) {
       <header className="flex flex-wrap items-center gap-1.5">
         <DecisionPill status={inv.status} />
         <span className="font-mono font-semibold">{inv.toolName}</span>
-        <Pill tone={inv.toolClass === 'REMEDIATION' ? 'warn' : 'neutral'}>{inv.toolClass}</Pill>
+        <Pill tone={inv.toolClass === 'REMEDIATION' ? 'warn' : inv.toolClass === 'SANDBOXED' ? 'purple' : 'neutral'}>{inv.toolClass}</Pill>
         {inv.simulated ? (
           <Pill tone="neutral" icon={FlaskConical}>
             SIMULATED

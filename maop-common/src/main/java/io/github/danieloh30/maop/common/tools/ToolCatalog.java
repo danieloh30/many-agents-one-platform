@@ -8,11 +8,12 @@ import java.util.Optional;
 
 /**
  * The tool catalogue shared by tool-service (validation, execution) and agents (model tool specifications).
- * All data is synthetic; all remediation is simulated.
+ * All data is synthetic; all remediation is simulated; sandboxed execution is simulated unless tool-service is
+ * configured with a real sandbox runtime.
  */
 public final class ToolCatalog {
 
-    public enum ToolClass { READ, REMEDIATION }
+    public enum ToolClass { READ, REMEDIATION, SANDBOXED }
 
     public record Param(String name, String type, boolean required, String description, Integer min, Integer max) {
         static Param str(String name, String description) {
@@ -30,6 +31,8 @@ public final class ToolCatalog {
 
     public record Tool(String name, ToolClass toolClass, String description, List<Param> params, ActionType actionType) {
     }
+
+    public static final String ANALYSIS_RUN_SCRIPT = "analysis.run_script";
 
     public static final List<Tool> TOOLS = List.of(
             new Tool("catalog.get_service", ToolClass.READ, "Service catalogue entry: owner, tier, runtime, feature flags.",
@@ -51,7 +54,11 @@ public final class ToolCatalog {
                     "SIMULATED feature-flag change. Records the intent only; no system change.",
                     List.of(Param.str("service", "Service name"), Param.str("flag", "Flag name"),
                             Param.bool("enabled", "Desired state")),
-                    ActionType.SET_FEATURE_FLAG));
+                    ActionType.SET_FEATURE_FLAG),
+            new Tool(ANALYSIS_RUN_SCRIPT, ToolClass.SANDBOXED,
+                    "Runs a short analysis script over recent error logs of a service inside a sandbox. Never offered to the model.",
+                    List.of(Param.str("service", "Service name"), Param.str("script", "Analysis script (max 120 characters)"),
+                            Param.integer("windowMinutes", "Window 1-60", 1, 60)), null));
 
     private static final Map<String, Tool> BY_NAME = new LinkedHashMap<>();
 

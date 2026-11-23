@@ -527,6 +527,11 @@ design applies to the `evidence-agent` Deployment only.
 [Tutorial 10](tutorials/10-production-blueprint-agent-substrate.md) explains the benefits, the trade-offs and the
 code an integration would need.
 
+What the demo does include is the path such an integration would use
+([ADR-0018](decisions/0018-sandboxed-tool-class.md)): a `SANDBOXED` tool class, the `tool.sandbox` permission held
+only by `evidence-agent`, and a `SandboxExecutor` in tool-service whose single implementation is a labelled
+simulation (`maop.sandbox.mode=SIMULATED`). Scenario 5 exercises it. No sandbox runtime is installed or contacted.
+
 ## 12. Assumptions and risks
 
 | # | Item | Type | Mitigation / verification |

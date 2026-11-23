@@ -38,6 +38,7 @@ final class RunViews {
         n.put("outcomeDetail", r.outcomeDetail);
         n.put("remediationMode", r.remediationMode.name());
         n.put("faultInjection", r.faultInjection.name());
+        n.put("analysisMode", r.analysisMode.name());
         ObjectNode inc = n.putObject("incident");
         inc.put("title", r.incident.title());
         inc.put("description", r.incident.description());

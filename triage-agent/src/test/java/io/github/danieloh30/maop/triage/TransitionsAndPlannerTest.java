@@ -50,5 +50,8 @@ class TransitionsAndPlannerTest {
                 "{\"category\":\"RELEASE_REGRESSION\",\"severity\":\"SEV2\",\"confidence\":1.7,\"rationale\":\"r\",\"tasks\":[{\"topic\":\"CONFIG_DIFF\",\"question\":\"q\"}]}"));
         assertThrows(IllegalArgumentException.class, () -> TriagePlanner.parse(
                 "{\"category\":\"RELEASE_REGRESSION\",\"severity\":\"SEV2\",\"confidence\":0.5,\"rationale\":\"r\",\"tasks\":[{\"topic\":\"CONFIG_DIFF\",\"question\":\"q\"},{\"topic\":\"CONFIG_DIFF\",\"question\":\"q\"}]}"));
+        IllegalArgumentException sandboxed = assertThrows(IllegalArgumentException.class, () -> TriagePlanner.parse(
+                "{\"category\":\"RELEASE_REGRESSION\",\"severity\":\"SEV2\",\"confidence\":0.5,\"rationale\":\"r\",\"tasks\":[{\"topic\":\"LOG_ANALYSIS\",\"question\":\"q\"}]}"));
+        assertTrue(sandboxed.getMessage().contains("planned by the platform"), "the model cannot plan the sandboxed task");
     }
 }

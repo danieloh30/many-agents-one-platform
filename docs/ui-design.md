@@ -280,4 +280,5 @@ Source layout (`web/`): `src/app` (shell, routes, providers), `src/features/{sce
 | Model endpoint failing | Run moves to `NEEDS_REVIEW`/`FAILED` with the server-provided reason; no substitute output is shown. |
 | KEDA/SPIRE/OPA not installed or unhealthy | The relevant tile and node show `Unavailable` and the preflight panel lists it. |
 | Deterministic model mode | Persistent amber top-bar badge and a badge on every model-derived card. |
+| Sandboxed analysis on a run | Purple "Sandboxed analysis" tag on the run header and a one-line explanation above the task lanes with the sandbox mode read from the recorded call and a link to it in Tool audit. In Tool audit the call's class pill reads `SANDBOXED` and *Effect* states the sandbox mode; with `SIMULATED` it says the script was recorded, not executed. A missing mode reads "not reported", never a guess. |
 | Fault injection on a run | Amber "Fault injected: DROP_ACK_ONCE" tag on the run header and a one-line explanation above the task lanes; only a lane that was actually redelivered gets the amber "Redelivered" tag. |

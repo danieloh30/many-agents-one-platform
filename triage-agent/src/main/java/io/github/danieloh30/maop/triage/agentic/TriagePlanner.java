@@ -96,6 +96,9 @@ public class TriagePlanner {
             if (t.topic() == null || !seen.add(t.topic())) {
                 throw new IllegalArgumentException("task topics must be valid and distinct");
             }
+            if (t.topic() == Topic.LOG_ANALYSIS) {
+                throw new IllegalArgumentException("topic LOG_ANALYSIS is planned by the platform, not by the model");
+            }
             if (t.question() == null || t.question().isBlank() || t.question().length() > 300) {
                 throw new IllegalArgumentException("each task needs a question (max 300 chars)");
             }

@@ -4,6 +4,7 @@ import { useInvocations } from '../../api/queries';
 import type { Run, RunTimelineEntry, ToolInvocation } from '../../api/types';
 import { fmtTime, humanize } from '../../design/format';
 import { cx, Pill } from '../../design/ui';
+import { sandboxOf } from '../audit/InvocationDetail';
 
 interface Segment {
   delivery: number;
@@ -49,6 +50,32 @@ function ReplayNote({ runId, calls }: { runId: string; calls: ToolInvocation[] }
   );
 }
 
+/**
+ * Why a sandboxed-analysis run has one more task: code, not the model, added a Log analysis task that calls the
+ * sandboxed tool. The sandbox mode is read from the recorded call, never assumed.
+ */
+function SandboxNote({ runId, invocations }: { runId: string; invocations: ToolInvocation[] }) {
+  const inv = invocations.find((i) => i.toolClass === 'SANDBOXED');
+  const mode = inv ? sandboxOf(inv.result).mode : null;
+  return (
+    <p className="text-xs text-text-muted" data-testid="sandbox-note">
+      The <span className="text-text">Log analysis</span> task runs a fixed analysis script through the sandboxed tool behind
+      the tool service. Policy decides first, and only the evidence agent holds the permission.{' '}
+      {inv ? (
+        <>
+          Sandbox mode: <span className="font-mono text-text">{mode ?? 'not reported'}</span>
+          {mode === 'SIMULATED' ? ' (the script was recorded, not executed).' : '.'}{' '}
+          <Link className="text-primary underline" to={`/runs/${runId}/audit/${inv.invocationId}`}>
+            Open in Tool audit
+          </Link>
+        </>
+      ) : (
+        'The call has not been recorded yet.'
+      )}
+    </p>
+  );
+}
+
 export function TaskLanes({ run, timeline }: { run: Run; timeline: RunTimelineEntry[] }) {
   const invocations = useInvocations(run.runId).data?.items ?? [];
   if (run.tasks.length === 0) return <p className="text-sm text-text-muted">No tasks dispatched yet.</p>;
@@ -60,6 +87,7 @@ export function TaskLanes({ run, timeline }: { run: Run; timeline: RunTimelineEn
           (about 20 s), and the lane gains a <span className="text-warn">delivery 2</span>.
         </p>
       ) : null}
+      {run.analysisMode === 'SANDBOXED_SCRIPT' ? <SandboxNote runId={run.runId} invocations={invocations} /> : null}
       <ul className="space-y-1.5" aria-label="Task lanes">
         {run.tasks.map((t) => {
           const segs = segmentsFor(t.taskId, t.deliveries, timeline);

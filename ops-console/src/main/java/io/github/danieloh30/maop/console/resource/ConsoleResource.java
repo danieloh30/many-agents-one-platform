@@ -122,6 +122,10 @@ public class ConsoleResource {
         items.add(scenario("REDELIVERY", "Redelivery without a duplicate effect",
                 "One evidence agent abandons its task after the tool call commits; the redelivery replays the stored result.",
                 run("REDELIVERY", "PROPOSE_ONLY", "DROP_ACK_ONCE")));
+        // Appended last so the first four presets keep their order and requests unchanged.
+        items.add(scenario("SANDBOX", "Sandboxed analysis behind the tool boundary",
+                "An evidence agent asks the tool service to run an analysis script in a sandbox. Policy decides first; the sandbox is a labelled simulation.",
+                run("SANDBOX", "PROPOSE_ONLY", "NONE").put("analysisMode", "SANDBOXED_SCRIPT")));
         return n;
     }
 

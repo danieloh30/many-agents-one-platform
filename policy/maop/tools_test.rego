@@ -21,7 +21,7 @@ base(name, action, class) := {
 grant := {"run_id": "run-1", "action_digest": "sha256:abc", "expires_at": "2026-01-01T12:10:00Z"}
 
 callers := {
-	"evidence-agent": ["tool.read", "tools.list"],
+	"evidence-agent": ["tool.read", "tool.sandbox", "tools.list"],
 	"recommendation-agent": ["tool.read", "tool.remediate", "tools.list"],
 	"triage-agent": ["approval.register", "tools.list"],
 	"ops-console": ["audit.read", "admin.reset", "tools.list"],
@@ -133,4 +133,24 @@ test_empty_trust_domain_config_accepts_configured_caller_domain if {
 test_decision_carries_revision if {
 	d := tools.decision with input as base("evidence-agent", "tool.invoke", "READ") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
 	d.revision == "t"
+}
+
+test_evidence_agent_may_run_sandboxed_tool if {
+	d := tools.decision with input as base("evidence-agent", "tool.invoke", "SANDBOXED") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
+	d.allow
+	d.reasons == []
+}
+
+test_recommendation_agent_may_not_run_sandboxed_tool if {
+	d := tools.decision with input as base("recommendation-agent", "tool.invoke", "SANDBOXED") with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
+	not d.allow
+	d.reasons == ["caller_not_permitted"]
+}
+
+test_sandboxed_tool_denied_from_untrusted_domain if {
+	foreign := {"spiffe_id": "spiffe://other.example/ns/maop/sa/evidence-agent", "trust_domain": "other.example"}
+	d := tools.decision with input as object.union(base("evidence-agent", "tool.invoke", "SANDBOXED"), {"caller": foreign})
+		with data.maop.trust_domain as td with data.maop.callers as callers with data.maop.policy_revision as "t"
+	not d.allow
+	"untrusted_domain" in d.reasons
 }

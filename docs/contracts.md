@@ -80,13 +80,17 @@ Base path `/v1`. Called only by `ops-console`.
 }
 ```
 
-- `scenario`: `SUCCESS | POLICY_DENIAL | BURST | REDELIVERY | CUSTOM` — a label for the console; behaviour is
+- `scenario`: `SUCCESS | POLICY_DENIAL | BURST | REDELIVERY | SANDBOX | CUSTOM` — a label for the console; behaviour is
   driven only by the explicit fields below it.
 - `remediationMode`: `PROPOSE_ONLY` (default) or `ATTEMPT_UNAPPROVED` (the agent tries to execute the
   simulated remediation without approval; policy is expected to deny).
 - `faultInjection`: `NONE` (default) or `DROP_ACK_ONCE` (evidence agent deliberately abandons the first
   delivery of one task after its tool call commits). Accepted only when
   `maop.fault-injection.enabled=true`; always echoed on the run and shown in the UI.
+- `analysisMode`: `NONE` (default, also when the field is omitted) or `SANDBOXED_SCRIPT`. With `SANDBOXED_SCRIPT`,
+  triage adds one evidence task with the topic `LOG_ANALYSIS` after the planned tasks. Code plans it, not the
+  model: one evidence slot is reserved for it, and a model plan that names `LOG_ANALYSIS` is invalid. Echoed on the
+  run and shown in the UI.
 
 `Run` (response of create/get):
 
@@ -99,6 +103,7 @@ Base path `/v1`. Called only by `ops-console`.
   "scenario": "SUCCESS",
   "remediationMode": "PROPOSE_ONLY",
   "faultInjection": "NONE",
+  "analysisMode": "NONE",
   "planSource": "MODEL",
   "incident": { "title": "...", "description": "...", "service": "checkout" },
   "classification": { "category": "RELEASE_REGRESSION", "severity": "SEV2", "confidence": 0.86,
@@ -179,6 +184,7 @@ Tool catalogue (all data is synthetic; all remediation is simulated):
 | `telemetry.get_error_summary` | `READ` | `service`, `windowMinutes≤60` | Synthetic error-rate summary by endpoint, plus `dependencyLatency` (p50/p95/p99 against baseline) for downstream calls. |
 | `remediation.rollback_deployment` | `REMEDIATION` | `service`, `toVersion` | Writes a `simulated_action` row. Touches no cluster API. |
 | `remediation.set_feature_flag` | `REMEDIATION` | `service`, `flag`, `enabled` | Writes a `simulated_action` row. |
+| `analysis.run_script` | `SANDBOXED` | `service`, `script` (max 120 characters), `windowMinutes` (1-60, optional) | Runs an analysis script over recent error logs inside a sandbox. Result carries `sandbox: {mode, executed, note}`; with `mode = SIMULATED` the script is recorded, not executed. Never offered to the model. |
 
 `ApprovalGrant` (`PUT /v1/approvals/{approvalId}`):
 
@@ -195,6 +201,9 @@ Tool catalogue (all data is synthetic; all remediation is simulated):
 | `POLICY_DENIAL` | `remediationMode=ATTEMPT_UNAPPROVED` | Tool audit shows `DENIED` with the rule that fired; no `simulated_action` row; run falls back to `AWAITING_APPROVAL`. |
 | `BURST` | `POST /api/v1/bursts` | Queue depth rises, KEDA raises evidence-agent replicas, queue drains, replicas return to minimum. |
 | `REDELIVERY` (optional) | `faultInjection=DROP_ACK_ONCE` | One task shows `deliveries: 2`; its tool invocation shows one execution and `replayed: true` on the second call. |
+| `SANDBOX` (optional) | `analysisMode=SANDBOXED_SCRIPT` | One extra `LOG_ANALYSIS` task; Tool audit shows `analysis.run_script` with class `SANDBOXED`, allowed for `evidence-agent`, and the sandbox mode; run reaches `AWAITING_APPROVAL`. |
+
+The list is ordered, and `SANDBOX` is last. The first four entries and their requests do not carry `analysisMode`.
 
 ### 2.5 Ops snapshot (runtime, not business state)
 
@@ -370,7 +379,8 @@ Shared payload types:
 { "invocationId": "…", "status": "DENIED", "decisionId": "…", "reasons": [ "approval_required" ] }
 ```
 
-`topic` ∈ `SERVICE_CATALOG | DEPLOYMENT_HISTORY | CONFIG_DIFF | ERROR_SUMMARY`.
+`topic` ∈ `SERVICE_CATALOG | DEPLOYMENT_HISTORY | CONFIG_DIFF | ERROR_SUMMARY | LOG_ANALYSIS`
+(`LOG_ANALYSIS` only on runs with `analysisMode = SANDBOXED_SCRIPT`).
 `actionType` ∈ `ROLLBACK_DEPLOYMENT | SET_FEATURE_FLAG | ESCALATE_TO_HUMAN | OBSERVE`
 (the last two have `sideEffect: false` and never call a remediation tool).
 `task.failed.reason` ∈ `DEADLINE_EXCEEDED | BUDGET_EXHAUSTED | MODEL_OUTPUT_INVALID | MODEL_UNAVAILABLE |

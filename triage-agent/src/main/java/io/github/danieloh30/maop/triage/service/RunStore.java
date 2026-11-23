@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.agroal.api.AgroalDataSource;
+import io.github.danieloh30.maop.common.model.AnalysisMode;
 import io.github.danieloh30.maop.common.model.Budget;
 import io.github.danieloh30.maop.common.model.FaultInjection;
 import io.github.danieloh30.maop.common.model.Incident;
@@ -46,7 +47,7 @@ public class RunStore {
     private static final String RUN_COLS = "run_id, version, state, outcome, outcome_detail, scenario, remediation_mode, "
             + "fault_injection, plan_source, burst_id, title, description, service, classification::text, budget::text, "
             + "usage::text, model_mode, model_name, trace_id, traceparent, recommendation::text, execution_attempt::text, "
-            + "evidence_completeness, approval::text, labels::text, created_at, updated_at, deadline, approval_deadline";
+            + "evidence_completeness, approval::text, labels::text, created_at, updated_at, deadline, approval_deadline, analysis_mode";
 
     @Inject
     AgroalDataSource ds;
@@ -74,7 +75,7 @@ public class RunStore {
     public void insert(Run r) {
         String sql = "insert into run (run_id, version, state, scenario, remediation_mode, fault_injection, plan_source, "
                 + "burst_id, title, description, service, budget, usage, model_mode, model_name, trace_id, traceparent, "
-                + "labels, created_at, updated_at, deadline) values (?,1,?,?,?,?,?,?,?,?,?,?::jsonb,?::jsonb,?,?,?,?,?::jsonb,?,?,?)";
+                + "labels, created_at, updated_at, deadline, analysis_mode) values (?,1,?,?,?,?,?,?,?,?,?,?::jsonb,?::jsonb,?,?,?,?,?::jsonb,?,?,?,?)";
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             int i = 1;
             ps.setObject(i++, r.runId);
@@ -96,7 +97,8 @@ public class RunStore {
             ps.setString(i++, json(r.labels == null ? Json.MAPPER.createObjectNode() : r.labels));
             ps.setTimestamp(i++, ts(r.createdAt));
             ps.setTimestamp(i++, ts(r.createdAt));
-            ps.setTimestamp(i, ts(r.deadline));
+            ps.setTimestamp(i++, ts(r.deadline));
+            ps.setString(i, r.analysisMode.name());
             ps.executeUpdate();
             r.version = 1;
             r.updatedAt = r.createdAt;
@@ -154,6 +156,7 @@ public class RunStore {
         r.updatedAt = inst(rs.getTimestamp(27));
         r.deadline = inst(rs.getTimestamp(28));
         r.approvalDeadline = inst(rs.getTimestamp(29));
+        r.analysisMode = AnalysisMode.valueOf(rs.getString(30));
         return r;
     }
 

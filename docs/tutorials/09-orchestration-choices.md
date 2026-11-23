@@ -81,6 +81,10 @@ only reads their results and writes the finding.
 | Error summary | `telemetry.get_error_summary` (last 30 minutes) |
 | Config diff | `deployment.get_history` (last 2), then `deployment.get_diff` from the older to the newer version |
 | Service catalog | `catalog.get_service`, then `catalog.get_dependencies` |
+| Log analysis (scenario 5 only) | `analysis.run_script` with a fixed script, through the sandboxed tool class |
+
+Log analysis is the one topic the model cannot plan: triage adds it in code for runs that ask for it
+([tutorial 10](10-production-blueprint-agent-substrate.md#try-it-scenario-5)).
 
 Config diff needs two calls because `deployment.get_diff` takes a *from* and a *to* version, which the agent only
 learns from the history. If the service has fewer than two deployments, the diff call is skipped. This is why the

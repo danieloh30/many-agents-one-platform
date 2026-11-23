@@ -54,9 +54,22 @@ export const FALLBACK_PRESETS: ScenarioPreset[] = [
       labels: { source: 'console' },
     },
   },
+  {
+    id: 'SANDBOX',
+    title: 'Sandboxed analysis (optional)',
+    description: 'An evidence agent runs an analysis script through the sandboxed tool; policy decides first.',
+    request: {
+      ...incident,
+      scenario: 'SANDBOX',
+      remediationMode: 'PROPOSE_ONLY',
+      faultInjection: 'NONE',
+      analysisMode: 'SANDBOXED_SCRIPT',
+      labels: { source: 'console' },
+    },
+  },
 ];
 
-export const PRESET_ORDER = ['SUCCESS', 'POLICY_DENIAL', 'BURST', 'REDELIVERY'];
+export const PRESET_ORDER = ['SUCCESS', 'POLICY_DENIAL', 'BURST', 'REDELIVERY', 'SANDBOX'];
 
 export function resolvePresets(serverItems: ScenarioPreset[] | undefined): ScenarioPreset[] {
   const items = serverItems && serverItems.length > 0 ? serverItems : FALLBACK_PRESETS;

@@ -66,6 +66,8 @@ public class ToolInvocationService {
     @Inject
     SyntheticTools synthetic;
     @Inject
+    SandboxExecutor sandbox;
+    @Inject
     Outbox outbox;
     @Inject
     MeterRegistry registry;
@@ -150,6 +152,10 @@ public class ToolInvocationService {
         try (Scope ignored = span.makeCurrent()) {
             if (tool.toolClass() == ToolClass.READ) {
                 return synthetic.execute(tool.name(), args, Instant.now());
+            }
+            if (tool.toolClass() == ToolClass.SANDBOXED) {
+                span.setAttribute("maop.sandbox.mode", sandbox.mode());
+                return sandbox.run(tool.name(), args, Instant.now());
             }
             Map<String, Object> params = new LinkedHashMap<>(args);
             String target = String.valueOf(params.remove("service"));

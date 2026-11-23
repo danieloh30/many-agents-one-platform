@@ -6,6 +6,7 @@ import io.github.danieloh30.maop.triage.model.Run;
 import io.github.danieloh30.maop.common.Deadlines;
 import io.github.danieloh30.maop.common.RunContext;
 import io.github.danieloh30.maop.common.TaskFailure;
+import io.github.danieloh30.maop.common.model.AnalysisMode;
 import io.github.danieloh30.maop.common.model.FailureReason;
 import io.github.danieloh30.maop.common.model.Outcome;
 import io.github.danieloh30.maop.common.model.RunState;
@@ -64,7 +65,9 @@ public class TriageWorker implements MessageHandler {
             Run snapshot = start.get();
             int maxTasks = Math.min(snapshot.budget.maxEvidenceTasks(),
                     Math.max(0, (snapshot.budget.maxModelCalls() - 2 - Workflow.RECOMMENDATION_BUDGET.maxModelCalls())
-                            / Workflow.EVIDENCE_BUDGET.maxModelCalls()));
+                            / Workflow.EVIDENCE_BUDGET.maxModelCalls()))
+                    // One evidence slot is reserved for the code-planned sandboxed analysis task.
+                    - (snapshot.analysisMode == AnalysisMode.SANDBOXED_SCRIPT ? 1 : 0);
             TriagePlanner.Result result;
             try {
                 if (maxTasks < 1) {

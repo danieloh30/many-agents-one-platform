@@ -51,6 +51,14 @@ approval_valid if {
 	time.parse_rfc3339_ns(input.approval.expires_at) > time.parse_rfc3339_ns(input.now)
 }
 
+# --- sandboxed tools: only callers that hold tool.sandbox; never the remediation path ------
+allow if {
+	trusted_domain
+	input.action == "tool.invoke"
+	input.tool.class == "SANDBOXED"
+	"tool.sandbox" in permissions
+}
+
 # --- non-tool actions --------------------------------------------------------------------
 allow if {
 	trusted_domain
@@ -76,6 +84,12 @@ caller_permitted if {
 	input.action == "tool.invoke"
 	input.tool.class == "REMEDIATION"
 	"tool.remediate" in permissions
+}
+
+caller_permitted if {
+	input.action == "tool.invoke"
+	input.tool.class == "SANDBOXED"
+	"tool.sandbox" in permissions
 }
 
 caller_permitted if {

@@ -92,6 +92,8 @@ To walk through the demo yourself, run the four scenarios in order and end each 
 [the four scenarios](index.md#the-four-scenarios): approve the first, second and fourth, and let the
 burst finish. While a run waits for you, an amber **Your decision is needed** bar shows its remaining time;
 **Review & decide** jumps to Approve and Reject on the run's **Timeline** tab. **Reset** in the top bar starts over.
+A fifth, optional scenario (sandboxed analysis) is covered in
+[tutorial 10](10-production-blueprint-agent-substrate.md#try-it-scenario-5).
 
 ### 5. Stop the stack
 
@@ -115,6 +117,14 @@ with live `gpt-4o-mini`:
 | 7 | A redelivered task replayed its tool call (`requests >= 2`, `executions = 1`) |
 | 8 | The burst raised the evidence queue depth |
 | 9 | All 12 burst runs drained to `EVIDENCE_ONLY` |
+
+Two more checks cover the optional scenario 5 ([tutorial 10](10-production-blueprint-agent-substrate.md#try-it-scenario-5)).
+They were added later and are not part of the recorded result above:
+
+| # | Check |
+| --- | --- |
+| 10 | The sandboxed tool call is allowed for the evidence agent only, and reports its sandbox mode |
+| 11 | The log analysis evidence is recorded and the run awaits approval |
 
 ### Console tour
 

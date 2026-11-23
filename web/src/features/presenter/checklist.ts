@@ -10,7 +10,7 @@ export interface CheckItem {
 }
 
 export interface GuideStep {
-  id: 'SUCCESS' | 'POLICY_DENIAL' | 'BURST' | 'REDELIVERY';
+  id: 'SUCCESS' | 'POLICY_DENIAL' | 'BURST' | 'REDELIVERY' | 'SANDBOX';
   number: number;
   title: string;
   optional: boolean;
@@ -22,6 +22,7 @@ export const GUIDE_STEPS: GuideStep[] = [
   { id: 'POLICY_DENIAL', number: 2, title: 'Policy denial', optional: false, focus: 'tool-service' },
   { id: 'BURST', number: 3, title: 'Burst', optional: false, focus: 'evidence-agents' },
   { id: 'REDELIVERY', number: 4, title: 'Redelivery', optional: true, focus: 'evidence-agents' },
+  { id: 'SANDBOX', number: 5, title: 'Sandbox', optional: true, focus: 'tool-service' },
 ];
 
 export interface ChecklistContext {
@@ -107,5 +108,16 @@ export function checklist(step: GuideStep['id'], ctx: ChecklistContext): CheckIt
           done: evs.some((e) => e.type === 'tool.invocation.completed.v1' && e.data.status === 'REPLAYED'),
         },
       ];
+    case 'SANDBOX': {
+      const sandboxed = evs.find(
+        (e) => e.type === 'tool.invocation.completed.v1' && e.data.toolClass === 'SANDBOXED' && e.data.status === 'EXECUTED',
+      );
+      const analysis = ctx.run?.runId === ctx.runId ? ctx.run?.evidence.some((ev) => ev.topic === 'LOG_ANALYSIS') : false;
+      return [
+        { id: 'allowed', label: 'Sandboxed tool call allowed by policy', done: !!sandboxed },
+        { id: 'analysis', label: 'Log analysis evidence collected', done: !!analysis },
+        { id: 'awaiting', label: 'Evidence-backed proposal awaiting approval', done: reachedState(ctx, 'AWAITING_APPROVAL') },
+      ];
+    }
   }
 }

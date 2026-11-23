@@ -1,6 +1,7 @@
 package io.github.danieloh30.maop.triage.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.github.danieloh30.maop.common.model.AnalysisMode;
 import io.github.danieloh30.maop.common.model.Budget;
 import io.github.danieloh30.maop.common.model.FaultInjection;
 import io.github.danieloh30.maop.common.model.Incident;
@@ -23,6 +24,7 @@ public final class Run {
     public Scenario scenario;
     public RemediationMode remediationMode;
     public FaultInjection faultInjection;
+    public AnalysisMode analysisMode = AnalysisMode.NONE;
     public PlanSource planSource;
     public UUID burstId;
     public Incident incident;

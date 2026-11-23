@@ -147,6 +147,27 @@ class TriageWorkflowTest {
     }
 
     @Test
+    void sandboxedAnalysisAddsOneCodePlannedTaskOnlyWhenRequested() throws Exception {
+        java.util.Map<String, Object> req = new java.util.LinkedHashMap<>(Json.MAPPER.readValue(
+                body("SANDBOX", "PROPOSE_ONLY", "NONE"), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
+                }));
+        req.put("analysisMode", "SANDBOXED_SCRIPT");
+        UUID id = submit(Json.write(req));
+        assertEquals("SANDBOXED_SCRIPT", run(id).getString("analysisMode"));
+        List<CloudEvent> cmds = evidenceCommands(id, 4);
+        List<String> topics = cmds.stream().map(c -> c.dataAs(EvidenceTaskCommand.class).topic().name()).toList();
+        assertEquals(4, topics.size(), "three planned tasks plus the sandboxed analysis");
+        assertEquals("LOG_ANALYSIS", topics.getLast(), "the code-planned task is dispatched last");
+        assertEquals(1, topics.stream().filter("LOG_ANALYSIS"::equals).count());
+
+        UUID plain = submit(body("SUCCESS", "PROPOSE_ONLY", "NONE"));
+        assertEquals("NONE", run(plain).getString("analysisMode"), "the setting defaults to NONE");
+        List<String> plainTopics = evidenceCommands(plain, 3).stream()
+                .map(c -> c.dataAs(EvidenceTaskCommand.class).topic().name()).toList();
+        assertEquals(List.of("DEPLOYMENT_HISTORY", "CONFIG_DIFF", "ERROR_SUMMARY"), plainTopics);
+    }
+
+    @Test
     void duplicateSubmissionReturnsTheOriginalRun() {
         String key = "dup-" + Ids.v7();
         String b = body("SUCCESS", "PROPOSE_ONLY", "NONE");

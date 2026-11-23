@@ -86,6 +86,36 @@ class ToolServiceTest {
     }
 
     @Test
+    void sandboxedToolRunsForTheEvidenceAgentAsALabelledSimulation() throws Exception {
+        UUID run = run();
+        Map<String, Object> args = Map.of("service", "checkout", "script", "group errors by signature; top 3", "windowMinutes", 30);
+        HttpResponse<String> r = invoke("evidence-agent", "analysis.run_script", "sb-" + Ids.v7(), run, Ids.v7(), args, null);
+        assertEquals(200, r.statusCode(), r.body());
+        JsonNode b = json(r);
+        assertEquals("EXECUTED", b.get("status").asText());
+        assertEquals("SANDBOXED", b.get("toolClass").asText());
+        assertEquals(true, b.at("/decision/allow").asBoolean());
+        assertEquals("SIMULATED", b.at("/result/sandbox/mode").asText());
+        assertEquals(false, b.at("/result/sandbox/executed").asBoolean(), "the simulation never claims to have run the script");
+        assertEquals("SYNTHETIC", b.at("/result/dataOrigin").asText());
+        assertEquals(68, b.at("/result/signatures/0/sharePct").asInt());
+        assertEquals(0, count("select count(*) from simulated_action where run_id = '" + run + "'"), "no remediation effect");
+        JsonNode audit = json(call("ops-console", "GET", "/v1/invocations?runId=" + run, null)).at("/items/0");
+        assertEquals("SANDBOXED", audit.get("toolClass").asText());
+    }
+
+    @Test
+    void sandboxedToolIsDeniedForACallerWithoutThePermission() throws Exception {
+        HttpResponse<String> r = invoke("recommendation-agent", "analysis.run_script", "sb-" + Ids.v7(), run(), Ids.v7(),
+                Map.of("service", "checkout", "script", "group errors by signature"), null);
+        assertEquals(403, r.statusCode(), r.body());
+        JsonNode b = json(r);
+        assertEquals("DENIED", b.get("status").asText());
+        assertEquals("caller_not_permitted", b.at("/decision/reasons/0").asText());
+        assertTrue(b.get("result").isNull(), "nothing ran");
+    }
+
+    @Test
     void duplicateRequestIsReplayedNotReExecuted() throws Exception {
         UUID run = run();
         UUID task = Ids.v7();

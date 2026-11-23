@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router';
-import { Activity, Ban, ChevronRight, Layers, Play, RotateCcw, Square, type LucideIcon } from 'lucide-react';
+import { Activity, Ban, Box, ChevronRight, Layers, Play, RotateCcw, Square, type LucideIcon } from 'lucide-react';
 import { useBurstCurrent, useConfig, useRun, useScenarios } from '../../api/queries';
 import type { ScenarioPreset } from '../../api/types';
 import { fmtNum, fmtTime } from '../../design/format';
@@ -14,6 +14,7 @@ const icons: Record<string, LucideIcon> = {
   POLICY_DENIAL: Ban,
   BURST: Layers,
   REDELIVERY: RotateCcw,
+  SANDBOX: Box,
 };
 
 export function usePresets(): { presets: ScenarioPreset[]; loading: boolean } {
@@ -28,6 +29,7 @@ const ENDINGS: Record<string, string> = {
   POLICY_DENIAL: 'End it with Approve: the agent could not act alone, but a person can let the same action through.',
   BURST: 'Nothing to approve: burst runs stop after evidence.',
   REDELIVERY: 'End it with Approve, or let the approval expire.',
+  SANDBOX: 'Open the Tool audit tab to see the sandboxed call, then end it with Approve.',
 };
 
 export function ScenarioPresets() {

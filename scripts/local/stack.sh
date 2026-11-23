@@ -218,6 +218,18 @@ e2e() {
   if [ "$maxdepth" -gt 0 ]; then check "burst raised evidence queue depth (max observed pending+inFlight=$maxdepth)" PASS; else check "burst queue depth" FAIL "max=$maxdepth"; fi
   if [ "$done_runs" -eq 12 ]; then check "all 12 load runs drained to EVIDENCE_ONLY" PASS; else check "burst drained" FAIL "completed=$done_runs"; fi
   api POST /api/v1/bursts/stop > /dev/null
+
+  log "6. sandboxed analysis behind the tool boundary"
+  id="$(api POST /api/v1/runs "$(scenario_request SANDBOX)" | jq -r .runId)"
+  st="$(await_state "$id" AWAITING_APPROVAL || true)"
+  api GET "/api/v1/audit/invocations?runId=$id" > "$out/sandbox-audit.json"
+  api GET "/api/v1/runs/$id" > "$out/sandbox-run.json"
+  local sbx; sbx="$(jq '[.items[] | select(.toolClass=="SANDBOXED" and .status=="EXECUTED" and .decision.allow==true and .sideEffect==null)] | length' "$out/sandbox-audit.json")"
+  local sbmode; sbmode="$(jq -r '[.items[] | select(.toolClass=="SANDBOXED") | .result.sandbox.mode // empty] | first // empty' "$out/sandbox-audit.json")"
+  local sbcaller; sbcaller="$(jq -r '[.items[] | select(.toolClass=="SANDBOXED") | .caller.spiffeId] | first // empty' "$out/sandbox-audit.json")"
+  local sbev; sbev="$(jq '[.evidence[] | select(.topic=="LOG_ANALYSIS")] | length' "$out/sandbox-run.json")"
+  if [ "$sbx" -eq 1 ] && [ -n "$sbmode" ] && [[ "$sbcaller" == */sa/evidence-agent ]]; then check "sandboxed tool call allowed for the evidence agent only (sandbox mode $sbmode)" PASS; else check "sandboxed tool call" FAIL "executed=$sbx mode=${sbmode:-none} caller=${sbcaller:-none} state=$st"; fi
+  if [ "$sbev" -eq 1 ] && [ "$st" = "AWAITING_APPROVAL" ]; then check "log analysis evidence recorded and run awaits approval" PASS; else check "sandboxed analysis evidence" FAIL "evidence=$sbev state=$st"; fi
   log "evidence written to $out"
   return $fail
 }

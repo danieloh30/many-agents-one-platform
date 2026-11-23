@@ -51,7 +51,7 @@ describe('left rail and inspector layout', () => {
     expect(within(list).getByText('End it with Approve: the agent could not act alone, but a person can let the same action through.')).toBeInTheDocument();
     expect(within(list).queryByText('End it with Approve on the Timeline tab.')).toBeNull();
     // Every scenario keeps its Run button while folded.
-    expect(within(list).getAllByRole('button', { name: /^Run scenario:/ })).toHaveLength(4);
+    expect(within(list).getAllByRole('button', { name: /^Run scenario:/ })).toHaveLength(5);
   });
 
   it('folds a burst into one Recent runs entry that expands to its runs', async () => {

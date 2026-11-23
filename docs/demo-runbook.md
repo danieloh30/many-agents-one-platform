@@ -14,6 +14,7 @@ Timings below are design targets. They become facts only after rehearsal on the 
 | 2 · Policy denial | The agent may ask; a separate service checks who is asking and what policy says before anything happens. |
 | 3 · Queue burst | Agent workers scale on real backlog like any other workload. |
 | 4 · Redelivery (optional) | A worker can fail mid-task and the effect is still committed once. |
+| 5 · Sandboxed analysis (optional) | Code an agent wants to run goes through the same boundary: identity and policy first, then an isolated place to run it. |
 
 ## 2. Before the session
 
@@ -65,6 +66,7 @@ Decide on stage, on the run's **Timeline** tab (the recommendation card), so no 
 | 2 · Policy denial | **Approve (simulate)** | `COMPLETED (REMEDIATION_SIMULATED)` | The agent was denied acting alone; with a person's approval the same action is allowed. Both calls stay in the audit. |
 | 3 · Queue burst | none | `COMPLETED (EVIDENCE_ONLY)` | Burst runs gather evidence and stop; there is nothing to approve. |
 | 4 · Redelivery | **Approve (simulate)** (or leave it) | `COMPLETED (REMEDIATION_SIMULATED)`, or `APPROVAL_EXPIRED` after 10 min | A run that survived a worker failure still finishes end to end. The simulated action is a separate `SIMULATED` row; the redelivered call keeps its "Requested 2×" tag. |
+| 5 · Sandboxed analysis | **Approve (simulate)** | `COMPLETED (REMEDIATION_SIMULATED)` | The extra evidence feeds the same kind of proposal; approving shows the run still finishes end to end. |
 
 ### 3.1 Scenario 1 — successful run with connected traces (2:30)
 
@@ -153,6 +155,30 @@ Only when the slot allows it (for example a longer session).
    **Tool audit** the simulated rollback is its own `SIMULATED` row, separate from the redelivered call tagged
    "Requested 2×". When time is short, leave it instead: it ends `APPROVAL_EXPIRED` after 10 minutes.
 
+### 3.5 Scenario 5 — sandboxed analysis behind the tool boundary (optional, 1:30)
+
+Use it after the production blueprint slide, when you talk about Agent Substrate. It is outside the 8-minute
+script. Say this first: the sandbox here is a **simulation**. No sandbox runtime is installed, and the script is
+recorded, not executed. What is real is everything in front of it.
+
+1. Run the **Sandboxed analysis** preset. The run header shows the purple tag `Sandboxed analysis`.
+2. On the **Timeline** tab, the task lanes show one more evidence task than scenario 1: **Log analysis**. The
+   line above the lanes says why: code, not the model, added it, and it calls the sandboxed tool.
+3. Click **Open in Tool audit** in that line. The call is `analysis.run_script`, class `SANDBOXED`, decision
+   `ALLOWED`, caller `evidence-agent`. *Effect* reads "Sandbox: simulated. The script was recorded, not executed".
+   Point at the arguments: the script is fixed text from the agent's code, never from the model.
+4. Open **Policy**: every call of the run with its verified caller and decision. The sandboxed call belongs to
+   `evidence-agent`, the only workload that holds `tool.sandbox` (`policy/maop/data.json`). The recommendation agent,
+   which may propose a rollback, cannot run code. Say: "who may read, who may act and who may run code are three
+   separate permissions".
+5. Back on **Timeline**, the **Log analysis** evidence card adds what the other topics could not show: which error
+   signatures dominate, and that they first appeared in 2.14.0. Click **Approve (simulate)**; the run ends
+   `COMPLETED (REMEDIATION_SIMULATED)`.
+
+What to say about production: with a sandbox runtime such as Agent Substrate, step 3 would run the script in an
+isolated actor that is suspended when idle. Steps 1, 2, 4 and 5 would look the same, because the contract is the
+tool API. See [tutorial 10](tutorials/10-production-blueprint-agent-substrate.md).
+
 ## 4. Presenter controls
 
 | Key | Action |
@@ -213,4 +239,5 @@ platform component is down at go/no-go, play the recording and say that it is a 
 | Scenario 3 time to drain | ≤ 120 s | |
 | Scenario 3 time back to 1 replica | ≤ 180 s after drain | |
 | Scenario 4 redelivery delay | ≈ 20 s | |
+| Scenario 5 time to `AWAITING_APPROVAL` | 25–45 s (one more evidence task) | |
 | Model calls / tokens consumed per full demo | — | |

@@ -6,6 +6,7 @@ import io.github.danieloh30.maop.triage.model.Run;
 import io.github.danieloh30.maop.triage.resource.Problems;
 
 import io.github.danieloh30.maop.common.Ids;
+import io.github.danieloh30.maop.common.model.AnalysisMode;
 import io.github.danieloh30.maop.common.model.Budget;
 import io.github.danieloh30.maop.common.model.FaultInjection;
 import io.github.danieloh30.maop.common.model.Incident;
@@ -110,6 +111,7 @@ public class RunService {
         r.scenario = req.scenario() == null ? Scenario.CUSTOM : req.scenario();
         r.remediationMode = req.remediationMode() == null ? RemediationMode.PROPOSE_ONLY : req.remediationMode();
         r.faultInjection = req.faultInjection() == null ? FaultInjection.NONE : req.faultInjection();
+        r.analysisMode = req.analysisMode() == null ? AnalysisMode.NONE : req.analysisMode();
         r.planSource = planSource;
         r.burstId = burstId;
         r.incident = new Incident(req.title().strip(), req.description().strip(), req.service().strip());
@@ -220,7 +222,7 @@ public class RunService {
             for (int i = 0; i < n; i++) {
                 CreateRunRequest req = new CreateRunRequest("Load run " + (i + 1) + "/" + n + ": checkout errors",
                         "Bounded load demonstration: preset evidence plan for the checkout incident.", "checkout",
-                        Scenario.BURST, RemediationMode.PROPOSE_ONLY, FaultInjection.NONE, Map.of("burst", burstId.toString()));
+                        Scenario.BURST, RemediationMode.PROPOSE_ONLY, FaultInjection.NONE, AnalysisMode.NONE, Map.of("burst", burstId.toString()));
                 Run r = newRun(Ids.v7(), req, PlanSource.PRESET, burstId);
                 store.insert(r);
                 workflow.startEvidence(r, new TriagePlan(null, null, 0, null, PRESET_TASKS), "preset plan (load run)");

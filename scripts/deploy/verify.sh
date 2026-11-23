@@ -2,22 +2,23 @@
 # (SC2034: globals set here are read by the other sourced modules.)
 # ./demo.sh verify — collects real evidence for each demo claim into artifacts/verify-<ts>/ and
 # reports PASS/FAIL per check. Nothing is inferred: a check passes only on the observed data saved
-# next to the summary. --quick (used by `up` as the smoke test) runs checks 1–4.
+# next to the summary. --quick (used by `up` as the smoke test) runs checks 1–4 and 7.
 
 V_NAME=(); V_STATUS=(); V_DETAIL=()
 v_record() { V_NAME+=("$1"); V_STATUS+=("$2"); V_DETAIL+=("$3"); printf '%s %-5s%s %s — %s\n' "$( [[ "$2" == PASS ]] && printf '%s' "$C_GRN" || printf '%s' "$C_RED")" "$2" "$C_RST" "$1" "$3" >&2; }
 
 V_TERMINAL="COMPLETED NEEDS_REVIEW TIMED_OUT FAILED CANCELLED"
 
-# submit_run <scenario> <remediationMode> <faultInjection> <out-file>; sets V_RUN_ID
+# submit_run <scenario> <remediationMode> <faultInjection> <out-file> [analysisMode]; sets V_RUN_ID
+# analysisMode is added to the request only when given, so the other checks send the same body as before.
 submit_run() {
-  local scenario="$1" mode="$2" fault="$3" out="$4" body
+  local scenario="$1" mode="$2" fault="$3" out="$4" analysis="${5:-}" body
   body="${ART}/request-${scenario}.json"
-  jq -n --arg s "$scenario" --arg m "$mode" --arg f "$fault" '{
+  jq -n --arg s "$scenario" --arg m "$mode" --arg f "$fault" --arg a "$analysis" '{
       title: "Checkout error rate elevated after release",
       description: "5xx on POST /checkout rose from 0.2% to 7% starting 14:05 UTC.",
       service: "checkout", scenario: $s, remediationMode: $m, faultInjection: $f,
-      labels: {source: "demo-verify"}}' > "$body"
+      labels: {source: "demo-verify"}} + (if $a == "" then {} else {analysisMode: $a} end)' > "$body"
   console_api POST /api/v1/runs "$out" "$body" auth
   V_RUN_ID="$(jq -r '.runId // empty' "$out" 2>/dev/null || true)"
   if [[ "$API_CODE" != 2* || -z "$V_RUN_ID" ]]; then
@@ -201,6 +202,30 @@ check_dedup() {
   fi
 }
 
+# Scenario 5: the evidence agent's sandboxed tool call is allowed by policy and recorded with the sandbox mode
+# the tool service reports. The mode is read from the audit record, never assumed.
+check_sandbox() {
+  if ! submit_run SANDBOX PROPOSE_ONLY NONE "${ART}/07-sandbox-submit.json" SANDBOXED_SCRIPT; then
+    v_record "7 sandboxed analysis" FAIL "submit returned HTTP ${API_CODE} (see 07-sandbox-submit.json)"; return 0
+  fi
+  local id="$V_RUN_ID"; RUN_IDS="$RUN_IDS $id"
+  wait_run "$id" "${ART}/07-sandbox-run.json" 180
+  fetch_audit "$id" "${ART}/07-sandbox-audit.json"
+  local calls mode caller evidence
+  calls="$(jq '[.items[]? | select(.toolClass == "SANDBOXED" and .toolName == "analysis.run_script" and .status == "EXECUTED"
+                and .decision.allow == true and .sideEffect == null)] | length' "${ART}/07-sandbox-audit.json" 2>/dev/null || echo 0)"
+  mode="$(jq -r '[.items[]? | select(.toolClass == "SANDBOXED") | .result.sandbox.mode // empty] | first // empty' \
+          "${ART}/07-sandbox-audit.json" 2>/dev/null || true)"
+  caller="$(jq -r '[.items[]? | select(.toolClass == "SANDBOXED") | .caller.spiffeId // empty] | first // empty' \
+            "${ART}/07-sandbox-audit.json" 2>/dev/null || true)"
+  evidence="$(jq '[.evidence[]? | select(.topic == "LOG_ANALYSIS")] | length' "${ART}/07-sandbox-run.json" 2>/dev/null || echo 0)"
+  if ((calls == 1 && evidence == 1)) && [[ -n "$mode" && "$caller" == */sa/evidence-agent && "$V_RUN_STATE" == "AWAITING_APPROVAL" ]]; then
+    v_record "7 sandboxed analysis" PASS "run ${id}: analysis.run_script EXECUTED once for ${caller##*/sa/}, sandbox mode ${mode}, LOG_ANALYSIS evidence recorded; run state ${V_RUN_STATE}"
+  else
+    v_record "7 sandboxed analysis" FAIL "run ${id} (${V_RUN_STATE}): sandboxed EXECUTED calls: ${calls}, sandbox mode: ${mode:-none}, caller: ${caller:-none}, LOG_ANALYSIS evidence: ${evidence}"
+  fi
+}
+
 cmd_verify() {
   require_owned_namespace
   local ts
@@ -226,6 +251,7 @@ cmd_verify() {
   if [[ "$OPT_QUICK" != "true" ]]; then check_dedup; fi
   check_identity
   if [[ "$OPT_QUICK" != "true" ]]; then check_scale_out; fi
+  check_sandbox
 
   local i fails=0
   {

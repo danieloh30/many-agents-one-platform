@@ -111,8 +111,10 @@ on observed data:
 | 4 | Identity enforcement | The TLS refusal of a certificate-less client from inside the cluster, plus verified SPIFFE IDs in the audit |
 | 5 | Scale-out | The evidence-agent replica timeline under a burst |
 | 6 | Redelivery dedup | A task with `deliveries >= 2` and an invocation with `requests >= 2`, `executions = 1` |
+| 7 | Sandboxed analysis | One `EXECUTED` `analysis.run_script` invocation of class `SANDBOXED` for `evidence-agent`, the sandbox mode it reports, and `LOG_ANALYSIS` evidence on the run |
 
-`./demo.sh verify --quick` runs checks 1 to 4, which is the smoke test `up` ends with.
+`./demo.sh verify --quick` runs checks 1 to 4 and 7, which is the smoke test `up` ends with. Check 7 was added after
+the results recorded at the top of this page.
 
 ### 5. Open, operate, reset
 

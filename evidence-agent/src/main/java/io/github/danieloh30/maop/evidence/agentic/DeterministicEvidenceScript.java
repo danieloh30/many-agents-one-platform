@@ -49,6 +49,9 @@ public class DeterministicEvidenceScript implements DeterministicScript {
             case ERROR_SUMMARY -> "[deterministic] POST /checkout errors rose to 7.1% (baseline 0.2%), mostly payment client"
                     + " timeouts; payment-gateway p99 latency is 880 ms, unchanged from its baseline.";
             case SERVICE_CATALOG -> "[deterministic] The service is tier 1 and depends on the payment gateway.";
+            case LOG_ANALYSIS -> "[deterministic] A sandboxed log analysis of 500 error lines found 68% payment client timeouts"
+                    + " at 300 ms, first seen in 2.14.0; every timed-out call would have completed within the previous"
+                    + " 2000 ms timeout.";
         };
         String text = "{\"finding\":\"" + finding + "\",\"confidence\":0.75,\"facts\":[" + String.join(",", facts) + "]}";
         return ChatResponse.builder().aiMessage(AiMessage.from(text)).build();

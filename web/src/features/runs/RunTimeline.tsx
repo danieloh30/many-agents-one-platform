@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CircleStop, TriangleExclamationPoint } from 'lucide-react';
+import { Box, CircleStop, TriangleExclamationPoint } from 'lucide-react';
 import { api, ApiError, describeError, queryKeys } from '../../api/client';
 import { useRun, useTimeline } from '../../api/queries';
 import type { Run } from '../../api/types';
@@ -27,6 +27,11 @@ export function RunHeader({ run }: { run: Run }) {
         {run.faultInjection !== 'NONE' ? (
           <Pill tone="warn" icon={TriangleExclamationPoint}>
             Fault injected: {run.faultInjection}
+          </Pill>
+        ) : null}
+        {run.analysisMode === 'SANDBOXED_SCRIPT' ? (
+          <Pill tone="purple" icon={Box} testId="sandbox-tag">
+            Sandboxed analysis
           </Pill>
         ) : null}
       </div>

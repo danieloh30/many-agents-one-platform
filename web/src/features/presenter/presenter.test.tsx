@@ -26,7 +26,7 @@ describe('presenter guide', () => {
   it('shows one step in full, with the others as chips that switch it', async () => {
     renderApp('/');
     const chips = await screen.findByRole('group', { name: 'Guide steps' });
-    expect(within(chips).getAllByRole('button')).toHaveLength(4);
+    expect(within(chips).getAllByRole('button')).toHaveLength(5);
     expect(screen.getAllByTestId('guide-step')).toHaveLength(1);
     expect(screen.getByTestId('guide-step')).toHaveTextContent('Success');
 

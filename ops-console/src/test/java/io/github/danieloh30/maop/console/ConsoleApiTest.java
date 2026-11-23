@@ -2,7 +2,6 @@ package io.github.danieloh30.maop.console;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.github.danieloh30.maop.testing.NatsTestResource;
@@ -35,7 +34,10 @@ class ConsoleApiTest {
         given().header("Authorization", "Bearer wrong").post("/api/v1/admin/reset").then().statusCode(401);
         given().header("Authorization", "Bearer wrong").get("/api/v1/session").then().statusCode(401);
         given().header("Authorization", "Bearer test-token-for-console-api").get("/api/v1/session").then().statusCode(204);
-        given().get("/api/v1/scenarios").then().statusCode(200).body("items.id", hasItems("SUCCESS", "POLICY_DENIAL", "BURST", "REDELIVERY"));
+        given().get("/api/v1/scenarios").then().statusCode(200)
+                .body("items.id", org.hamcrest.Matchers.contains("SUCCESS", "POLICY_DENIAL", "BURST", "REDELIVERY", "SANDBOX"))
+                .body("items[4].request.analysisMode", org.hamcrest.Matchers.equalTo("SANDBOXED_SCRIPT"))
+                .body("items[0].request.analysisMode", org.hamcrest.Matchers.nullValue());
     }
 
     @Test

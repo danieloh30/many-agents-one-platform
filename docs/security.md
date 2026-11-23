@@ -175,6 +175,7 @@ For every tool invocation, approval registration, and audit read:
 | Trust domain | Caller's trust domain equals the configured one | `untrusted_domain` |
 | Read tools | `tool.class == "READ"` for `evidence-agent` and `recommendation-agent` | `caller_not_permitted` |
 | Remediation tools | `tool.class == "REMEDIATION"` only for `recommendation-agent`, **and** `tool.simulated == true`, **and** an approval exists whose `run_id` and `action_digest` match the request and whose `expires_at` is in the future | `caller_not_permitted`, `not_simulated`, `approval_required`, `approval_mismatch`, `approval_expired` |
+| Sandboxed tools | `tool.class == "SANDBOXED"` only for callers that hold `tool.sandbox` (`evidence-agent`). No approval is involved: the tool has no effect outside the sandbox ([ADR-0018](decisions/0018-sandboxed-tool-class.md)) | `caller_not_permitted` |
 | Approval registration | `action == "approval.register"` only for `triage-agent` | `caller_not_permitted` |
 | Audit read | `action == "audit.read"` only for `ops-console` | `caller_not_permitted` |
 

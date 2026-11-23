@@ -70,7 +70,7 @@ interface UiState {
   /** Bumped to ask the timeline to scroll to the approval decision. */
   decisionRequest: number;
   /** Presenter guide: the scenario step shown in full, and whether the guide is folded to one line. */
-  guideStep: 'SUCCESS' | 'POLICY_DENIAL' | 'BURST' | 'REDELIVERY';
+  guideStep: 'SUCCESS' | 'POLICY_DENIAL' | 'BURST' | 'REDELIVERY' | 'SANDBOX';
   guideFolded: boolean;
   setGuideStep(step: UiState['guideStep']): void;
   toggleGuide(): void;

@@ -57,5 +57,20 @@
       ]
     },
     "payment-gateway": {"onsetMinutesAgo": null, "endpoints": [{"endpoint": "POST /authorize", "errorRatePct": 0.3, "baselinePct": 0.3, "topErrors": []}]}
+  },
+  "logAnalysis": {
+    "checkout": {
+      "endpoint": "POST /checkout",
+      "errorLinesSampled": 500,
+      "signatures": [
+        { "signature": "PaymentClientTimeoutException: payment-gateway POST /authorize exceeded 300 ms", "count": 340, "sharePct": 68,
+          "firstSeenInVersion": "2.14.0", "seenInPreviousVersion": false },
+        { "signature": "UpstreamResetException: connection reset after client timeout", "count": 105, "sharePct": 21,
+          "firstSeenInVersion": "2.14.0", "seenInPreviousVersion": false },
+        { "signature": "other", "count": 55, "sharePct": 11, "firstSeenInVersion": null, "seenInPreviousVersion": true }
+      ],
+      "timedOutCalls": { "clientTimeoutMs": 300, "previousClientTimeoutMs": 2000, "slowestMs": 890,
+        "wouldCompleteWithinPreviousTimeoutPct": 100 }
+    }
   }
 }

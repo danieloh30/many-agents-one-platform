@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.Ids;
 import io.github.danieloh30.maop.common.model.ActionCommand;
+import io.github.danieloh30.maop.common.model.AnalysisMode;
 import io.github.danieloh30.maop.common.model.Classification;
 import io.github.danieloh30.maop.common.model.EvidenceCompleteness;
 import io.github.danieloh30.maop.common.model.EvidenceItem;
@@ -21,6 +22,7 @@ import io.github.danieloh30.maop.common.model.RunState;
 import io.github.danieloh30.maop.common.model.TaskBudget;
 import io.github.danieloh30.maop.common.model.TaskKind;
 import io.github.danieloh30.maop.common.model.TaskState;
+import io.github.danieloh30.maop.common.model.Topic;
 import io.github.danieloh30.maop.common.model.TriagePlan;
 import io.github.danieloh30.maop.common.events.CloudEvent;
 import io.github.danieloh30.maop.common.events.EventTypes;
@@ -121,9 +123,9 @@ public class Workflow {
             r.classification = Json.tree(plan.classification());
         }
         transition(r, RunState.GATHERING_EVIDENCE, null,
-                "Dispatched " + plan.tasks().size() + " evidence task(s)" + (truncationNote == null ? "" : "; " + truncationNote));
+                "Dispatched " + withAnalysis(r, plan.tasks()).size() + " evidence task(s)" + (truncationNote == null ? "" : "; " + truncationNote));
         int index = 0;
-        for (TriagePlan.PlannedTask p : plan.tasks()) {
+        for (TriagePlan.PlannedTask p : withAnalysis(r, plan.tasks())) {
             Task t = new Task();
             t.taskId = Ids.v7();
             t.runId = r.runId;
@@ -138,6 +140,23 @@ public class Workflow {
             outbox.event(Subjects.WORK_EVIDENCE, event(EventTypes.EVIDENCE_REQUESTED, r, t.taskId, cmd));
             dispatched(r, t, "Evidence task " + p.topic() + " queued");
         }
+    }
+
+    static final TriagePlan.PlannedTask SANDBOXED_ANALYSIS = new TriagePlan.PlannedTask(Topic.LOG_ANALYSIS,
+            "Which error signatures dominate the recent error logs, and did they exist in the previous version?");
+
+    /**
+     * Code, not the model, adds the sandboxed analysis task, and only for runs that asked for it. It goes last so
+     * fault injection (first task) and the planned topics are unaffected.
+     */
+    static List<TriagePlan.PlannedTask> withAnalysis(Run r, List<TriagePlan.PlannedTask> planned) {
+        if (r.analysisMode != AnalysisMode.SANDBOXED_SCRIPT || r.planSource == PlanSource.PRESET) {
+            return planned;
+        }
+        List<TriagePlan.PlannedTask> all = new ArrayList<>(planned);
+        all.removeIf(p -> p.topic() == Topic.LOG_ANALYSIS);
+        all.add(SANDBOXED_ANALYSIS);
+        return all;
     }
 
     private void dispatched(Run r, Task t, String message) {

@@ -2,9 +2,13 @@
 
 ## Goal
 
-Understand what Agent Substrate would add to this architecture, what it would cost, and which code you would
-write to integrate it. This page is background reading: Agent Substrate is **not** installed by this project and
-nothing in the demo depends on it ([ADR-0012](../decisions/0012-agent-substrate-optional-future.md)).
+Understand what Agent Substrate would add to this architecture, what it would cost, and which code an integration
+needs. Then run scenario 5, which exercises the path such an integration would use.
+
+Agent Substrate is **not** installed by this project and nothing in the demo depends on it
+([ADR-0012](../decisions/0012-agent-substrate-optional-future.md)). Scenario 5 uses a **simulated** sandbox
+([ADR-0018](../decisions/0018-sandboxed-tool-class.md)): the identity check, the policy decision, the audit record
+and the trace are real; the sandbox is a labelled stand-in that records the script and does not execute it.
 
 The facts about Agent Substrate on this page were checked against its documentation on 2026-11-23. The project is
 young and moves fast, so check them again before you repeat them.
@@ -118,8 +122,8 @@ already free to take other work. There is no idle compute to release, so suspend
 Agent Substrate starts to pay off when an instance holds state in memory or on disk between events. Two cases
 would bring that into this design:
 
-1. **A tool that runs untrusted or model-written code**, for example a log-analysis script that the
-   recommendation agent writes. Such code needs strong isolation, no credentials, and no network by default.
+1. **A tool that runs untrusted or model-written code**, for example a log-analysis script that an agent
+   writes. Scenario 5 shows the boundary for this case with a fixed script and a simulated sandbox. Such code needs strong isolation, no credentials, and no network by default.
 2. **One long-lived agent per investigation**, which keeps its conversation memory and working files while it
    waits hours for a person, and continues from where it stopped.
 
@@ -182,15 +186,72 @@ A simple test: if an instance is stateless, or a queue already holds its work, K
 If an instance must keep memory or files across long idle periods, or must run code you do not trust, look at
 Agent Substrate.
 
-## What you would add to the demo app
+## What the demo includes: scenario 5
 
-Nothing below exists in the repository. The names of new classes, tools and properties are suggestions. The
-Substrate names (`WorkerPool`, `ActorTemplate`, `CreateActor`, `SuspendActor`, `DeleteActor`, the
-`ate-target-actor` header) come from its documentation; confirm them for the version you install.
+Option A below is the shape ADR-0012 allows: a sandboxed executor behind `tool-service`. The demo implements that
+shape up to the sandbox runtime itself.
+
+| Part | Where | State |
+| --- | --- | --- |
+| Tool class `SANDBOXED` and the tool `analysis.run_script` | [`ToolCatalog.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-common/src/main/java/io/github/danieloh30/maop/common/tools/ToolCatalog.java) | Implemented |
+| Permission `tool.sandbox`, held only by `evidence-agent` | [`policy/maop/tools.rego`](https://github.com/danieloh30/many-agents-one-platform/blob/main/policy/maop/tools.rego), `data.json` | Implemented, with allow and deny tests |
+| `SandboxExecutor` seam in `tool-service`, called after the OPA decision, inside the idempotency and audit path | [`SandboxExecutor.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/service/SandboxExecutor.java), `ToolInvocationService` | Implemented |
+| The executor | [`SimulatedSandboxExecutor.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/tool-service/src/main/java/io/github/danieloh30/maop/tools/service/SimulatedSandboxExecutor.java) | **Simulation only**: records the script, runs nothing, returns synthetic output marked `sandbox.mode = SIMULATED` |
+| Setting `maop.sandbox.mode` | `tool-service` `application.properties` | `SIMULATED` is the only accepted value; anything else fails at startup |
+| Run setting `analysisMode = SANDBOXED_SCRIPT` and the code-planned `LOG_ANALYSIS` task | `triage-agent` `Workflow`, `evidence-agent` `EvidenceAgent` | Implemented |
+| Console preset, run tag, task-lane note, Tool audit labels | `ops-console`, `web/` | Implemented |
+| A real sandbox runtime | none | Not implemented |
+
+The four original scenarios do not send `analysisMode`, so their plans, tool calls and budgets are unchanged.
+
+## Try it: scenario 5
+
+It works on the local stack ([tutorial 01](01-run-it-locally.md)) or on a cluster
+([tutorial 07](07-deploy-to-kubernetes.md)). On the console, run the **Sandboxed analysis** preset. From a terminal
+against the local stack:
+
+```bash
+REQ="$(curl -s http://localhost:8080/api/v1/scenarios | jq -c '.items[] | select(.id=="SANDBOX") | .request')"
+```
+
+```bash
+RUN_ID="$(curl -s -X POST http://localhost:8080/api/v1/runs -H 'Content-Type: application/json' -H "Idempotency-Key: sandbox-$(date +%s)" -d "$REQ" | jq -r .runId)"
+```
+
+```bash
+curl -s "http://localhost:8080/api/v1/audit/invocations?runId=$RUN_ID" | jq '.items[] | select(.toolClass=="SANDBOXED") | {toolName, status, caller: .caller.spiffeId, allow: .decision.allow, sandbox: .result.sandbox}'
+```
+
+### What you should see
+
+- The request carries `"analysisMode": "SANDBOXED_SCRIPT"`. The run shows a purple **Sandboxed analysis** tag.
+- The task lanes have one more evidence task than scenario 1, **Log analysis**, dispatched last. Triage added it in
+  code; the model's plan has one task fewer, so the run's budget is the same.
+- **Tool audit** shows `analysis.run_script`, class `SANDBOXED`, `EXECUTED`, called by the `evidence-agent` SPIFFE
+  ID, with the OPA decision id. The last command prints:
+
+  ```json
+  { "toolName": "analysis.run_script", "status": "EXECUTED", "caller": "spiffe://…/sa/evidence-agent", "allow": true,
+    "sandbox": { "mode": "SIMULATED", "executed": false, "note": "Simulation only: the script was recorded, not executed, and no sandbox runtime was contacted." } }
+  ```
+
+- The **Log analysis** evidence card names the dominant error signatures and that they first appeared in 2.14.0.
+  All of it is synthetic data.
+- The run reaches `AWAITING_APPROVAL`. Approve it to finish as `REMEDIATION_SIMULATED`.
+- The same call from another workload is refused. `recommendation-agent` does not hold `tool.sandbox`, so OPA
+  answers `caller_not_permitted` and nothing runs. `ToolServiceTest` and `policy/maop/tools_test.rego` cover this.
+
+`./demo.sh verify` records this as check 7, and `scripts/local/stack.sh e2e` as its last two checks.
+
+## What a real integration still needs
+
+The names of new classes and properties below are suggestions. The Substrate names (`WorkerPool`, `ActorTemplate`,
+`CreateActor`, `SuspendActor`, `DeleteActor`, the `ate-target-actor` header) come from its documentation; confirm
+them for the version you install.
 
 ### Option A: a sandboxed executor behind `tool-service`
 
-This is the shape ADR-0012 allows. The agents and the workflow do not change. One new tool runs inside an actor.
+The agents, the workflow, the policy and the tool contract stay as scenario 5 has them. One class is replaced.
 
 ```mermaid
 %%{init: {"look":"handDrawn","theme":"base","themeVariables":{"darkMode":false,"background":"#FFFCF5","primaryColor":"#D4E6F1","primaryBorderColor":"#2E6B8A","primaryTextColor":"#1F1F1F","secondaryColor":"#D8F0D8","secondaryTextColor":"#1F1F1F","tertiaryColor":"#E8DCC4","tertiaryTextColor":"#1F1F1F","textColor":"#1F1F1F","lineColor":"#4A4035","edgeLabelBackground":"#FFFCF5","clusterBkg":"#F5F5F0","clusterBorder":"#6B5B45","fontSize":"16px"},"flowchart":{"nodeSpacing":35,"rankSpacing":55,"padding":18,"curve":"basis"}}}%%
@@ -211,20 +272,18 @@ sequenceDiagram
     T->>R: SuspendActor or DeleteActor (control plane)
 ```
 
+Today the two middle steps (router and actor) are the simulated executor. To make them real:
+
 | Where | What to add | Why |
 | --- | --- | --- |
 | New module `sandbox-runner` | A small container image that accepts one script and bounded input over HTTP, runs it, and returns bounded output. No model call, no credentials, no outbound network. | This is the image an `ActorTemplate` points at. It runs inside the sandbox. |
-| `tool-service`, package `service` | A `SandboxExecutor` interface with two implementations: `SyntheticSandboxExecutor` (returns canned output, the default) and `SubstrateSandboxExecutor`. | Keeps the demo runnable without Substrate, like the live and deterministic model modes. |
-| `tool-service`, `SubstrateSandboxExecutor` | Two clients. A gRPC client for Substrate's control plane (`CreateActor`, `SuspendActor`, `DeleteActor`), generated from its `ateapi.proto`. An HTTP client that calls the actor through the router with the `ate-target-actor` header. | The control plane manages the actor's life; the router carries the request and resumes the actor. |
-| `tool-service`, `ToolInvocationService` | Route the new tool to the executor **after** the OPA decision and inside the existing idempotency and audit path. Use the `idempotencyKey` as the actor name. | A redelivered task then finds the same actor and does not run the script twice. |
-| `tool-service`, `application.properties` | `maop.sandbox.mode=SYNTHETIC\|SUBSTRATE`, the control plane and router addresses, a timeout, and output size limits. | Explicit and labelled, never a silent fallback. |
-| `policy/maop/tools.rego`, `data.json`, `tools_test.rego` | A new tool class (for example `SANDBOXED`) and a permission (for example `tool.sandbox`), granted only to the agent that may use it. Add allow and deny tests. | The policy decision stays at `tool-service`, before anything executes. |
-| `docs/contracts.md` and the OpenAPI document | The new tool, its arguments, its result and its limits; the new tool class; a field on the audit record for where it ran. | Contracts change together with code. |
-| `evidence-agent`, `EvidenceAgent` | A new evidence topic whose fixed tool calls include the new tool, or a follow-up call inside the tool-call budget. | Code, not the model, still picks the tool calls ([tutorial 09](09-orchestration-choices.md)). |
+| `tool-service`, `SubstrateSandboxExecutor` | A second `SandboxExecutor` with two clients. A gRPC client for Substrate's control plane (`CreateActor`, `SuspendActor`, `DeleteActor`), generated from its `ateapi.proto`. An HTTP client that calls the actor through the router with the `ate-target-actor` header. | The control plane manages the actor's life; the router carries the request and resumes the actor. |
+| `tool-service`, `maop.sandbox.mode` | Accept `SUBSTRATE`, plus the control plane and router addresses, a timeout, and output size limits. Use the `idempotencyKey` as the actor name. | Explicit and labelled, never a silent fallback. A redelivered task then finds the same actor and does not run the script twice. |
+| `docs/contracts.md` | The limits of the tool's result, and `sandbox.mode = SUBSTRATE` with `executed = true`. | Contracts change together with code. |
 | `deploy/components/substrate/` | A Kustomize component with a `WorkerPool` and a `SandboxConfig`, a NetworkPolicy from `tool-service` to the router, and the `maop.sandbox.*` settings. A script step that registers the `ActorTemplate` through `kubectl ate`. | Opt-in, like `deploy/components/spiffe`. The base and the OpenShift overlay stay unchanged. |
-| `ops-console` and the SPA | Show the pool on the workload strip (workers ready, actors running, requests parked) and label sandboxed calls on the *Tool audit* tab. Unknown values are `null` and `UNAVAILABLE`. | The audience should see where the code ran. |
-| `docs/decisions/` | A new ADR that supersedes 0012, and an update to rule 5 in `CLAUDE.md`. | `tool-service` would gain a client to an execution runtime. The rule exists so that no path can change a real cluster; the new record must show that an actor with default-deny egress keeps that true. |
-| Tests | Unit tests with the synthetic executor. An integration test against a real Substrate on kind, in its own CI job, because of the prerequisites. | The core build must not depend on Substrate. |
+| `ops-console` and the SPA | Show the pool on the workload strip (workers ready, actors running, requests parked). Unknown values are `null` and `UNAVAILABLE`. | The audience should see where the code ran. The audit labels already read the mode from the result. |
+| `docs/decisions/` | A new ADR that follows 0012 and 0018, and a look at rule 5 in `CLAUDE.md`. | `tool-service` would gain a client to an execution runtime. The rule exists so that no path can change a real cluster; the new record must show that an actor with default-deny egress keeps that true. |
+| Tests | An integration test against a real Substrate on kind, in its own CI job, because of the prerequisites. | The core build must not depend on Substrate. |
 
 Sizing for Option A: the pool is a fixed `replicas`. Start from the highest number of scripts you expect to run at
 once, and watch parked requests. KEDA keeps scaling `evidence-agent` exactly as before.
@@ -251,9 +310,9 @@ not decided.
 
 ## Adopt it in steps
 
-1. Keep the contracts as they are. Nothing in steps 2 to 4 changes an agent's API.
+1. Keep the contracts as they are. Scenario 5 already fixes the tool API; nothing in steps 2 to 4 changes it.
 2. Run Substrate's own counter demo on kind to learn the lifecycle and check the prerequisites.
-3. Build Option A with the synthetic executor as the default, and the Substrate executor behind a setting.
+3. Add the Substrate executor behind `maop.sandbox.mode`, and keep the simulated one as the default.
 4. Add pool metrics to Grafana and an alert on parked requests before you rely on it.
 5. Consider Option B only if sessions really hold state while they wait, and write the decision record first.
 
@@ -267,10 +326,13 @@ not decided.
   becomes useful with untrusted code or with per-investigation sessions that hold state.
 - A workload that moves into Substrate leaves KEDA's reach. Decide how its worker pool is sized.
 - The run record stays the source of truth. A snapshot is a runtime artefact, never business state.
+- Scenario 5 shows the boundary a sandbox sits behind: verified caller, policy decision, audit and trace are real,
+  and the sandbox is a labelled simulation until a runtime is added.
 
 ## Learn more
 
 - [ADR-0012: Agent Substrate as an optional future execution integration](../decisions/0012-agent-substrate-optional-future.md) ·
+  [ADR-0018: A sandboxed tool class with a simulated executor](../decisions/0018-sandboxed-tool-class.md) ·
   [ADR-0009: KEDA scaling](../decisions/0009-keda-jetstream-scaling.md) ·
   [ADR-0007: OPA at the tool service](../decisions/0007-opa-pep-at-tool-service.md)
 - [Tutorial 06: Scaling with KEDA](06-scaling-with-keda.md) ·
