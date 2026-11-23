@@ -157,8 +157,7 @@ Only when the slot allows it (for example a longer session).
 
 ### 3.5 Scenario 5 — sandboxed analysis behind the tool boundary (optional, 1:30)
 
-Use it after the production blueprint slide, when you talk about Agent Substrate. It is outside the 8-minute
-script. Say this first: the sandbox here is a **simulation**. No sandbox runtime is installed, and the script is
+Use it after the production blueprint slide, when you talk about Agent Substrate. Say this first: the sandbox here is a **simulation**. No sandbox runtime is installed, and the script is
 recorded, not executed. What is real is everything in front of it.
 
 1. Run the **Sandboxed analysis** preset. The run header shows the purple tag `Sandboxed analysis`.

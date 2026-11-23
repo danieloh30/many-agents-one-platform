@@ -35,8 +35,8 @@ interface that returns a typed result (`IncidentTriageAgent`, `EvidenceAnalystAg
 ### The five scenarios
 
 Demo them in this order: each one builds on what the audience saw in the previous one. The console's presenter
-checklist follows the same order, and the [demo runbook](../demo-runbook.md#3-script-800) has the timed script
-(about 8 minutes). Scenarios 4 and 5 are optional extras outside that script.
+checklist follows the same order, and the [demo runbook](../demo-runbook.md#3-script-800) has the timed script.
+Scenarios 4 and 5 are optional.
 
 | # | Scenario | What you see | End it with | Tutorial |
 | --- | --- | --- | --- | --- |
