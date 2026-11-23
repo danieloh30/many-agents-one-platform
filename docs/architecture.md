@@ -524,6 +524,8 @@ messages, so the first remaining message for the subject is the oldest unacknowl
 Documented in [decisions/0012-agent-substrate-optional-future.md](decisions/0012-agent-substrate-optional-future.md).
 It is not part of the core demo, nothing in the core depends on it, and KEDA scaling in this
 design applies to the `evidence-agent` Deployment only.
+[Tutorial 10](tutorials/10-production-blueprint-agent-substrate.md) explains the benefits, the trade-offs and the
+code an integration would need.
 
 ## 12. Assumptions and risks
 

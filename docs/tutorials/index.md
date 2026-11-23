@@ -116,7 +116,8 @@ Tutorial 01 starts the local stack, and tutorials 02 to 05 use it. Tutorials 06 
 Kubernetes or OpenShift cluster (a local kind cluster works) and show the results observed on OpenShift.
 Tutorial 08 covers how the project stays current without manual upgrades. Tutorial 09 is background reading,
 not a hands-on step: why a durable workflow, not a supervisor agent, orchestrates the three agents, and why
-code, not the model, picks each evidence agent's tool calls.
+code, not the model, picks each evidence agent's tool calls. Tutorial 10 is also background reading: the
+production blueprint around the demo, and where the optional Agent Substrate runtime would fit next to KEDA.
 
 | # | Tutorial | Needs |
 | --- | --- | --- |
@@ -129,6 +130,7 @@ code, not the model, picks each evidence agent's tool calls.
 | 07 | [Deploy to Kubernetes](07-deploy-to-kubernetes.md) | Cluster (OpenShift or kind) |
 | 08 | [Dependency automation](08-dependency-automation.md) | GitHub repository |
 | 09 | [Orchestration choices: workflow or supervisor agent](09-orchestration-choices.md) | Nothing (background reading) |
+| 10 | [Production blueprint: where Agent Substrate fits](10-production-blueprint-agent-substrate.md) | Nothing (background reading) |
 
 ## Prerequisites
 

@@ -169,4 +169,5 @@ On a cluster (observed on Red Hat OpenShift):
 - [Deployment §2.2: Scaling](../deployment.md#22-scaling) · [§5.1: KEDA on OpenShift](../deployment.md#51-keda)
 - [Architecture §7: Model usage and concurrency limits](../architecture.md#7-model-usage-and-concurrency-limits) · [§9: Scaling](../architecture.md#9-scaling)
 - [ADR-0009: KEDA JetStream scaling](../decisions/0009-keda-jetstream-scaling.md)
+- [Tutorial 10: Production blueprint](10-production-blueprint-agent-substrate.md): how KEDA differs from Agent Substrate's suspend and resume
 - Source: [`ModelGateway.java`](https://github.com/danieloh30/many-agents-one-platform/blob/main/maop-common/src/main/java/io/github/danieloh30/maop/common/agentic/ModelGateway.java), [`openshift-cma` overlay](https://github.com/danieloh30/many-agents-one-platform/blob/main/deploy/overlays/openshift-cma/kustomization.yaml), [`scripts/deploy/verify.sh`](https://github.com/danieloh30/many-agents-one-platform/blob/main/scripts/deploy/verify.sh)
