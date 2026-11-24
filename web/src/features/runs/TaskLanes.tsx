@@ -4,7 +4,7 @@ import { useInvocations } from '../../api/queries';
 import type { Run, RunTimelineEntry, ToolInvocation } from '../../api/types';
 import { fmtTime, humanize } from '../../design/format';
 import { cx, Pill } from '../../design/ui';
-import { sandboxOf } from '../audit/InvocationDetail';
+import { SANDBOX_MARK, sandboxOf } from '../audit/InvocationDetail';
 
 interface Segment {
   delivery: number;
@@ -63,7 +63,9 @@ function SandboxNote({ runId, invocations }: { runId: string; invocations: ToolI
       the tool service. Policy decides first, and only the evidence agent holds the permission.{' '}
       {inv ? (
         <>
-          Sandbox mode: <span className="font-mono text-text">{mode ?? 'not reported'}</span>
+          <span className={SANDBOX_MARK}>
+            Sandbox mode: <span className="font-mono">{mode ?? 'not reported'}</span>
+          </span>
           {mode === 'SIMULATED' ? ' (the script was recorded, not executed).' : '.'}{' '}
           <Link className="text-primary underline" to={`/runs/${runId}/audit/${inv.invocationId}`}>
             Open in Tool audit

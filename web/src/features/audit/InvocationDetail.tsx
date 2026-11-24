@@ -39,19 +39,24 @@ export function sandboxOf(result: unknown): { mode: string | null; executed: boo
   };
 }
 
+/** The sandbox colour (purple), so the mode stands out in a line of text; the words carry the meaning, not the colour. */
+export const SANDBOX_MARK = 'rounded border border-purple/40 px-1.5 py-0.5 font-semibold text-purple tint-purple';
+
 function SandboxText({ inv }: { inv: ToolInvocation }) {
   const { mode, executed } = sandboxOf(inv.result);
   if (mode === 'SIMULATED') {
     return (
       <span data-testid="sandbox-effect">
-        Sandbox: <span className="font-semibold">simulated</span>. The script was recorded, not executed, and no sandbox
+        <span className={SANDBOX_MARK}>Sandbox: simulated</span>. The script was recorded, not executed, and no sandbox
         runtime was contacted — no side effect
       </span>
     );
   }
   return (
     <span data-testid="sandbox-effect">
-      Sandbox mode: <span className="font-mono">{mode ?? 'not reported'}</span>
+      <span className={SANDBOX_MARK}>
+        Sandbox mode: <span className="font-mono">{mode ?? 'not reported'}</span>
+      </span>
       {executed === null ? null : executed ? ' — script executed inside the sandbox' : ' — script not executed'}
     </span>
   );
