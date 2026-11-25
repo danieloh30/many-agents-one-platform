@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.recommendation.agentic;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.github.danieloh30.maop.common.BudgetTracker;
 import io.github.danieloh30.maop.common.TaskFailure;
 import io.github.danieloh30.maop.common.model.ActionDigests;
@@ -82,19 +82,19 @@ public class RecommendationAgent {
             throw new IllegalArgumentException("no JSON object found");
         }
         JsonNode n = Json.parse(json);
-        String summary = n.path("summary").asText("");
-        String explanation = n.path("explanation").asText("");
+        String summary = n.path("summary").asString("");
+        String explanation = n.path("explanation").asString("");
         if (summary.isBlank() || summary.length() > 200 || explanation.isBlank() || explanation.length() > 700) {
             throw new IllegalArgumentException("summary (max 200) and explanation (max 700) are required");
         }
         JsonNode pa = n.path("proposedAction");
         ActionType type;
         try {
-            type = ActionType.valueOf(pa.path("actionType").asText());
+            type = ActionType.valueOf(pa.path("actionType").asString());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("proposedAction.actionType is invalid");
         }
-        String target = pa.path("target").asText("");
+        String target = pa.path("target").asString("");
         if (target.isBlank() || target.length() > 120) {
             throw new IllegalArgumentException("proposedAction.target is required");
         }
@@ -102,14 +102,14 @@ public class RecommendationAgent {
         JsonNode p = pa.path("parameters");
         switch (type) {
             case ROLLBACK_DEPLOYMENT -> {
-                String v = p.path("toVersion").asText("");
+                String v = p.path("toVersion").asString("");
                 if (v.isBlank() || v.length() > 40) {
                     throw new IllegalArgumentException("ROLLBACK_DEPLOYMENT requires parameters.toVersion");
                 }
                 params.put("toVersion", v);
             }
             case SET_FEATURE_FLAG -> {
-                String flag = p.path("flag").asText("");
+                String flag = p.path("flag").asString("");
                 if (flag.isBlank() || !p.path("enabled").isBoolean()) {
                     throw new IllegalArgumentException("SET_FEATURE_FLAG requires parameters.flag and boolean parameters.enabled");
                 }
@@ -122,7 +122,7 @@ public class RecommendationAgent {
         }
         checkVersions(cmd, summary, explanation, String.valueOf(params.getOrDefault("toVersion", "")));
         List<String> citations = new ArrayList<>();
-        n.path("citations").forEach(c -> citations.add(c.asText()));
+        n.path("citations").forEach(c -> citations.add(c.asString()));
         if (citations.isEmpty() || !evidenceIds.containsAll(citations)) {
             throw new IllegalArgumentException("citations must be non-empty and reference evidence ids " + evidenceIds);
         }
@@ -133,7 +133,7 @@ public class RecommendationAgent {
         List<String> risks = new ArrayList<>();
         n.path("risks").forEach(r -> {
             if (risks.size() < 3) {
-                risks.add(r.asText().length() > 200 ? r.asText().substring(0, 200) : r.asText());
+                risks.add(r.asString().length() > 200 ? r.asString().substring(0, 200) : r.asString());
             }
         });
         ProposedAction action = ActionDigests.withDigest(cmd.runId(), new ProposedAction(type, target, params, false, null));

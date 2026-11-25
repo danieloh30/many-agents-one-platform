@@ -3,8 +3,8 @@ package io.github.danieloh30.maop.triage.resource;
 import io.github.danieloh30.maop.triage.model.Run;
 import io.github.danieloh30.maop.triage.model.Task;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.json.Json;
 import java.util.List;
 

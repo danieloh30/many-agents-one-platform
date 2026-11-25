@@ -209,7 +209,7 @@ public class RunService {
             new TriagePlan.PlannedTask(Topic.ERROR_SUMMARY, "Which endpoints and error types increased, and when?"));
 
     /** Bounded load: N preset-planned evidence runs (no triage model call), dispatched at once. */
-    public com.fasterxml.jackson.databind.node.ObjectNode startBurst(Integer requested) {
+    public tools.jackson.databind.node.ObjectNode startBurst(Integer requested) {
         int n = Math.clamp(requested == null ? burstMaxRuns : requested, 1, burstMaxRuns);
         return QuarkusTransaction.requiringNew().call(() -> {
             if (store.activeBurst().isPresent()) {
@@ -237,7 +237,7 @@ public class RunService {
         });
     }
 
-    public com.fasterxml.jackson.databind.node.ObjectNode currentBurst() {
+    public tools.jackson.databind.node.ObjectNode currentBurst() {
         return QuarkusTransaction.requiringNew().call(() -> store.activeBurst().orElseGet(() -> {
             var n = Json.MAPPER.createObjectNode();
             n.put("active", false);
@@ -250,13 +250,13 @@ public class RunService {
     }
 
     /** Stop load: cancel the burst's active runs and purge queued evidence work. Idempotent. */
-    public com.fasterxml.jackson.databind.node.ObjectNode stopBurst() throws Exception {
+    public tools.jackson.databind.node.ObjectNode stopBurst() throws Exception {
         var result = QuarkusTransaction.requiringNew().call(() -> {
             var b = store.activeBurst();
             if (b.isEmpty()) {
                 return currentBurst();
             }
-            UUID burstId = UUID.fromString(b.get().get("burstId").asText());
+            UUID burstId = UUID.fromString(b.get().get("burstId").asString());
             for (UUID id : store.activeRunsOfBurst(burstId)) {
                 Run r = store.lock(id).orElseThrow();
                 workflow.transition(r, RunState.CANCELLED, Outcome.CANCELLED_BY_OPERATOR, "Load stopped by operator");

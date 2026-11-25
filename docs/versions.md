@@ -15,9 +15,9 @@ implementation time (they are not recorded here because they were not pulled in 
 | --- | --- | --- |
 | JDK | **25** (Temurin 25 LTS for build; `maven.compiler.release=25`) | Baseline. Never lower. No `--enable-preview`. |
 | Maven | 3.9.16 via Maven Wrapper (`.mvn/wrapper/maven-wrapper.properties`) | Quarkus supports `[3.9.0,)`. |
-| Quarkus platform BOM | `io.quarkus.platform:quarkus-bom:3.40.1.2` | 3.40 is the current stream and an LTS. 4.0 is a release candidate — not used. |
-| Quarkus Maven plugin | `io.quarkus.platform:quarkus-maven-plugin:3.40.1.2` | Shares the `quarkus.platform.version` property with the BOM. |
-| Quarkus LangChain4j | `io.quarkus.platform:quarkus-langchain4j-bom:3.40.1.2` → `io.quarkiverse.langchain4j:*` **1.13.4** (LangChain4j 1.19.3) | Taken from the platform member BOM, same property. The newer standalone 1.15.1 is intentionally not used. |
+| Quarkus platform BOM | `io.quarkus.platform:quarkus-bom:4.0.1` | Stable non-LTS release; owner-approved exception in ADR-0019. |
+| Quarkus Maven plugin | `io.quarkus.platform:quarkus-maven-plugin:4.0.1` | Shares the `quarkus.platform.version` property with the BOM. |
+| Quarkus LangChain4j | `io.quarkus.platform:quarkus-langchain4j-bom:4.0.1` → `io.quarkiverse.langchain4j:*` **2.0.0.CR1** (LangChain4j 1.24.0) | Taken from the platform member BOM, same property; includes a pre-release extension member (ADR-0019). |
 | Model provider extension | `io.quarkiverse.langchain4j:quarkus-langchain4j-openai` | Any OpenAI-compatible endpoint. |
 | NATS client | `io.nats:jnats:2.26.4` | Own property `jnats.version` (independently versioned). |
 | CloudEvents | In-repo envelope and NATS binary-binding codec (`maop-common`) | The SDK is not used: the Quarkus BOM pins `cloudevents-api` 3.0.0 (ADR-0016). |
@@ -111,4 +111,4 @@ Do not state CNCF maturity levels in talks or docs without re-checking the
 | V4 | Helm chart versions trail application releases (KEDA, SPIRE). | Charts are pinned, not app versions; the scheduled check proposes chart bumps. |
 | V5 | OpenShift's Custom Metrics Autoscaler operator and upstream KEDA cannot coexist, and the operator does not list the NATS JetStream trigger. | See [deployment.md](deployment.md) §5.1. Needs cluster verification. |
 | V6 | Quarkus platform versions have four parts (`3.40.1.2`); Dependabot's patch/minor classification of them is not confirmed. | Auto-merge is gated on the compatibility checks, not on the classification alone; stream changes are owned by the scheduled workflow. |
-| V7 | A native Quarkus SPIFFE client exists only in the 4.0 pre-release line. | Use `spiffe-helper` + TLS registry now; revisit when 4.x is the LTS (ADR-0008). |
+| V7 | A native Quarkus SPIFFE client is available in the 4.0 line. | Use `spiffe-helper` + TLS registry now; a native-client migration remains separate from this platform upgrade (ADR-0008, ADR-0019). |

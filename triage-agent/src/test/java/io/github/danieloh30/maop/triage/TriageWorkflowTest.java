@@ -149,7 +149,7 @@ class TriageWorkflowTest {
     @Test
     void sandboxedAnalysisAddsOneCodePlannedTaskOnlyWhenRequested() throws Exception {
         java.util.Map<String, Object> req = new java.util.LinkedHashMap<>(Json.MAPPER.readValue(
-                body("SANDBOX", "PROPOSE_ONLY", "NONE"), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
+                body("SANDBOX", "PROPOSE_ONLY", "NONE"), new tools.jackson.core.type.TypeReference<Map<String, Object>>() {
                 }));
         req.put("analysisMode", "SANDBOXED_SCRIPT");
         UUID id = submit(Json.write(req));

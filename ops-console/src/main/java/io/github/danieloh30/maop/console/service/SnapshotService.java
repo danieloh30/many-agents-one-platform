@@ -1,7 +1,7 @@
 package io.github.danieloh30.maop.console.service;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -90,8 +90,8 @@ public class SnapshotService {
     /** Fed by EventHub: worker heartbeats and model-call observations. */
     public void observe(CloudEvent e) {
         switch (e.typeSuffix()) {
-            case EventTypes.WORKER_HEARTBEAT -> heartbeats.put(e.data().path("pod").asText(),
-                    new Heartbeat(e.data().path("service").asText(), e.data().path("activeTasks").asInt(),
+            case EventTypes.WORKER_HEARTBEAT -> heartbeats.put(e.data().path("pod").asString(),
+                    new Heartbeat(e.data().path("service").asString(), e.data().path("activeTasks").asInt(),
                             e.data().path("modelPermitsInUse").asInt(), Instant.now()));
             case EventTypes.MODEL_CALL_COMPLETED -> {
                 ObjectNode n = e.data().deepCopy();
@@ -387,9 +387,9 @@ public class SnapshotService {
         probe(out, "prometheus", prometheusUrl.map(u -> u + "/-/ready"));
         probe(out, "grafana", grafanaUrl.map(u -> u + "/api/health"));
         ObjectNode mc = lastModelCall.get();
-        if (mc != null && Duration.between(Instant.parse(mc.get("observedAt").asText()), Instant.now()).toMinutes() < 10) {
-            add(out, "model", "OK", mc.path("mode").asText() + " " + mc.path("model").asText() + ": last successful call at "
-                    + mc.get("observedAt").asText());
+        if (mc != null && Duration.between(Instant.parse(mc.get("observedAt").asString()), Instant.now()).toMinutes() < 10) {
+            add(out, "model", "OK", mc.path("mode").asString() + " " + mc.path("model").asString() + ": last successful call at "
+                    + mc.get("observedAt").asString());
         }
     }
 

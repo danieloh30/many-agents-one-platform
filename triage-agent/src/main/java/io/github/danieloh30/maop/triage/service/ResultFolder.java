@@ -82,9 +82,9 @@ public class ResultFolder implements MessageHandler {
                     store.updateTask(t);
                 }
                 store.timeline(r.runId, "TASK_STARTED", null, null, t.taskId, t.kind + " task started on "
-                        + e.data().path("pod").asText("unknown pod") + " (delivery " + delivery + ")",
-                        Map.of("delivery", delivery, "pod", e.data().path("pod").asText(""), "service",
-                                e.data().path("service").asText("")));
+                        + e.data().path("pod").asString("unknown pod") + " (delivery " + delivery + ")",
+                        Map.of("delivery", delivery, "pod", e.data().path("pod").asString(""), "service",
+                                e.data().path("service").asString("")));
             });
             return Disposition.ACK;
         }

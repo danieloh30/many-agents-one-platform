@@ -1,8 +1,8 @@
 package io.github.danieloh30.maop.tools.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.model.PolicyDecision;
 import io.github.danieloh30.maop.common.json.Json;
 import io.github.danieloh30.maop.common.tracing.Tracing;
@@ -47,8 +47,8 @@ public class OpaClient {
 
     public PolicyDecision decide(ObjectNode input) throws PolicyUnavailableException {
         Span span = Tracing.tracer().spanBuilder("policy.evaluate").setSpanKind(SpanKind.CLIENT)
-                .setAttribute("maop.policy.action", input.path("action").asText())
-                .setAttribute("maop.tool.name", input.path("tool").path("name").asText(""))
+                .setAttribute("maop.policy.action", input.path("action").asString())
+                .setAttribute("maop.tool.name", input.path("tool").path("name").asString(""))
                 .startSpan();
         try (Scope ignored = span.makeCurrent()) {
             ObjectNode body = Json.MAPPER.createObjectNode();
@@ -76,10 +76,10 @@ public class OpaClient {
             }
             List<String> reasons = new ArrayList<>();
             if (result.get("reasons") instanceof ArrayNode arr) {
-                arr.forEach(n -> reasons.add(n.asText()));
+                arr.forEach(n -> reasons.add(n.asString()));
             }
             PolicyDecision d = new PolicyDecision(result.get("allow").asBoolean(false),
-                    json.path("decision_id").asText(null), result.path("revision").asText(null), reasons);
+                    json.path("decision_id").asString(null), result.path("revision").asString(null), reasons);
             span.setAttribute("maop.policy.decision", d.allow() ? "allow" : "deny");
             if (d.decisionId() != null) {
                 span.setAttribute("maop.policy.decision_id", d.decisionId());

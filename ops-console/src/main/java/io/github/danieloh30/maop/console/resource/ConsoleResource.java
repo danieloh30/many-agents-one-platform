@@ -4,9 +4,9 @@ import io.github.danieloh30.maop.console.service.EventHub;
 import io.github.danieloh30.maop.console.service.Proxy;
 import io.github.danieloh30.maop.console.service.SnapshotService;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.json.Json;
 import io.github.danieloh30.maop.common.tools.ToolClient;
 import jakarta.inject.Inject;
@@ -86,8 +86,8 @@ public class ConsoleResource {
             // reported as unknown below
         }
         ObjectNode model = n.putObject("model");
-        model.put("mode", info == null ? null : info.at("/model/mode").asText(null));
-        model.put("name", info == null ? null : info.at("/model/name").asText(null));
+        model.put("mode", info == null ? null : info.at("/model/mode").asString(null));
+        model.put("name", info == null ? null : info.at("/model/name").asString(null));
         n.putObject("identity").put("mode", identityMode).put("trustDomain", trustDomain);
         ObjectNode links = n.putObject("links");
         Optional<String> j = clean(jaeger);

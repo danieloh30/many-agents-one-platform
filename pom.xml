@@ -29,7 +29,7 @@
 
     <!-- One property for the Quarkus platform BOM, its member BOMs, and the plugin. -->
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.40.1.2</quarkus.platform.version>
+    <quarkus.platform.version>4.0.1</quarkus.platform.version>
 
     <!-- Independently versioned libraries (each owns its property; never reuse the platform property). -->
     <jnats.version>2.27.0</jnats.version>

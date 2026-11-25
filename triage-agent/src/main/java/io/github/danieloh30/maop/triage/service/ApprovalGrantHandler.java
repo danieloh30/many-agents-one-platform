@@ -1,7 +1,7 @@
 package io.github.danieloh30.maop.triage.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.tools.ToolClient;
 import io.github.danieloh30.maop.common.tracing.Tracing;
 import io.github.danieloh30.maop.outbox.OutboxHandler;
@@ -29,9 +29,9 @@ public class ApprovalGrantHandler implements OutboxHandler {
     @Override
     public void deliver(UUID id, String subject, JsonNode payload) throws Exception {
         ObjectNode body = payload.deepCopy();
-        String approvalId = body.remove("approvalId").asText();
+        String approvalId = body.remove("approvalId").asString();
         JsonNode tp = body.remove("traceparent");
-        try (Scope ignored = Tracing.fromTraceparent(tp == null ? null : tp.asText()).makeCurrent()) {
+        try (Scope ignored = Tracing.fromTraceparent(tp == null ? null : tp.asString()).makeCurrent()) {
             HttpResponse<String> r = tools.call("PUT", "/v1/approvals/" + approvalId, body, Instant.now().plusSeconds(10));
             if (r.statusCode() != 200 && r.statusCode() != 201) {
                 throw new IllegalStateException("Approval registration returned " + r.statusCode() + ": " + r.body());

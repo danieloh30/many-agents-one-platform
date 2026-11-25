@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.outbox;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.agroal.api.AgroalDataSource;
 import io.github.danieloh30.maop.common.json.Json;
 import io.micrometer.core.instrument.Gauge;

@@ -13,7 +13,8 @@ and merged.
 | Security updates | Same rules; grouped separately so they are not delayed by other changes. |
 | Anything the automation cannot express as a PR | One standing issue, updated in place (§5.4). |
 
-Invariants: Java never goes below 25. Quarkus follows **LTS streams** only. The Quarkus
+Invariants: Java never goes below 25. Automated Quarkus stream upgrades follow **LTS streams** only;
+[ADR-0019](decisions/0019-quarkus-4-platform.md) records the owner-approved 4.0.1 exception. The Quarkus
 LangChain4j version always comes from the platform member BOM of the same platform version.
 
 ## 2. One coordinated mechanism, two engines, disjoint ownership

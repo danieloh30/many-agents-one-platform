@@ -2,9 +2,9 @@ package io.github.danieloh30.maop.tools.service;
 
 import io.github.danieloh30.maop.tools.model.VerifiedCaller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.agroal.api.AgroalDataSource;
 import io.github.danieloh30.maop.common.model.ApprovalGrant;
 import io.github.danieloh30.maop.common.model.PolicyDecision;
@@ -67,7 +67,7 @@ public class InvocationStore {
                     return Optional.empty();
                 }
                 List<String> reasons = new ArrayList<>();
-                Json.parse(rs.getString(10)).forEach(n -> reasons.add(n.asText()));
+                Json.parse(rs.getString(10)).forEach(n -> reasons.add(n.asString()));
                 String result = rs.getString(11);
                 return Optional.of(new Stored(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3),
                         rs.getString(4), rs.getString(5), rs.getString(6),

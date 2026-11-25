@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.agroal.api.AgroalDataSource;
 import io.github.danieloh30.maop.common.Ids;
 import io.github.danieloh30.maop.common.model.ActionDigests;
@@ -76,13 +76,13 @@ class ToolServiceTest {
                 Map.of("service", "checkout", "limit", 3), null);
         assertEquals(200, r.statusCode(), r.body());
         JsonNode b = json(r);
-        assertEquals("EXECUTED", b.get("status").asText());
+        assertEquals("EXECUTED", b.get("status").asString());
         assertEquals(false, b.get("replayed").asBoolean());
-        assertEquals(ToolServiceResources.id("evidence-agent"), b.at("/caller/spiffeId").asText());
+        assertEquals(ToolServiceResources.id("evidence-agent"), b.at("/caller/spiffeId").asString());
         assertEquals(true, b.at("/decision/allow").asBoolean());
-        assertTrue(b.at("/decision/decisionId").asText().length() > 0, "OPA decision id recorded");
-        assertEquals("SYNTHETIC", b.at("/result/dataOrigin").asText());
-        assertEquals("2.14.0", b.at("/result/deployments/0/version").asText());
+        assertTrue(b.at("/decision/decisionId").asString().length() > 0, "OPA decision id recorded");
+        assertEquals("SYNTHETIC", b.at("/result/dataOrigin").asString());
+        assertEquals("2.14.0", b.at("/result/deployments/0/version").asString());
     }
 
     @Test
@@ -92,16 +92,16 @@ class ToolServiceTest {
         HttpResponse<String> r = invoke("evidence-agent", "analysis.run_script", "sb-" + Ids.v7(), run, Ids.v7(), args, null);
         assertEquals(200, r.statusCode(), r.body());
         JsonNode b = json(r);
-        assertEquals("EXECUTED", b.get("status").asText());
-        assertEquals("SANDBOXED", b.get("toolClass").asText());
+        assertEquals("EXECUTED", b.get("status").asString());
+        assertEquals("SANDBOXED", b.get("toolClass").asString());
         assertEquals(true, b.at("/decision/allow").asBoolean());
-        assertEquals("SIMULATED", b.at("/result/sandbox/mode").asText());
+        assertEquals("SIMULATED", b.at("/result/sandbox/mode").asString());
         assertEquals(false, b.at("/result/sandbox/executed").asBoolean(), "the simulation never claims to have run the script");
-        assertEquals("SYNTHETIC", b.at("/result/dataOrigin").asText());
+        assertEquals("SYNTHETIC", b.at("/result/dataOrigin").asString());
         assertEquals(68, b.at("/result/signatures/0/sharePct").asInt());
         assertEquals(0, count("select count(*) from simulated_action where run_id = '" + run + "'"), "no remediation effect");
         JsonNode audit = json(call("ops-console", "GET", "/v1/invocations?runId=" + run, null)).at("/items/0");
-        assertEquals("SANDBOXED", audit.get("toolClass").asText());
+        assertEquals("SANDBOXED", audit.get("toolClass").asString());
     }
 
     @Test
@@ -110,8 +110,8 @@ class ToolServiceTest {
                 Map.of("service", "checkout", "script", "group errors by signature"), null);
         assertEquals(403, r.statusCode(), r.body());
         JsonNode b = json(r);
-        assertEquals("DENIED", b.get("status").asText());
-        assertEquals("caller_not_permitted", b.at("/decision/reasons/0").asText());
+        assertEquals("DENIED", b.get("status").asString());
+        assertEquals("caller_not_permitted", b.at("/decision/reasons/0").asString());
         assertTrue(b.get("result").isNull(), "nothing ran");
     }
 
@@ -140,7 +140,7 @@ class ToolServiceTest {
         HttpResponse<String> r = invoke("evidence-agent", "catalog.get_service", key, run, task,
                 Map.of("service", "cart"), null);
         assertEquals(409, r.statusCode());
-        assertEquals("IDEMPOTENCY_KEY_REUSED", json(r).get("code").asText());
+        assertEquals("IDEMPOTENCY_KEY_REUSED", json(r).get("code").asString());
     }
 
     @Test
@@ -173,13 +173,13 @@ class ToolServiceTest {
                 Ids.v7(), Map.of("service", "checkout", "toVersion", "2.13.2"), null);
         assertEquals(403, r.statusCode(), r.body());
         JsonNode b = json(r);
-        assertEquals("POLICY_DENIED", b.get("code").asText());
-        assertEquals("DENIED", b.get("status").asText());
-        assertEquals(List.of("approval_required"), List.of(b.at("/decision/reasons/0").asText()));
-        assertEquals(ToolServiceResources.id("recommendation-agent"), b.at("/caller/spiffeId").asText());
+        assertEquals("POLICY_DENIED", b.get("code").asString());
+        assertEquals("DENIED", b.get("status").asString());
+        assertEquals(List.of("approval_required"), List.of(b.at("/decision/reasons/0").asString()));
+        assertEquals(ToolServiceResources.id("recommendation-agent"), b.at("/caller/spiffeId").asString());
         assertEquals(0, count("select count(*) from simulated_action where run_id = '" + run + "'"));
         JsonNode audit = json(call("ops-console", "GET", "/v1/invocations?runId=" + run, null)).at("/items/0");
-        assertEquals("DENIED", audit.get("status").asText());
+        assertEquals("DENIED", audit.get("status").asString());
         assertEquals(0, audit.get("executions").asInt());
         assertTrue(audit.get("sideEffect").isNull());
     }
@@ -200,13 +200,13 @@ class ToolServiceTest {
         HttpResponse<String> other = invoke("recommendation-agent", "remediation.rollback_deployment", "rb-o-" + Ids.v7(),
                 run, Ids.v7(), Map.of("service", "checkout", "toVersion", "2.12.4"), approval);
         assertEquals(403, other.statusCode());
-        assertEquals("approval_mismatch", json(other).at("/decision/reasons/0").asText());
+        assertEquals("approval_mismatch", json(other).at("/decision/reasons/0").asString());
 
         // The evidence agent cannot use it at all.
         HttpResponse<String> ev = invoke("evidence-agent", "remediation.rollback_deployment", "rb-e-" + Ids.v7(), run,
                 Ids.v7(), Map.of("service", "checkout", "toVersion", "2.13.2"), approval);
         assertEquals(403, ev.statusCode());
-        assertEquals("caller_not_permitted", json(ev).at("/decision/reasons/0").asText());
+        assertEquals("caller_not_permitted", json(ev).at("/decision/reasons/0").asString());
 
         String key = "rb-ok-" + Ids.v7();
         UUID task = Ids.v7();
@@ -252,7 +252,7 @@ class ToolServiceTest {
         HttpResponse<String> f = foreign.send(HttpRequest.newBuilder(URI.create(ToolClients.BASE + "/v1/tools")).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
         assertEquals(401, f.statusCode());
-        assertEquals("UNTRUSTED_DOMAIN", json(f).get("code").asText());
+        assertEquals("UNTRUSTED_DOMAIN", json(f).get("code").asString());
     }
 
     @Test
@@ -260,7 +260,7 @@ class ToolServiceTest {
         HttpResponse<String> r = invoke("intruder", "catalog.get_service", "intr-" + Ids.v7(), run(), Ids.v7(),
                 Map.of("service", "checkout"), null);
         assertEquals(403, r.statusCode());
-        assertEquals("caller_not_permitted", json(r).at("/decision/reasons/0").asText());
+        assertEquals("caller_not_permitted", json(r).at("/decision/reasons/0").asString());
     }
 
     @Test
@@ -310,7 +310,7 @@ class ToolServiceTest {
             assertTrue(found != null, "tool.invocation.completed event published via outbox");
             String tp = found.ext(CloudEvent.EXT_TRACEPARENT);
             assertTrue(tp != null && tp.contains(traceId), "event continues the caller's trace: " + tp);
-            assertEquals(ToolServiceResources.id("evidence-agent"), found.data().get("callerSpiffeId").asText());
+            assertEquals(ToolServiceResources.id("evidence-agent"), found.data().get("callerSpiffeId").asString());
         }
     }
 

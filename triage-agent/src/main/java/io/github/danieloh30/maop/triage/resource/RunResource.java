@@ -6,8 +6,8 @@ import io.github.danieloh30.maop.triage.model.Run;
 import io.github.danieloh30.maop.triage.service.RunService;
 import io.github.danieloh30.maop.triage.service.RunStore;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.json.Json;
 import io.github.danieloh30.maop.common.agentic.ModelGateway;
 import io.quarkus.narayana.jta.QuarkusTransaction;

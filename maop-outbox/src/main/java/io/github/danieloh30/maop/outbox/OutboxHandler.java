@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.outbox;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.UUID;
 
 /** Publishes one outbox row of a given kind. Must be idempotent: a row can be delivered more than once. */

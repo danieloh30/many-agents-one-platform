@@ -1,8 +1,8 @@
 package io.github.danieloh30.maop.tools.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.json.Json;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,9 +36,9 @@ public class SyntheticTools {
                 if (svc.isMissingNode()) {
                     return notFound(out, service);
                 }
-                out.put("owner", svc.path("owner").asText());
+                out.put("owner", svc.path("owner").asString());
                 out.put("tier", svc.path("tier").asInt());
-                out.put("runtime", svc.path("runtime").asText());
+                out.put("runtime", svc.path("runtime").asString());
                 out.set("featureFlags", svc.path("featureFlags"));
             }
             case "catalog.get_dependencies" -> {
@@ -50,8 +50,8 @@ public class SyntheticTools {
                 int depth = args.get("depth") instanceof Number n ? n.intValue() : 1;
                 if (depth > 1) {
                     ObjectNode second = out.putObject("secondLevel");
-                    svc.path("downstream").forEach(d -> second.set(d.asText(),
-                            data.path("services").path(d.asText()).path("downstream")));
+                    svc.path("downstream").forEach(d -> second.set(d.asString(),
+                            data.path("services").path(d.asString()).path("downstream")));
                 }
             }
             case "deployment.get_history" -> {
@@ -64,10 +64,10 @@ public class SyntheticTools {
                 for (int i = 0; i < Math.min(limit, list.size()); i++) {
                     JsonNode d = list.get(i);
                     ObjectNode e = arr.addObject();
-                    e.put("version", d.path("version").asText());
+                    e.put("version", d.path("version").asString());
                     e.put("deployedAt", at(now, d.path("minutesAgo").asLong()));
-                    e.put("deployedBy", d.path("by").asText());
-                    e.put("change", d.path("change").asText());
+                    e.put("deployedBy", d.path("by").asString());
+                    e.put("change", d.path("change").asString());
                     if (d.has("observedWhileLive")) {
                         e.set("observedWhileLive", d.path("observedWhileLive"));
                     }

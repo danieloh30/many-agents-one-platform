@@ -1,7 +1,7 @@
 package io.github.danieloh30.maop.evidence.agentic;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.BudgetTracker;
 import io.github.danieloh30.maop.common.TaskFailure;
 import io.github.danieloh30.maop.common.model.EvidenceItem;
@@ -64,11 +64,11 @@ public class EvidenceAgent {
                 JsonNode deps = history == null ? null : history.result().path("deployments");
                 if (deps != null && deps.size() >= 2) {
                     call(cmd, budget, results, "deployment.get_diff", Map.of("service", svc,
-                            "fromVersion", deps.get(1).path("version").asText(), "toVersion", deps.get(0).path("version").asText()));
+                            "fromVersion", deps.get(1).path("version").asString(), "toVersion", deps.get(0).path("version").asString()));
                 }
             }
         }
-        if (results.values().stream().allMatch(n -> "DENIED".equals(n.path("status").asText()))) {
+        if (results.values().stream().allMatch(n -> "DENIED".equals(n.path("status").asString()))) {
             throw new TaskFailure(FailureReason.TOOL_DENIED, false, "All baseline tool calls were denied by policy");
         }
         return results;
@@ -89,7 +89,7 @@ public class EvidenceAgent {
 
     public Gathered gather(EvidenceTaskCommand cmd, Map<String, ObjectNode> baseline, BudgetTracker budget) {
         Map<String, String> invocations = new ConcurrentHashMap<>();
-        baseline.values().forEach(n -> invocations.put(n.get("invocationId").asText(), n.get("toolName").asText()));
+        baseline.values().forEach(n -> invocations.put(n.get("invocationId").asString(), n.get("toolName").asString()));
         String toolResults = Json.write(baseline.values());
         String feedback = "";
         TaskFailure last = new TaskFailure(FailureReason.MODEL_OUTPUT_INVALID, false, "Evidence output invalid");
@@ -133,7 +133,7 @@ public class EvidenceAgent {
         } catch (IllegalArgumentException e) {
             throw new TaskFailure(FailureReason.MODEL_OUTPUT_INVALID, false, "Evidence output is not valid JSON");
         }
-        String finding = n.path("finding").asText("");
+        String finding = n.path("finding").asString("");
         double confidence = n.path("confidence").asDouble(-1);
         if (finding.isBlank() || finding.length() > 400 || confidence < 0 || confidence > 1) {
             throw new TaskFailure(FailureReason.MODEL_OUTPUT_INVALID, false, "Evidence finding/confidence invalid");
@@ -141,12 +141,12 @@ public class EvidenceAgent {
         List<Fact> facts = new ArrayList<>();
         Set<String> known = invocations.keySet();
         for (JsonNode f : n.path("facts")) {
-            String id = f.path("invocationId").asText();
+            String id = f.path("invocationId").asString();
             if (!known.contains(id)) {
                 throw new TaskFailure(FailureReason.MODEL_OUTPUT_INVALID, false,
                         "Fact cites invocation " + id + " that was not returned to this task");
             }
-            String statement = f.path("statement").asText("");
+            String statement = f.path("statement").asString("");
             if (statement.isBlank()) {
                 continue;
             }

@@ -4,8 +4,8 @@ import io.github.danieloh30.maop.tools.model.VerifiedCaller;
 import io.github.danieloh30.maop.tools.service.InvocationStore;
 import io.github.danieloh30.maop.tools.service.ToolInvocationService;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.model.ApprovalGrant;
 import io.github.danieloh30.maop.common.model.ToolInvocationRequest;
 import io.github.danieloh30.maop.common.json.Json;
