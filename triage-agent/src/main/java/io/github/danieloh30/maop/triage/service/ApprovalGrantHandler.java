@@ -28,7 +28,7 @@ public class ApprovalGrantHandler implements OutboxHandler {
 
     @Override
     public void deliver(UUID id, String subject, JsonNode payload) throws Exception {
-        ObjectNode body = payload.deepCopy();
+        ObjectNode body = ((ObjectNode) payload).deepCopy();
         String approvalId = body.remove("approvalId").asString();
         JsonNode tp = body.remove("traceparent");
         try (Scope ignored = Tracing.fromTraceparent(tp == null ? null : tp.asString()).makeCurrent()) {
