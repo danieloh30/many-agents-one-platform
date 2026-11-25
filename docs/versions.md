@@ -73,7 +73,7 @@ compatible.
 | Component | Chart | App version | Notes |
 | --- | --- | --- | --- |
 | KEDA | `keda` **2.21.1** from `https://kedacore.github.io/charts` | 2.21.1 | Patch over 2.21.0 (chart values differ only in comments). Tested with Kubernetes 1.34–1.36. |
-| SPIRE | `spire` **0.31.0** + `spire-crds` **0.6.1** from `https://spiffe.github.io/helm-charts-hardened/` | SPIRE 1.16.0 | Chart 0.31.0 makes SPIRE 1.16.0 the default; its values are unchanged from 0.30.4. Pin the SPIFFE CSI driver image tag explicitly (chart default trails the 0.3.0 release). |
+| SPIRE | `spire` **0.31.0** + `spire-crds` **0.6.1** from `https://spiffe.github.io/helm-charts-hardened/` | SPIRE 1.16.0 | Chart 0.31.0 makes SPIRE 1.16.0 the default; its values are unchanged from 0.30.4. SPIFFE CSI driver **0.4.0** is pinned explicitly. Keep the chart's OpenShift SELinux init container: it labels the socket directory before the driver's read-only mount is used. Rehearse socket access on the target cluster before an event. |
 
 ## 5. Clusters
 
