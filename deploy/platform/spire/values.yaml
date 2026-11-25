@@ -39,5 +39,5 @@ spire-server:
 
 spiffe-csi-driver:
   image:
-    # Chart default trails the 0.3.0 release (docs/versions.md §4).
-    tag: "0.3.0"
+    # Chart default trails the 0.4.0 release (docs/versions.md §4).
+    tag: "0.4.0"
