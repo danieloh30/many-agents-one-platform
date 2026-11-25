@@ -9,7 +9,8 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
-  useStore,
+  useNodesStore,
+  useViewportStore,
   type Edge,
   type EdgeProps,
   type Node,
@@ -322,9 +323,9 @@ function FocusController() {
  * nodes change size (first measurement, presenter mode's larger type, pods appearing during a scale-out).
  */
 function ResizeController() {
-  const width = useStore((s) => s.width);
-  const height = useStore((s) => s.height);
-  const measured = useStore((s) => {
+  const width = useViewportStore((s) => s.width);
+  const height = useViewportStore((s) => s.height);
+  const measured = useNodesStore((s) => {
     let sum = 0;
     for (const n of s.nodeLookup.values()) sum += (n.measured.width ?? 0) + (n.measured.height ?? 0);
     return Math.round(sum);
