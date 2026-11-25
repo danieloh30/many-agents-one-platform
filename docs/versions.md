@@ -22,7 +22,7 @@ implementation time (they are not recorded here because they were not pulled in 
 | NATS client | `io.nats:jnats:2.26.4` | Own property `jnats.version` (independently versioned). |
 | CloudEvents | In-repo envelope and NATS binary-binding codec (`maop-common`) | The SDK is not used: the Quarkus BOM pins `cloudevents-api` 3.0.0 (ADR-0016). |
 | Test PKI | `org.bouncycastle:bcpkix-lts8on:2.73.12` (test scope only) | LTS line matching the `bcprov-lts8on` that jnats brings in. |
-| Managed by the Quarkus BOM (no explicit version) | `quarkus-rest`, `quarkus-rest-jackson`, `quarkus-rest-client-jackson`, `quarkus-hibernate-orm-panache`, `quarkus-jdbc-postgresql`, `quarkus-flyway`, `quarkus-scheduler`, `quarkus-smallrye-fault-tolerance`, `quarkus-smallrye-health`, `quarkus-opentelemetry`, `quarkus-micrometer`, `quarkus-micrometer-registry-prometheus`, `quarkus-tls-registry`, `quarkus-kubernetes-client` (ops-console only) | OpenTelemetry 1.62.0, Hibernate ORM 7.4.9, Flyway 12.0.0, Testcontainers 2.0.5 come with the BOM. |
+| Managed by the Quarkus BOM (no explicit version) | `quarkus-rest`, `quarkus-rest-jackson`, `quarkus-rest-client-jackson`, `quarkus-hibernate-orm-panache`, `quarkus-jdbc-postgresql`, `quarkus-flyway`, `quarkus-scheduler`, `quarkus-smallrye-fault-tolerance`, `quarkus-smallrye-health`, `quarkus-opentelemetry`, `quarkus-micrometer`, `quarkus-micrometer-registry-prometheus`, `quarkus-tls-registry`, `quarkus-kubernetes-client` (ops-console only) | Versions are managed by the 4.0.1 platform BOM; do not override them independently. |
 | Runtime base image | `registry.access.redhat.com/ubi9/openjdk-25-runtime:1.24` | JVM mode. Native image is out of scope. |
 
 Java 25 status: Quarkus 3.40 builds on JDK 25 in its own CI and lists 25 among supported LTS
@@ -105,7 +105,7 @@ Do not state CNCF maturity levels in talks or docs without re-checking the
 
 | # | Risk | Handling |
 | --- | --- | --- |
-| V1 | Platform LangChain4j (1.13.4) trails the standalone release (1.15.1). | Accepted for stability; never mix the two BOMs. |
+| V1 | Platform LangChain4j is 2.0.0.CR1, a pre-release member of stable platform 4.0.1. | Accepted through ADR-0019 subject to demo validation; never mix platform and standalone BOMs. |
 | V2 | `jnats` and CloudEvents are outside the platform BOM. | Thin adapter in `maop-common`, integration tests against a real NATS container. |
 | V3 | TypeScript must stay on 6.0.x until `typescript-eslint` supports 7. | Dependabot `ignore` for TypeScript majors; revisit in the compatibility check. |
 | V4 | Helm chart versions trail application releases (KEDA, SPIRE). | Charts are pinned, not app versions; the scheduled check proposes chart bumps. |
