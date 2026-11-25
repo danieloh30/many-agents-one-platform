@@ -14,6 +14,8 @@ changes Jackson, Jakarta REST, telemetry defaults, and the platform-managed Lang
   Maven plugin sharing the existing property. Future stream discovery remains LTS-only.
 - Apply the official Quarkus update recipes, including Jackson 3 and the Quarkus JUnit artifact rename.
 - Keep the existing gRPC OTLP collector endpoint and explicitly configure the gRPC protocol.
+  Set parent-based always-on sampling in every service so the demo retains every run trace;
+  Quarkus 4 otherwise samples only 10% by default.
 - Retain Java 25, the existing SPIFFE helper identity integration, and simulated remediation.
 - Merge only after the compatibility gate and a real kind deployment with demo verification pass.
   Model calls in this check are explicitly deterministic. Rehearse live-model and OpenShift-specific

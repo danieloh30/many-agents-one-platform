@@ -101,6 +101,7 @@ class TriageWorkflowTest {
     void successfulRunWithApprovalCompletesInOneTrace() throws Exception {
         UUID id = submit(body("SUCCESS", "PROPOSE_ONLY", "NONE"));
         String traceId = run(id).getString("traceId");
+        assertTrue(traceId != null && traceId.matches("[0-9a-f]{32}"), "every submitted run must expose a valid trace ID");
         List<CloudEvent> cmds = evidenceCommands(id, 3);
         assertEquals(3, cmds.size(), "deterministic triage plan delegates three evidence tasks");
         for (CloudEvent c : cmds) {
