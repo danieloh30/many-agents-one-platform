@@ -94,7 +94,7 @@ public class SnapshotService {
                     new Heartbeat(e.data().path("service").asString(), e.data().path("activeTasks").asInt(),
                             e.data().path("modelPermitsInUse").asInt(), Instant.now()));
             case EventTypes.MODEL_CALL_COMPLETED -> {
-                ObjectNode n = e.data().deepCopy();
+                ObjectNode n = ((ObjectNode) e.data()).deepCopy();
                 n.put("observedAt", Instant.now().toString());
                 lastModelCall.set(n);
             }
