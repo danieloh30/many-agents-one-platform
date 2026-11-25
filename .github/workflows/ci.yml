@@ -368,7 +368,7 @@ jobs:
   # Runs nightly, on demand (workflow_dispatch input run-e2e), and on PRs labelled `run-e2e`
   # (add the label, then push or re-run; the label alone does not trigger a run).
   # It drives demo.sh's kubernetes path (`up --platform kubernetes --install-platform-components`,
-  # then `verify --quick`) against a kind cluster with kind-action's local registry, which serves
+  # then full `verify`, including redelivery and scale-out) against a kind cluster with kind-action's local registry, which serves
   # plain HTTP (hence MAOP_REGISTRY_TLS_VERIFY=false). Passing on GitHub since run 44226446717.
   e2e-kind:
     if: >-
@@ -434,10 +434,10 @@ jobs:
           MAOP_REGISTRY_TLS_VERIFY: "false"
           MAOP_SPIRE_TRUST_DOMAIN: e2e.maop.test
         run: ./demo.sh up --platform kubernetes --profile dev --install-platform-components --skip-model-probe --yes
-      - name: demo.sh verify --quick (smoke subset)
+      - name: demo.sh verify (all demo scenarios)
         env:
           MAOP_PLATFORM: kubernetes
-        run: ./demo.sh verify --quick
+        run: ./demo.sh verify
       - name: Cluster state on failure
         if: failure()
         run: |
