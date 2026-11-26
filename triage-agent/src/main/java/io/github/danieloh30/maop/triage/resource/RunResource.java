@@ -10,6 +10,10 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.json.Json;
 import io.github.danieloh30.maop.common.agentic.ModelGateway;
+import io.github.danieloh30.maop.common.tracing.Tracing;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DefaultValue;
@@ -61,9 +65,17 @@ public class RunResource {
 
     @POST
     @Path("/runs")
-    public Response create(CreateRunRequest req, @HeaderParam("Idempotency-Key") String key) {
-        RunService.Created c = service.create(req, key);
-        return Response.status(c.replayed() ? 200 : 202).entity(view(c.run().runId)).build();
+    public Response create(CreateRunRequest req, @HeaderParam("Idempotency-Key") String key,
+            @HeaderParam("traceparent") String traceparent) {
+        try (Scope ignored = incomingTrace(traceparent)) {
+            RunService.Created c = service.create(req, key);
+            return Response.status(c.replayed() ? 200 : 202).entity(view(c.run().runId)).build();
+        }
+    }
+
+    private static Scope incomingTrace(String traceparent) {
+        Context parent = Tracing.fromTraceparent(traceparent);
+        return (Span.fromContext(parent).getSpanContext().isValid() ? parent : Context.current()).makeCurrent();
     }
 
     @GET
@@ -124,8 +136,10 @@ public class RunResource {
 
     @POST
     @Path("/bursts")
-    public Response burst(BurstRequest req) {
-        return Response.status(202).entity(service.startBurst(req == null ? null : req.runs())).build();
+    public Response burst(BurstRequest req, @HeaderParam("traceparent") String traceparent) {
+        try (Scope ignored = incomingTrace(traceparent)) {
+            return Response.status(202).entity(service.startBurst(req == null ? null : req.runs())).build();
+        }
     }
 
     @GET

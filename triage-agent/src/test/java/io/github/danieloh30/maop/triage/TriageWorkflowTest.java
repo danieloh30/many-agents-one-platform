@@ -148,6 +148,17 @@ class TriageWorkflowTest {
     }
 
     @Test
+    void submissionRetainsTheCallingConsolesTrace() {
+        String traceId = "4bf92f3577b34da6a3ce929d0e0e4736";
+        String id = given().contentType(ContentType.JSON)
+                .header("Idempotency-Key", "trace-" + Ids.v7())
+                .header("traceparent", "00-" + traceId + "-00f067aa0ba902b7-01")
+                .body(body("SUCCESS", "PROPOSE_ONLY", "NONE")).post("/v1/runs")
+                .then().statusCode(202).extract().path("runId");
+        assertEquals(traceId, run(UUID.fromString(id)).getString("traceId"));
+    }
+
+    @Test
     void sandboxedAnalysisAddsOneCodePlannedTaskOnlyWhenRequested() throws Exception {
         java.util.Map<String, Object> req = new java.util.LinkedHashMap<>(Json.MAPPER.readValue(
                 body("SANDBOX", "PROPOSE_ONLY", "NONE"), new tools.jackson.core.type.TypeReference<Map<String, Object>>() {
