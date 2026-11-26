@@ -39,6 +39,7 @@ public class Proxy {
         return http.send(b.build(), HttpResponse.BodyHandlers.ofString());
     }
 
+    @io.opentelemetry.instrumentation.annotations.WithSpan("maop.console.forward")
     public Response forward(String method, String path, String body, Map<String, String> headers) {
         try {
             HttpResponse<String> r = send(method, path, body, headers);
