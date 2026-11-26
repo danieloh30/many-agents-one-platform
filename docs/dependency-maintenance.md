@@ -255,4 +255,8 @@ in the [runbook](demo-runbook.md). Tag the rehearsed commit (`demo-YYYYMMDD`) an
 - `ci.yml` job names: `changes`, `backend`, `frontend`, `policy`, `manifests`, `shell`, `java-version-guard`,
   `ownership-check`, `images`, `security`, aggregated by the required check `compat-gate`. `e2e-kind` runs nightly
   or on PRs labelled `run-e2e` and is not part of the gate yet.
+- The optional `e2e-kind` job runs full demo verification. Its evidence worker explicitly sets
+  `MAOP_MODEL_DETERMINISTIC_DELAY=2s` so the synthetic model leaves enough real queue backlog for KEDA
+  to observe scale-out. The `maop.model.deterministic-delay` setting defaults to `0s` and applies only to
+  deterministic mode; live provider calls are unaffected. Delayed calls remain interruptible by deadlines.
 - Repository settings and their verified state are recorded in the final handoff of the implementation phase.

@@ -65,6 +65,8 @@ public class ModelGateway {
     Duration permitTimeout;
     @ConfigProperty(name = "maop.model.call-timeout", defaultValue = "20s")
     Duration callTimeout;
+    @ConfigProperty(name = "maop.model.deterministic-delay", defaultValue = "0s")
+    Duration deterministicDelay;
     @ConfigProperty(name = "quarkus.application.name", defaultValue = "maop")
     String service;
 
@@ -116,7 +118,7 @@ public class ModelGateway {
                         if (!script.isResolvable()) {
                             throw new IllegalStateException("Deterministic mode selected but no DeterministicScript bean");
                         }
-                        model = new ScriptedChatModel(script.get());
+                        model = new ScriptedChatModel(script.get(), deterministicDelay);
                     } else {
                         if (!liveModel.isResolvable()) {
                             throw new IllegalStateException("Live model mode selected but no ChatModel is configured");

@@ -434,6 +434,10 @@ jobs:
           MAOP_REGISTRY_TLS_VERIFY: "false"
           MAOP_SPIRE_TRUST_DOMAIN: e2e.maop.test
         run: ./demo.sh up --platform kubernetes --profile dev --install-platform-components --skip-model-probe --yes
+      - name: Give deterministic evidence calls enough latency to exercise real KEDA scaling
+        run: |
+          kubectl set env deployment/evidence-agent -n maop MAOP_MODEL_DETERMINISTIC_DELAY=2s
+          kubectl rollout status deployment/evidence-agent -n maop --timeout=5m
       - name: demo.sh verify (all demo scenarios)
         env:
           MAOP_PLATFORM: kubernetes
