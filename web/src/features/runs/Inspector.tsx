@@ -70,13 +70,15 @@ export function Inspector({ runId, invocationId }: { runId: string | undefined; 
         </Tabs.List>
         <div className="min-h-0 flex-1 overflow-auto p-3">
           {!runId ? (
-            <EmptyInspector />
+            <Tabs.Content value={tab}><EmptyInspector /></Tabs.Content>
           ) : run.isPending ? (
-            <Skeleton className="h-40" label="Loading run" />
+            <Tabs.Content value={tab}><Skeleton className="h-40" label="Loading run" /></Tabs.Content>
           ) : run.isError ? (
+            <Tabs.Content value={tab}>
             <p role="alert" className="text-sm text-danger">
               {describeError(run.error)}
             </p>
+            </Tabs.Content>
           ) : (
             <>
               <Tabs.Content value="summary">

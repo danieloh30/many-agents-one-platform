@@ -215,6 +215,9 @@ body {
   background: transparent;
   color: var(--text-muted);
 }
+.react-flow__attribution a {
+  color: inherit;
+}
 .react-flow__controls-button {
   background: var(--surface);
   color: var(--text);
