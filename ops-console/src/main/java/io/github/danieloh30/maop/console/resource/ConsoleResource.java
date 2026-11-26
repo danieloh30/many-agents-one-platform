@@ -157,6 +157,7 @@ public class ConsoleResource {
 
     @POST
     @Path("/runs")
+    @io.opentelemetry.instrumentation.annotations.WithSpan("maop.console.submit")
     public Response create(String body, @HeaderParam("Idempotency-Key") String key) {
         return triage.forward("POST", "/v1/runs", body, Map.of("Idempotency-Key", key == null ? "" : key));
     }
@@ -194,6 +195,7 @@ public class ConsoleResource {
 
     @POST
     @Path("/bursts")
+    @io.opentelemetry.instrumentation.annotations.WithSpan("maop.console.burst")
     public Response burst(String body) {
         return triage.forward("POST", "/v1/bursts", body == null || body.isBlank() ? "{}" : body, Map.of());
     }

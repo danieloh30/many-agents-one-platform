@@ -33,6 +33,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -77,6 +78,7 @@ public class RunService {
     public record Created(Run run, boolean replayed) {
     }
 
+    @WithSpan("maop.run.submit")
     public Created create(CreateRunRequest req, String idempotencyKey) {
         validate(req);
         if (idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 200) {
@@ -209,6 +211,7 @@ public class RunService {
             new TriagePlan.PlannedTask(Topic.ERROR_SUMMARY, "Which endpoints and error types increased, and when?"));
 
     /** Bounded load: N preset-planned evidence runs (no triage model call), dispatched at once. */
+    @WithSpan("maop.burst.submit")
     public tools.jackson.databind.node.ObjectNode startBurst(Integer requested) {
         int n = Math.clamp(requested == null ? burstMaxRuns : requested, 1, burstMaxRuns);
         return QuarkusTransaction.requiringNew().call(() -> {
