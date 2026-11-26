@@ -148,7 +148,7 @@ export function Shell() {
 
   const stage = (
     <div className="flex min-h-[416px] flex-1 flex-col">
-      <div role="tablist" aria-label="Stage view (T)" className="flex items-end gap-1 border-b border-border px-3 pt-2">
+      <div className="flex items-end gap-1 border-b border-border px-3 pt-2">
         {isLg && !presenter ? (
           <Button
             size="sm"
@@ -161,6 +161,7 @@ export function Shell() {
             title={railHidden ? 'Show scenarios and runs (L)' : 'Hide scenarios and runs (L)'}
           />
         ) : null}
+        <div role="tablist" aria-label="Stage view (T)" className="flex items-end gap-1">
         {(
           [
             ['topology', 'Topology', Workflow],
@@ -181,6 +182,7 @@ export function Shell() {
             <Icon aria-hidden size={14} /> {label}
           </button>
         ))}
+        </div>
         {!isLg ? (
           <Button size="sm" variant="ghost" icon={PanelRight} className="ml-auto mb-1" onClick={() => setDrawer(true)}>
             Inspector
