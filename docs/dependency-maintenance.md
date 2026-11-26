@@ -13,7 +13,8 @@ and merged.
 | Security updates | Same rules; grouped separately so they are not delayed by other changes. |
 | Anything the automation cannot express as a PR | One standing issue, updated in place (§5.4). |
 
-Invariants: Java never goes below 25. Quarkus follows **LTS streams** only. The Quarkus
+Invariants: Java never goes below 25. Automated Quarkus stream upgrades follow **LTS streams** only;
+[ADR-0019](decisions/0019-quarkus-4-platform.md) records the owner-approved 4.0.1 exception. The Quarkus
 LangChain4j version always comes from the platform member BOM of the same platform version.
 
 ## 2. One coordinated mechanism, two engines, disjoint ownership
@@ -254,4 +255,8 @@ in the [runbook](demo-runbook.md). Tag the rehearsed commit (`demo-YYYYMMDD`) an
 - `ci.yml` job names: `changes`, `backend`, `frontend`, `policy`, `manifests`, `shell`, `java-version-guard`,
   `ownership-check`, `images`, `security`, aggregated by the required check `compat-gate`. `e2e-kind` runs nightly
   or on PRs labelled `run-e2e` and is not part of the gate yet.
+- The optional `e2e-kind` job runs full demo verification. Its evidence worker explicitly sets
+  `MAOP_MODEL_DETERMINISTIC_DELAY=2s` so the synthetic model leaves enough real queue backlog for KEDA
+  to observe scale-out. The `maop.model.deterministic-delay` setting defaults to `0s` and applies only to
+  deterministic mode; live provider calls are unaffected. Delayed calls remain interruptible by deadlines.
 - Repository settings and their verified state are recorded in the final handoff of the implementation phase.

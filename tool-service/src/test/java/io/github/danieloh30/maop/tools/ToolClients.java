@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.tools;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.github.danieloh30.maop.common.json.Json;
 import io.github.danieloh30.maop.common.tls.SpiffeHttpClient;
 import io.github.danieloh30.maop.common.tls.SvidSource;

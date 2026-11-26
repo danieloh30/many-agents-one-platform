@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.common.tools;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.github.danieloh30.maop.common.BudgetTracker;
 import io.github.danieloh30.maop.common.Deadlines;
 import io.github.danieloh30.maop.common.TaskFailure;
@@ -78,21 +78,21 @@ public class ToolClient {
                 Map.of("Idempotency-Key", key), deadline, "tool call " + toolName);
         JsonNode json = r.body() == null || r.body().isBlank() ? Json.MAPPER.createObjectNode() : Json.parse(r.body());
         return switch (r.statusCode()) {
-            case 200 -> new ToolResult(json.path("invocationId").asText(), toolName, json.path("status").asText(),
+            case 200 -> new ToolResult(json.path("invocationId").asString(), toolName, json.path("status").asString(),
                     json.path("replayed").asBoolean(), Json.convert(json.path("decision"), PolicyDecision.class),
                     json.path("result"));
             case 403 -> {
                 if (budget != null) {
                     budget.denial();
                 }
-                yield new ToolResult(json.path("invocationId").asText(), toolName, "DENIED",
+                yield new ToolResult(json.path("invocationId").asString(), toolName, "DENIED",
                         json.path("replayed").asBoolean(), Json.convert(json.path("decision"), PolicyDecision.class), null);
             }
             case 408, 504 -> throw TaskFailure.deadline("tool call " + toolName);
             case 409, 422 -> throw new TaskFailure(FailureReason.INVALID_COMMAND, false,
-                    "Tool rejected request (" + r.statusCode() + "): " + json.path("detail").asText());
+                    "Tool rejected request (" + r.statusCode() + "): " + json.path("detail").asString());
             default -> throw new TaskFailure(FailureReason.TOOL_UNAVAILABLE, true,
-                    "Tool service returned " + r.statusCode() + ": " + json.path("code").asText());
+                    "Tool service returned " + r.statusCode() + ": " + json.path("code").asString());
         };
     }
 

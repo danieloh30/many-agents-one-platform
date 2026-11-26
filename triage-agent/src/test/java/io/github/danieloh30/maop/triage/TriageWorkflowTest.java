@@ -101,6 +101,7 @@ class TriageWorkflowTest {
     void successfulRunWithApprovalCompletesInOneTrace() throws Exception {
         UUID id = submit(body("SUCCESS", "PROPOSE_ONLY", "NONE"));
         String traceId = run(id).getString("traceId");
+        assertTrue(traceId != null && traceId.matches("[0-9a-f]{32}"), "every submitted run must expose a valid trace ID");
         List<CloudEvent> cmds = evidenceCommands(id, 3);
         assertEquals(3, cmds.size(), "deterministic triage plan delegates three evidence tasks");
         for (CloudEvent c : cmds) {
@@ -147,9 +148,20 @@ class TriageWorkflowTest {
     }
 
     @Test
+    void submissionRetainsTheCallingConsolesTrace() {
+        String traceId = "4bf92f3577b34da6a3ce929d0e0e4736";
+        String id = given().contentType(ContentType.JSON)
+                .header("Idempotency-Key", "trace-" + Ids.v7())
+                .header("traceparent", "00-" + traceId + "-00f067aa0ba902b7-01")
+                .body(body("SUCCESS", "PROPOSE_ONLY", "NONE")).post("/v1/runs")
+                .then().statusCode(202).extract().path("runId");
+        assertEquals(traceId, run(UUID.fromString(id)).getString("traceId"));
+    }
+
+    @Test
     void sandboxedAnalysisAddsOneCodePlannedTaskOnlyWhenRequested() throws Exception {
         java.util.Map<String, Object> req = new java.util.LinkedHashMap<>(Json.MAPPER.readValue(
-                body("SANDBOX", "PROPOSE_ONLY", "NONE"), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
+                body("SANDBOX", "PROPOSE_ONLY", "NONE"), new tools.jackson.core.type.TypeReference<Map<String, Object>>() {
                 }));
         req.put("analysisMode", "SANDBOXED_SCRIPT");
         UUID id = submit(Json.write(req));

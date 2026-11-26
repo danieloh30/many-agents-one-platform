@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.console.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.github.danieloh30.maop.common.events.CloudEvent;
 import io.github.danieloh30.maop.common.events.CloudEventCodec;
 import io.github.danieloh30.maop.common.events.EventTypes;

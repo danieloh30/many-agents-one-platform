@@ -1,15 +1,11 @@
 package io.github.danieloh30.maop.common.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,15 +13,13 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
+import tools.jackson.core.JacksonException;
 
 /** Shared JSON configuration plus canonical serialisation (RFC 8785 subset) and digests. */
 public final class Json {
 
     public static final ObjectMapper MAPPER = JsonMapper.builder()
-            .addModule(new JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .serializationInclusion(JsonInclude.Include.ALWAYS)
+            .changeDefaultPropertyInclusion(incl -> incl.withContentInclusion(JsonInclude.Include.ALWAYS).withValueInclusion(JsonInclude.Include.ALWAYS))
             .build();
 
     private Json() {
@@ -34,7 +28,7 @@ public final class Json {
     public static String write(Object value) {
         try {
             return MAPPER.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Cannot serialise " + value.getClass().getSimpleName(), e);
         }
     }
@@ -50,7 +44,7 @@ public final class Json {
     public static <T> T read(String json, Class<T> type) {
         try {
             return MAPPER.readValue(json, type);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Invalid JSON for " + type.getSimpleName() + ": " + e.getOriginalMessage(), e);
         }
     }
@@ -62,7 +56,7 @@ public final class Json {
     public static <T> T convert(JsonNode node, Class<T> type) {
         try {
             return MAPPER.treeToValue(node, type);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Invalid payload for " + type.getSimpleName() + ": " + e.getOriginalMessage(), e);
         }
     }
@@ -70,7 +64,7 @@ public final class Json {
     public static JsonNode parse(String json) {
         try {
             return MAPPER.readTree(json);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Invalid JSON: " + e.getOriginalMessage(), e);
         }
     }
@@ -89,7 +83,7 @@ public final class Json {
     private static void writeCanonical(JsonNode node, StringBuilder sb) {
         if (node instanceof ObjectNode obj) {
             List<String> names = new ArrayList<>();
-            obj.fieldNames().forEachRemaining(names::add);
+            obj.propertyNames().iterator().forEachRemaining(names::add);
             names.sort(null);
             sb.append('{');
             for (int i = 0; i < names.size(); i++) {
@@ -102,7 +96,7 @@ public final class Json {
             sb.append('}');
         } else if (node instanceof ArrayNode arr) {
             sb.append('[');
-            Iterator<JsonNode> it = arr.elements();
+            Iterator<JsonNode> it = arr.values().iterator();
             boolean first = true;
             while (it.hasNext()) {
                 if (!first) {

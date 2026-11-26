@@ -1,6 +1,7 @@
 package io.github.danieloh30.maop.common.tracing;
 
 import io.github.danieloh30.maop.common.events.CloudEvent;
+import io.quarkus.arc.Arc;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -14,7 +15,7 @@ import java.util.Map;
 
 /**
  * W3C trace-context propagation through CloudEvents extensions (and therefore NATS headers and outbox rows).
- * Uses the OpenTelemetry instance configured by Quarkus (registered globally by the extension) and falls back
+ * Uses the OpenTelemetry instance configured by Quarkus and falls back
  * to the no-op implementation when none is configured (plain unit tests).
  */
 public final class Tracing {
@@ -46,7 +47,17 @@ public final class Tracing {
 
     public static OpenTelemetry otel() {
         OpenTelemetry o = override;
-        return o != null ? o : GlobalOpenTelemetry.get();
+        if (o != null) {
+            return o;
+        }
+        var container = Arc.container();
+        if (container != null) {
+            var managed = container.instance(OpenTelemetry.class);
+            if (managed.isAvailable()) {
+                return managed.get();
+            }
+        }
+        return GlobalOpenTelemetry.get();
     }
 
     public static io.opentelemetry.api.trace.Tracer tracer() {

@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.triage.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.github.danieloh30.maop.common.model.TaskDeadLettered;
 import io.github.danieloh30.maop.common.model.TaskKind;
 import io.github.danieloh30.maop.common.events.CloudEvent;
@@ -42,7 +42,7 @@ public class AdvisoryListener {
     }
 
     void handle(JsonNode advisory) {
-        String stream = advisory.path("stream").asText();
+        String stream = advisory.path("stream").asString();
         long seq = advisory.path("stream_seq").asLong();
         long deliveries = advisory.path("deliveries").asLong();
         try {

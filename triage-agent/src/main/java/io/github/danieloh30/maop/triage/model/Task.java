@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.triage.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.github.danieloh30.maop.common.model.TaskKind;
 import io.github.danieloh30.maop.common.model.TaskState;
 import io.github.danieloh30.maop.common.model.Topic;

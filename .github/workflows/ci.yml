@@ -368,7 +368,7 @@ jobs:
   # Runs nightly, on demand (workflow_dispatch input run-e2e), and on PRs labelled `run-e2e`
   # (add the label, then push or re-run; the label alone does not trigger a run).
   # It drives demo.sh's kubernetes path (`up --platform kubernetes --install-platform-components`,
-  # then `verify --quick`) against a kind cluster with kind-action's local registry, which serves
+  # then full `verify`, including redelivery and scale-out) against a kind cluster with kind-action's local registry, which serves
   # plain HTTP (hence MAOP_REGISTRY_TLS_VERIFY=false). Passing on GitHub since run 44226446717.
   e2e-kind:
     if: >-
@@ -434,15 +434,24 @@ jobs:
           MAOP_REGISTRY_TLS_VERIFY: "false"
           MAOP_SPIRE_TRUST_DOMAIN: e2e.maop.test
         run: ./demo.sh up --platform kubernetes --profile dev --install-platform-components --skip-model-probe --yes
-      - name: demo.sh verify --quick (smoke subset)
+      - name: Give deterministic evidence calls enough latency to exercise real KEDA scaling
+        run: |
+          kubectl set env deployment/evidence-agent -n maop MAOP_MODEL_DETERMINISTIC_DELAY=2s
+          kubectl rollout status deployment/evidence-agent -n maop --timeout=5m
+      - name: demo.sh verify (all demo scenarios)
         env:
           MAOP_PLATFORM: kubernetes
-        run: ./demo.sh verify --quick
+        run: ./demo.sh verify
       - name: Cluster state on failure
         if: failure()
         run: |
           kubectl get pods -A -o wide || true
           kubectl get events -A --sort-by=.lastTimestamp | tail -n 100 || true
+          for service in ops-console triage-agent evidence-agent recommendation-agent tool-service otel-collector; do
+            echo "::group::$service runtime logs"
+            kubectl logs -n maop -l "app.kubernetes.io/name=$service" --all-containers --prefix --tail=150 || true
+            echo "::endgroup::"
+          done
       - name: Upload verify artifacts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

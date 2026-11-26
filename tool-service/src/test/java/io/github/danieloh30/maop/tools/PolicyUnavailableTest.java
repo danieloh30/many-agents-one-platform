@@ -37,7 +37,7 @@ class PolicyUnavailableTest {
         HttpResponse<String> r = ToolClients.invoke("recommendation-agent", "catalog.get_service", "opa-" + Ids.v7(), run,
                 Ids.v7(), Map.of("service", "checkout"), null);
         assertEquals(503, r.statusCode(), r.body());
-        assertEquals("POLICY_UNAVAILABLE", ToolClients.json(r).get("code").asText());
+        assertEquals("POLICY_UNAVAILABLE", ToolClients.json(r).get("code").asString());
         try (var c = ds.getConnection(); var s = c.createStatement();
                 ResultSet rs = s.executeQuery("select count(*) from tool_invocation where run_id = '" + run + "'")) {
             rs.next();

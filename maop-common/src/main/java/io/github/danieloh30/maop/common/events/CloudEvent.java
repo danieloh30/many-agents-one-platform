@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.common.events;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.github.danieloh30.maop.common.json.Json;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

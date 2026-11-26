@@ -1,7 +1,7 @@
 package io.github.danieloh30.maop.common.events;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.json.Json;
 import io.nats.client.impl.Headers;
 import java.nio.charset.StandardCharsets;
@@ -103,20 +103,20 @@ public final class CloudEventCodec {
     }
 
     public static CloudEvent fromStructured(JsonNode n) {
-        if (!CloudEvent.SPEC_VERSION.equals(n.path("specversion").asText())) {
+        if (!CloudEvent.SPEC_VERSION.equals(n.path("specversion").asString())) {
             throw new IllegalArgumentException("Unsupported CloudEvents specversion");
         }
         Map<String, String> ext = new LinkedHashMap<>();
-        Iterator<String> names = n.fieldNames();
+        Iterator<String> names = n.propertyNames().iterator();
         while (names.hasNext()) {
             String name = names.next();
             if (!CORE.contains(name)) {
-                ext.put(name, n.get(name).asText());
+                ext.put(name, n.get(name).asString());
             }
         }
-        return new CloudEvent(n.path("id").asText(), n.path("source").asText(), n.path("type").asText(),
-                n.hasNonNull("subject") ? n.get("subject").asText() : null,
-                n.hasNonNull("time") ? OffsetDateTime.parse(n.get("time").asText()) : null,
-                n.hasNonNull("dataschema") ? n.get("dataschema").asText() : null, ext, n.path("data"));
+        return new CloudEvent(n.path("id").asString(), n.path("source").asString(), n.path("type").asString(),
+                n.hasNonNull("subject") ? n.get("subject").asString() : null,
+                n.hasNonNull("time") ? OffsetDateTime.parse(n.get("time").asString()) : null,
+                n.hasNonNull("dataschema") ? n.get("dataschema").asString() : null, ext, n.path("data"));
     }
 }

@@ -4,8 +4,8 @@ import io.github.danieloh30.maop.triage.model.Run;
 import io.github.danieloh30.maop.triage.model.Task;
 import io.github.danieloh30.maop.triage.model.Transitions;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.Ids;
 import io.github.danieloh30.maop.common.model.ActionCommand;
 import io.github.danieloh30.maop.common.model.AnalysisMode;

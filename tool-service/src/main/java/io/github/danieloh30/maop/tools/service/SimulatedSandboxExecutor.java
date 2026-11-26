@@ -1,7 +1,7 @@
 package io.github.danieloh30.maop.tools.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.json.Json;
 import io.github.danieloh30.maop.common.tools.ToolCatalog;
 import io.quarkus.runtime.Startup;

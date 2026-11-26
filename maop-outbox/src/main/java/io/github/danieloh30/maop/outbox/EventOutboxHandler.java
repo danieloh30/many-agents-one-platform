@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.outbox;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import io.github.danieloh30.maop.common.events.CloudEventCodec;
 import io.github.danieloh30.maop.common.messaging.JetStreamClient;
 import jakarta.enterprise.context.ApplicationScoped;

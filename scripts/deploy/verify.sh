@@ -64,21 +64,24 @@ check_success_run() {
 check_trace() {
   if [[ -z "${SUCCESS_TRACE_ID:-}" ]]; then v_record "2 connected trace" FAIL "no traceId on the success run"; return 0; fi
   if ! resolve_jaeger; then v_record "2 connected trace" FAIL "Jaeger query API not reachable"; return 0; fi
-  local out="${ART}/02-trace.json" i code services count=0
+  local out="${ART}/02-trace.json" i code services count=0 connected=false
   for ((i = 0; i < 12; i++)); do
     code="$(_curl -o "$out" -w '%{http_code}' "${JAEGER_BASE}/api/traces/${SUCCESS_TRACE_ID}" 2>/dev/null || true)"
     if [[ "$code" == "200" ]]; then
       count="$(jq '[.data[]?.processes[]?.serviceName] | unique | length' "$out" 2>/dev/null || echo 0)"
-      ((count >= 4)) && break
+      connected="$(jq '[.data[]?.processes[]?.serviceName] | unique as $seen
+        | ["ops-console", "triage-agent", "evidence-agent", "recommendation-agent", "tool-service"] - $seen
+        | length == 0' "$out" 2>/dev/null || echo false)"
+      [[ "$connected" == true ]] && break
     fi
     sleep 5
   done
   services="$(jq -r '[.data[]?.processes[]?.serviceName] | unique | join(", ")' "$out" 2>/dev/null || true)"
   printf '%s\n' "$services" > "${ART}/02-trace-services.txt"
-  if ((count >= 4)); then
+  if [[ "$connected" == true ]]; then
     v_record "2 connected trace" PASS "trace ${SUCCESS_TRACE_ID}: ${count} services (${services})"
   else
-    v_record "2 connected trace" FAIL "trace ${SUCCESS_TRACE_ID}: HTTP ${code:-000}, ${count} services (${services:-none}); expected >= 4"
+    v_record "2 connected trace" FAIL "trace ${SUCCESS_TRACE_ID}: HTTP ${code:-000}, ${count} services (${services:-none}); expected console, triage, evidence, recommendation and tool service"
   fi
 }
 

@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.tools.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.time.Instant;
 import java.util.Map;
 

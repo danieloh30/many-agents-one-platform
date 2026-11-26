@@ -105,6 +105,7 @@ flowchart LR
 ## Requirements
 
 - JDK 25 or newer (Maven Wrapper included), Node.js 26 LTS or newer
+- Quarkus platform 4.0.1; migration policy and demo validation: [ADR-0019](docs/decisions/0019-quarkus-4-platform.md)
 - For OpenShift: `oc` logged in as a cluster administrator, `helm`; images are built in-cluster (no Docker Desktop)
 - For other Kubernetes clusters: `kubectl`, `helm`, podman or docker, and a registry the cluster can pull from
 - For the local stack: podman or docker, `openssl`, `jq`, `curl`

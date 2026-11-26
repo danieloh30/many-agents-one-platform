@@ -3,8 +3,8 @@ package io.github.danieloh30.maop.tools.service;
 import io.github.danieloh30.maop.tools.model.VerifiedCaller;
 import io.github.danieloh30.maop.tools.resource.Problems;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.Ids;
 import io.github.danieloh30.maop.common.model.ActionDigests;
 import io.github.danieloh30.maop.common.model.ApprovalGrant;

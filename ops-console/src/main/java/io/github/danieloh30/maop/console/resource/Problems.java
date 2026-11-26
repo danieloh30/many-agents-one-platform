@@ -1,6 +1,6 @@
 package io.github.danieloh30.maop.console.resource;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.json.Json;
 import io.opentelemetry.api.trace.Span;
 import jakarta.ws.rs.core.Response;

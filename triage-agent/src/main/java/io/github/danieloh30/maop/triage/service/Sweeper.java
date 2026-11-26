@@ -45,7 +45,7 @@ public class Sweeper {
                     }
                 }
                 store.activeBurst().ifPresent(b -> {
-                    UUID burstId = UUID.fromString(b.get("burstId").asText());
+                    UUID burstId = UUID.fromString(b.get("burstId").asString());
                     if (store.activeRunsOfBurst(burstId).isEmpty()) {
                         store.endBurst(burstId);
                         b.put("active", false);

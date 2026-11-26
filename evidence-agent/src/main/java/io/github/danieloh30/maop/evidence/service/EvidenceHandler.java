@@ -2,7 +2,7 @@ package io.github.danieloh30.maop.evidence.service;
 
 import io.github.danieloh30.maop.evidence.agentic.EvidenceAgent;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.github.danieloh30.maop.common.BudgetTracker;
 import io.github.danieloh30.maop.common.Deadlines;
 import io.github.danieloh30.maop.common.RunContext;
